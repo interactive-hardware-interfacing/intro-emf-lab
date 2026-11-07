@@ -178,8 +178,8 @@ export const EQUATIONS = {
       { title: 'Courant stability limit', tex: String.raw`c\,\Delta t \le \frac{h}{\sqrt{2}} \quad (\text{used: } c\,\Delta t = 0.99\,h/\sqrt{2})` },
     ],
     layers: {
-      E: { tex: String.raw`E_z^{\,n+1}_{i,j} = c_a E_z^{\,n}_{i,j} + c_b\left[(H_y^{\,n+\frac12}_{i+\frac12,j} - H_y^{\,n+\frac12}_{i-\frac12,j}) - (H_x^{\,n+\frac12}_{i,j+\frac12} - H_x^{\,n+\frac12}_{i,j-\frac12})\right]`, note: 'c_a = (1 − σΔt/2ε)/(1 + σΔt/2ε), c_b = (Δt/εh)/(1 + σΔt/2ε): the Yee update of E from the curl of H.' },
-      H: { tex: String.raw`H_x^{\,n+\frac12}_{i,j+\frac12} = H_x^{\,n-\frac12}_{i,j+\frac12} - \frac{\Delta t}{\mu_0 h}\left(E_z^{\,n}_{i,j+1} - E_z^{\,n}_{i,j}\right), \qquad H_y^{\,n+\frac12}_{i+\frac12,j} = H_y^{\,n-\frac12}_{i+\frac12,j} + \frac{\Delta t}{\mu_0 h}\left(E_z^{\,n}_{i+1,j} - E_z^{\,n}_{i,j}\right)`, note: 'H sits half a cell and half a time step away from E: leap-frog.' },
+      E: { tex: String.raw`{E_z}^{\,n+1}_{i,j} = c_a {E_z}^{\,n}_{i,j} + c_b\left[({H_y}^{\,n+\frac12}_{i+\frac12,j} - {H_y}^{\,n+\frac12}_{i-\frac12,j}) - ({H_x}^{\,n+\frac12}_{i,j+\frac12} - {H_x}^{\,n+\frac12}_{i,j-\frac12})\right]`, note: 'c_a = (1 − σΔt/2ε)/(1 + σΔt/2ε), c_b = (Δt/εh)/(1 + σΔt/2ε): the Yee update of E from the curl of H.' },
+      H: { tex: String.raw`{H_x}^{\,n+\frac12}_{i,j+\frac12} = {H_x}^{\,n-\frac12}_{i,j+\frac12} - \frac{\Delta t}{\mu_0 h}\left({E_z}^{\,n}_{i,j+1} - {E_z}^{\,n}_{i,j}\right), \qquad {H_y}^{\,n+\frac12}_{i+\frac12,j} = {H_y}^{\,n-\frac12}_{i+\frac12,j} + \frac{\Delta t}{\mu_0 h}\left({E_z}^{\,n}_{i+1,j} - {E_z}^{\,n}_{i,j}\right)`, note: 'H sits half a cell and half a time step away from E: leap-frog.' },
       S: { tex: String.raw`\mathbf{S} = \mathbf{E}\times\mathbf{H}, \qquad |\mathbf{S}| = |E_z|\,|\mathbf{H}| \quad (\mathbf{E} \perp \mathbf{H})`, note: 'Instantaneous power flow per unit area.' },
     },
     solver: { tex: String.raw`\text{absorbing wall (Mur): } E^{\,n+1}_{0} = E^{\,n}_{1} + \frac{c\Delta t - h}{c\Delta t + h}\left(E^{\,n+1}_{1} - E^{\,n}_{0}\right)` },

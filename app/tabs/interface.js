@@ -150,29 +150,31 @@ export default {
     // shade the conductor
     if (s.cond) { ctx.fillStyle = 'rgba(120,120,140,0.55)'; ctx.fillRect(px0, 0, view.width - px0, view.height); }
     // labels
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 14px system-ui';
+    ctx.font = 'bold 14px system-ui';
     const sym = s.mag ? 'μr' : 'εr';
-    ctx.fillText(`medium 1: ${sym} = ${this.e1}`, 12, 22);
+    const haloText = (t, x, y) => { ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.strokeText(t, x, y); ctx.fillStyle = '#111'; ctx.fillText(t, x, y); };
+    haloText(`medium 1: ${sym} = ${this.e1}`, 12, 22);
     ctx.textAlign = 'right';
-    ctx.fillText(s.cond ? 'perfect conductor' : `medium 2: ${sym} = ${this.e2}`, view.width - 12, 22);
+    haloText(s.cond ? 'perfect conductor' : `medium 2: ${sym} = ${this.e2}`, view.width - 12, 22);
     ctx.textAlign = 'start';
     // the field direction through the origin, and the angle each ray makes with the normal:
     // θ1 between the incoming ray (lower left, direction −E1) and the −x normal, θ2 between
     // the outgoing ray (direction E2) and the +x normal
     const [ox, oy] = view.toPx(0, 0);
-    const ray = (dx, dy, color) => { ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + 90 * dx, oy - 90 * dy); ctx.stroke(); };
+    const ray = (dx, dy, color) => { ctx.strokeStyle = color; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + 90 * dx, oy - 90 * dy); ctx.stroke(); };
     const arc = (base, th, color, label, lx, ly) => {
       const r = 40;
-      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+      ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.beginPath();
       ctx.arc(ox, oy, r, -base, -(base + th), th > 0); // canvas angles run clockwise: negate world angles
       ctx.stroke();
-      ctx.fillStyle = color; ctx.font = '13px system-ui'; ctx.fillText(label, ox + lx, oy + ly);
+      ctx.font = 'bold 14px system-ui'; ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.strokeText(label, ox + lx, oy + ly);
+      ctx.fillStyle = color; ctx.fillText(label, ox + lx, oy + ly);
     };
     if (!s.cond) {
-      ray(-Math.cos(s.th1), -Math.sin(s.th1), '#fde047'); ray(Math.cos(s.th2), Math.sin(s.th2), '#7dd3fc');
-      arc(Math.PI, s.th1, '#fde047', `θ1 = ${(s.th1 / deg).toFixed(1)}°`, -120, 60);
-      arc(0, s.th2, '#7dd3fc', `θ2 = ${(s.th2 / deg).toFixed(1)}°`, 48, -48);
-    } else ray(-1, 0, '#fde047');
+      ray(-Math.cos(s.th1), -Math.sin(s.th1), '#b45309'); ray(Math.cos(s.th2), Math.sin(s.th2), '#1e3a8a');
+      arc(Math.PI, s.th1, '#b45309', `θ1 = ${(s.th1 / deg).toFixed(1)}°`, -120, 60);
+      arc(0, s.th2, '#1e3a8a', `θ2 = ${(s.th2 / deg).toFixed(1)}°`, 48, -48);
+    } else ray(-1, 0, '#b45309');
     // the normal
     ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
     ctx.beginPath(); ctx.moveTo(ox - 70, oy); ctx.lineTo(ox + 70, oy); ctx.stroke();

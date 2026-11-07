@@ -199,6 +199,21 @@ export async function run(check) {
     check('interface: V is continuous across the interface', iface.at(-1e-9, 0.03).V, iface.at(1e-9, 0.03).V, 1e-6);
   }
 
+  // ------------------------------------------------------------ 5c. every equation renders in KaTeX
+  {
+    const { EQUATIONS } = await import('../app/equations.js');
+    const src = readFileSync(join(ROOT, 'vendor', 'katex', 'katex.min.js'), 'utf8');
+    const mod = { exports: {} };
+    new Function('module', 'exports', 'self', src)(mod, mod.exports, undefined); // UMD build -> module.exports
+    const katex = mod.exports.default ?? mod.exports;
+    let bad = 0;
+    for (const [tab, set] of Object.entries(EQUATIONS)) {
+      const all = [...set.governing.map((e) => [e.title, e.tex]), ...Object.entries(set.layers ?? {}).map(([k, e]) => [`layer ${k}`, e.tex]), ...(set.solver ? [['solver', set.solver.tex]] : [])];
+      for (const [name, tex] of all) { try { katex.renderToString(tex, { throwOnError: true }); } catch (e) { bad++; console.error(`equations: ${tab} / ${name}: ${e.message.slice(0, 120)}`); } }
+    }
+    check('equations: every TeX string renders in KaTeX', bad, 0, 0);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

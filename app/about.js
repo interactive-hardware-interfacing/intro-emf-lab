@@ -39,8 +39,8 @@ export const TAB_INFO = {
   },
   'ring-charge': {
     what: 'A ring of radius R in the z = 0 plane carrying either N point charges of q each or a continuous line charge λ, computed in 3D with cut planes.',
-    shows: ['V, |E|, E arrows or lines, equipotentials.', 'A "discrete − continuous" map: where N points stop looking like a ring.', 'The out-of-plane E component on a cut.'],
-    lookFor: ['Equal total charge means λ = Nq / 2πR; as N grows the discrete field converges to the continuous one, fastest far from the ring.', 'On the axis E is purely axial and zero at the centre by symmetry.'],
+    shows: ['Click a point charge to remove it without moving the others; the “Per-charge E at the probe” layer draws each charge’s contribution at the probe as an arrow with the net in white, and the side panel reports Σ|Eₖ| against |ΣEₖ|.', 'V, |E|, E arrows or lines, equipotentials.', 'A "discrete − continuous" map: where N points stop looking like a ring.', 'The out-of-plane E component on a cut.'],
+    lookFor: ['At the centre of a full ring the contributions cancel to zero; take one charge out and the net field there is exactly minus that charge’s own field.', 'Equal total charge means λ = Nq / 2πR; as N grows the discrete field converges to the continuous one, fastest far from the ring.', 'On the axis E is purely axial and zero at the centre by symmetry.'],
   },
   'line-charge': {
     what: 'Two infinitely long conducting rods of radius a at x = ±d in cross-section. The exact solution outside the rods is that of two image line charges at x = ±√(d² − a²), so the rod surfaces are exact equipotentials.',

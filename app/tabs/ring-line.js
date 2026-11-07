@@ -9,7 +9,7 @@ import { pointChargesField, ringChargeField, ringAsPointCharges, lineChargeE, li
 import { Grid2D, magnitude } from '../../core/grid.js';
 import { drawScalarField, drawQuiver, drawStreamlines, drawContours, levelsBetween, drawMarker, radialSeeds } from '../../core/render.js';
 import { CutPlane } from '../cutplane.js';
-import { getNum } from '../state.js';
+import { getNum, getList } from '../state.js';
 import { ui } from '../shell.js';
 
 const GRID_N = 141;
@@ -39,6 +39,7 @@ const TAB = {
     { id: 'En', label: 'E normal to plane', kind: 'scalar', unit: 'V/m', signed: true, eq: 'E' },
     { id: 'E', label: 'E field (in plane)', kind: 'vector', styles: ['arrows', 'lines'], default: true },
     { id: 'Veq', label: 'Equipotentials', kind: 'contour', eq: 'V' },
+    { id: 'contrib', label: 'Per-charge E at the probe (arrows)', kind: 'contour', eq: 'E', note: 'one arrow per point charge, plus the bold net arrow' },
   ],
 
   mode: 'ring',
@@ -47,6 +48,7 @@ const TAB = {
   q: 1,
   lambda: 1,          // C/m
   R: 0.2,
+  removed: [],        // ring: indices of point charges taken out (positions of the rest unchanged)
   // rods
   d: 0.4,
   lam: 1e-9,
@@ -60,6 +62,7 @@ const TAB = {
     this.q = getNum(s, 'q', 1);
     this.lambda = getNum(s, 'lam', 1);
     this.R = getNum(s, 'R', 0.2);
+    this.removed = getList(s, 'rm', []).map((v) => parseInt(v, 10)).filter((k) => Number.isInteger(k) && k >= 0 && k < this.N);
     this.d = getNum(s, 'd', 0.4);
     this.lam = getNum(s, 'laml', 1e-9);
     this.a = getNum(s, 'a', 0.1);
@@ -74,6 +77,7 @@ const TAB = {
     const ring = this.mode === 'ring';
     L('diff').available = ring;
     L('En').available = ring;
+    L('contrib').available = ring;
     if (!ring && (shell.colorLayer === 'diff' || shell.colorLayer === 'En')) shell.colorLayer = 'V';
     if (ring) shell.setExtent(this.cut.extent, this.cut.axes);
     else shell.setExtent(RODS_EXTENT, ['x', 'y']);
@@ -90,7 +94,7 @@ const TAB = {
       box.appendChild(ui.lead(shell, 'A ring of N point charges versus a continuous line charge, in 3D.'));
       box.appendChild(ui.field('Show', ui.select([['discrete', 'Discrete: N point charges'], ['continuous', 'Continuous: line charge λ']], this.source, (v) => { this.source = v; re(); })));
       const r1 = ui.el('div', 'row');
-      r1.appendChild(ui.field('Number of point charges N', ui.number(this.N, { min: 1, max: 400, onChange: (v) => { this.N = Math.round(v); re(); } })));
+      r1.appendChild(ui.field('Number of point charges N', ui.number(this.N, { min: 1, max: 400, onChange: (v) => { this.N = Math.round(v); this.removed = this.removed.filter((k) => k < this.N); re(); this.buildControls(); } })));
       r1.appendChild(ui.field('Charge per point q (C)', ui.number(this.q, { min: -10, max: 10, onChange: (v) => { this.q = v; re(); } })));
       box.appendChild(r1);
       const r2 = ui.el('div', 'row');
@@ -100,6 +104,18 @@ const TAB = {
       const eq = ui.el('p', 'hint');
       eq.textContent = `Equivalent λ for these N charges: ${(this.N * this.q / (2 * Math.PI * this.R)).toPrecision(4)} C/m. Equivalent q for this λ: ${(this.lambda * 2 * Math.PI * this.R / this.N).toPrecision(4)} C.`;
       box.appendChild(eq);
+      box.appendChild(ui.el('h2', '', 'Remove charges'));
+      box.appendChild(ui.el('p', 'hint', 'Click a point charge on the plot (XY plane at z = 0) to take it out without moving the others; click again to put it back. With a full ring the contributions at the centre cancel exactly; remove one and the net field at the centre is minus what that charge gave.'));
+      const rr = ui.el('div', 'row');
+      rr.append(ui.button('Remove every other charge', () => { this.removed = Array.from({ length: Math.floor(this.N / 2) }, (_, k) => 2 * k + 1); re(); this.buildControls(); }, 'btn btn-small'),
+        ui.button('Restore all', () => { this.removed = []; re(); this.buildControls(); }, 'btn btn-small'));
+      box.appendChild(rr);
+      this.removedEl = ui.el('p', 'hint', this.removed.length ? `Removed charge${this.removed.length > 1 ? 's' : ''} #${this.removed.map((k) => k + 1).join(', #')}; ${this.N - this.removed.length} of ${this.N} remain.` : `All ${this.N} charges present.`);
+      box.appendChild(this.removedEl);
+      box.appendChild(ui.el('h2', '', 'Cancellation at the probe'));
+      box.appendChild(ui.el('p', 'hint', 'Click the plot to place the probe (the ring centre is 0, 0). Σ|Eₖ| is what the charges would give if nothing cancelled; |ΣEₖ| is what is left. Switch on the “Per-charge E at the probe” layer to see each contribution as an arrow.'));
+      this.cancelEl = ui.el('table', 'probe-table'); this.cancelEl.appendChild(document.createElement('tbody')); box.appendChild(this.cancelEl);
+      this.renderCancel();
       box.appendChild(ui.el('h2', '', 'View'));
       box.appendChild(this.cut.controls((what) => {
         if (what === 'plane') { this.cut.refreshLabel(); shell.setExtent(this.cut.extent, this.cut.axes); }
@@ -123,7 +139,48 @@ const TAB = {
 
   // ------------------------------------------------------------ model
 
-  ringCharges() { return ringAsPointCharges(this.N, this.q, this.R, [0, 0, 0]); },
+  allRingCharges() { return ringAsPointCharges(this.N, this.q, this.R, [0, 0, 0]); },
+  ringCharges() { const all = this.allRingCharges(); return this.removed.length ? all.filter((c, k) => !this.removed.includes(k)) : all; },
+
+  /** Each present charge's E at a 3D point, the net, and the sum of magnitudes. */
+  contributions(p) {
+    const parts = this.ringCharges().map((c) => ({ c, E: pointChargesField([c], p).E }));
+    const net = parts.reduce((a, q) => [a[0] + q.E[0], a[1] + q.E[1], a[2] + q.E[2]], [0, 0, 0]);
+    const sumMag = parts.reduce((a, q) => a + Math.hypot(...q.E), 0);
+    return { parts, net, netMag: Math.hypot(...net), sumMag };
+  },
+
+  renderCancel() {
+    if (!this.cancelEl) return;
+    const tb = this.cancelEl.tBodies[0]; tb.innerHTML = '';
+    const row = (a, b) => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${a}</td><td>${b}</td>`; tb.appendChild(tr); };
+    const [u, v] = this.shell.probePt ?? [NaN, NaN];
+    if (!Number.isFinite(u) || !Number.isFinite(v)) { row('probe', 'not set'); return; }
+    const p = this.cut.point(u, v), k = this.contributions(p);
+    const f = (x) => (Number.isFinite(x) ? x.toPrecision(4) : '—');
+    row('probe', `(${p.map((x) => x.toFixed(3)).join(', ')}) m`);
+    row('charges contributing', `${k.parts.length}`);
+    row('Σ|Eₖ| (no cancellation)', `${f(k.sumMag)} V/m`);
+    row('|ΣEₖ| (net)', `${f(k.netMag)} V/m`);
+    row('cancelled', k.sumMag > 0 ? `${(100 * (1 - k.netMag / k.sumMag)).toFixed(2)} %` : '—');
+    row('net E (x, y, z)', `${k.net.map(f).join(', ')} V/m`);
+  },
+
+  /** Click a charge marker in the plane of the ring to remove or restore it. */
+  onPointer(type, x, y) {
+    if (this.mode !== 'ring' || this.source !== 'discrete' || type !== 'down') return false;
+    if (this.cut.plane !== 'xy' || Math.abs(this.cut.offset) > 1e-9) return false;
+    const tol = Math.max(0.012, 0.6 * (2 * Math.PI * this.R) / this.N); // half the spacing, at least ~a marker
+    let best = -1, bd = Infinity;
+    this.allRingCharges().forEach((c, k) => { const d = Math.hypot(c.pos[0] - x, c.pos[1] - y); if (d < bd) { bd = d; best = k; } });
+    if (best < 0 || bd > tol) return false;
+    const i = this.removed.indexOf(best);
+    if (i >= 0) this.removed.splice(i, 1); else this.removed.push(best);
+    this.removed.sort((a, b) => a - b);
+    if (this.removedEl) this.removedEl.textContent = this.removed.length ? `Removed charge${this.removed.length > 1 ? 's' : ''} #${this.removed.map((k) => k + 1).join(', #')}; ${this.N - this.removed.length} of ${this.N} remain.` : `All ${this.N} charges present.`;
+    this.shell.recompute(); this.shell.syncUrl();
+    return true;
+  },
 
   /** 3D field at a point for the ring mode. Returns { E:[3], V, Ed:[3], Ec:[3] } */
   ringField(p) {
@@ -227,11 +284,38 @@ const TAB = {
       }
       return;
     }
+    // Per-charge contributions at the probe, as arrows from the probe point
+    if (this.source === 'discrete' && this.shell.layerOn.get('contrib')) {
+      const [u, v] = this.shell.probePt;
+      if (Number.isFinite(u) && Number.isFinite(v)) {
+        const k = this.contributions(this.cut.point(u, v));
+        const [px, py] = view.toPx(u, v);
+        const maxMag = Math.max(k.netMag, ...k.parts.map((q) => Math.hypot(...q.E))) || 1;
+        const Lpx = 0.22 * view.width;
+        const arrow = (E, color, width) => {
+          const e = this.cut.inPlane(E), m = Math.hypot(...E); if (!(m > 0)) return;
+          const len = Lpx * (m / maxMag), ex = e[0] / m, ey = -e[1] / m; // screen y is down
+          ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+          ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + len * ex, py + len * ey); ctx.stroke();
+          const hx = px + len * ex, hy = py + len * ey, a = 5 + width;
+          ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx - a * ex + 0.5 * a * ey, hy - a * ey - 0.5 * a * ex); ctx.lineTo(hx - a * ex - 0.5 * a * ey, hy - a * ey + 0.5 * a * ex); ctx.closePath(); ctx.fill();
+        };
+        ctx.save();
+        for (const q of k.parts) arrow(q.E, 'rgba(255,170,0,0.95)', 1.5);
+        arrow(k.net, '#ffffff', 3);
+        ctx.fillStyle = '#fff'; ctx.font = '12px system-ui';
+        ctx.fillText(`net |E| = ${k.netMag.toPrecision(3)} V/m of Σ|Eₖ| = ${k.sumMag.toPrecision(3)} V/m`, px + 8, py - 8);
+        ctx.restore();
+      }
+    }
     // Ring trace in this plane
     const pl = this.cut.plane, off = this.cut.offset;
     if (pl === 'xy') {
       if (Math.abs(off) < 1e-9) {
-        if (this.source === 'discrete') for (const c of this.ringCharges()) drawMarker(ctx, view, c.pos[0], c.pos[1], { radius: this.N > 60 ? 2 : 5, fill: this.q > 0 ? '#e5484d' : '#3b82f6', stroke: '#fff', lineWidth: 1 });
+        if (this.source === 'discrete') this.allRingCharges().forEach((c, k) => {
+          const gone = this.removed.includes(k);
+          drawMarker(ctx, view, c.pos[0], c.pos[1], { radius: this.N > 60 ? 2 : 5, fill: gone ? 'rgba(0,0,0,0)' : this.q > 0 ? '#e5484d' : '#3b82f6', stroke: gone ? 'rgba(255,255,255,0.7)' : '#fff', lineWidth: 1 });
+        });
         else { const [cx, cy] = view.toPx(0, 0); ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, this.R / view.scale, 0, 2 * Math.PI); ctx.strokeStyle = this.lambda > 0 ? '#e5484d' : '#3b82f6'; ctx.lineWidth = 4; ctx.stroke(); ctx.restore(); }
       } else {
         const [cx, cy] = view.toPx(0, 0); ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, this.R / view.scale, 0, 2 * Math.PI); ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
@@ -253,6 +337,7 @@ const TAB = {
 
   probe(u, v) {
     const f = this.at(u, v);
+    if (this.mode === 'ring') setTimeout(() => this.renderCancel(), 0);
     const rows = [
       { label: 'V', value: f.V, unit: 'V' },
       { label: `E${this.shell.tab.axes[0]}`, value: f.E[0], unit: 'V/m' },
@@ -263,6 +348,7 @@ const TAB = {
       const p = this.cut.point(u, v);
       const disc = pointChargesField(this.ringCharges(), p), cont = ringChargeField(this.lambda, this.R, [0, 0, 0], p);
       rows.push({ label: `E${this.cut.def.normal} (normal)`, value: f.En, unit: 'V/m' });
+      if (this.removed.length) rows.push({ label: 'charges removed', value: this.removed.length, unit: '' });
       rows.push({ label: '|E| discrete (3D)', value: Math.hypot(...disc.E), unit: 'V/m' });
       rows.push({ label: '|E| continuous (3D)', value: Math.hypot(...cont.E), unit: 'V/m' });
       rows.push({ label: 'V discrete', value: disc.V, unit: 'V' });
@@ -273,7 +359,7 @@ const TAB = {
 
   getState() {
     const s = {};
-    if (this.mode === 'ring') Object.assign(s, { src: this.source, N: this.N, q: this.q, lam: this.lambda, R: this.R, ...this.cut.state() });
+    if (this.mode === 'ring') Object.assign(s, { src: this.source, N: this.N, q: this.q, lam: this.lambda, R: this.R, rm: this.removed.join(','), ...this.cut.state() });
     else Object.assign(s, { d: this.d, a: this.a, laml: this.lam });
     return s;
   },
