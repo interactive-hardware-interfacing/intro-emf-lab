@@ -69,7 +69,7 @@ export class Shell {
     this.tab = tab;
     for (const b of this.$('tabs').children) b.setAttribute('aria-selected', String(b.dataset.id === tab.id));
     document.title = `${tab.title} · Intro EMF Lab`;
-    this.$('foot-phase').textContent = tab.available === false ? `This tab arrives in Phase ${tab.phase}.` : `Phase ${tab.phase} tab.`;
+    this.$('foot-phase').textContent = tab.available === false ? 'This tab is not finished yet.' : '';
 
     // Canvas stack: one canvas per layer plus an overlay, all CANVAS_PX square.
     this.stackEl.innerHTML = '';
@@ -637,9 +637,10 @@ export const ui = {
     l.appendChild(input);
     return l;
   },
-  number(value, { min, max, step, onChange } = {}) {
+  number(value, { min, max, step, onChange, ariaLabel } = {}) {
     const i = document.createElement('input');
     i.type = 'text';
+    if (ariaLabel) i.setAttribute('aria-label', ariaLabel);
     i.inputMode = 'decimal';
     i.value = String(value);
     if (min !== undefined) i.dataset.min = min;
@@ -657,9 +658,10 @@ export const ui = {
     i.addEventListener('keydown', (e) => { if (e.key === 'Enter') commit(); });
     return i;
   },
-  range(value, { min, max, step, onInput } = {}) {
+  range(value, { min, max, step, onInput, ariaLabel } = {}) {
     const i = document.createElement('input');
     i.type = 'range';
+    if (ariaLabel) i.setAttribute('aria-label', ariaLabel);
     i.min = min; i.max = max; i.step = step; i.value = value;
     i.addEventListener('input', () => onInput?.(parseFloat(i.value)));
     return i;

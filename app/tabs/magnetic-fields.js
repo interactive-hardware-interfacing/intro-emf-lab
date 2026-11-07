@@ -131,7 +131,7 @@ export default {
       const row = ui.el('div', 'source-row' + (hidden ? ' hidden-values' : ''));
       row.appendChild(ui.el('span', 'idx', String(k + 1)));
       const mk = (key, min, max, hide) => {
-        const inp = ui.number(hide ? '' : w[key], { min, max, onChange: (v) => { w[key] = v; shell.recompute(); shell.syncUrl(); } });
+        const inp = ui.number(hide ? '' : w[key], { min, max, ariaLabel: `wire ${k + 1} ${({ I: 'current I (A)', x: 'x (m)', y: 'y (m)' })[key]}`, onChange: (v) => { w[key] = v; shell.recompute(); shell.syncUrl(); } });
         if (hide) { inp.disabled = true; inp.value = '?'; }
         return inp;
       };

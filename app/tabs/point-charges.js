@@ -104,7 +104,7 @@ export default {
       const row = ui.el('div', 'source-row' + (hidden ? ' hidden-values' : ''));
       row.appendChild(ui.el('span', 'idx', String(k + 1)));
       const mk = (key, min, max) => {
-        const inp = ui.number(hidden ? '' : c[key], { min, max, onChange: (v) => { c[key] = v; shell.recompute(); shell.syncUrl(); } });
+        const inp = ui.number(hidden ? '' : c[key], { min, max, ariaLabel: `charge ${k + 1} ${({ q: 'q (C)', x: 'x (m)', y: 'y (m)' })[key]}`, onChange: (v) => { c[key] = v; shell.recompute(); shell.syncUrl(); } });
         if (hidden) { inp.disabled = true; inp.value = '?'; }
         return inp;
       };

@@ -27,14 +27,16 @@ export default {
   extent: EXTENT,
   axes: ['x', 'y'],
   layers: [
-    { id: 'V', label: 'Potential V (or A_z)', kind: 'scalar', unit: 'V', signed: true, default: true },
-    { id: 'Fmag', label: '|E| (or |B|)', kind: 'scalar', unit: 'V/m', log: false, eq: 'E' },
-    { id: 'Fn', label: 'Normal component E_x (or B_x)', kind: 'scalar', unit: 'V/m', signed: true, eq: 'E' },
-    { id: 'Ft', label: 'Tangential component E_y (or H_y)', kind: 'scalar', unit: 'V/m', signed: true, eq: 'E' },
-    { id: 'E', label: 'E (or B) field', kind: 'vector', styles: ['arrows', 'lines'], default: true },
-    { id: 'D', label: 'D (or H) field', kind: 'vector', styles: ['arrows'], eq: 'D' },
-    { id: 'P', label: 'P (or M) field', kind: 'vector', styles: ['arrows'], eq: 'P' },
-    { id: 'Veq', label: 'Equipotentials (or A_z contours)', kind: 'contour', eq: 'V' },
+    // Labels and units are rewritten per case by applyMode(): E/D/P/V for the electric
+    // cases, B/H/M/A_z for the magnetic one.
+    { id: 'V', label: 'Potential V', kind: 'scalar', unit: 'V', signed: true, default: true },
+    { id: 'Fmag', label: '|E|', kind: 'scalar', unit: 'V/m', log: false, eq: 'E' },
+    { id: 'Fn', label: 'Normal component E_x', kind: 'scalar', unit: 'V/m', signed: true, eq: 'E' },
+    { id: 'Ft', label: 'Tangential component E_y', kind: 'scalar', unit: 'V/m', signed: true, eq: 'E' },
+    { id: 'E', label: 'E field', kind: 'vector', styles: ['arrows', 'lines'], default: true },
+    { id: 'D', label: 'D field', kind: 'vector', styles: ['arrows'], eq: 'D' },
+    { id: 'P', label: 'P field', kind: 'vector', styles: ['arrows'], eq: 'P' },
+    { id: 'Veq', label: 'Equipotentials', kind: 'contour', eq: 'V' },
   ],
 
   mode: 'electric',      // 'electric' | 'conductor' | 'magnetic'
@@ -49,7 +51,23 @@ export default {
     this.mode = ['electric', 'conductor', 'magnetic'].includes(s.mode) ? s.mode : 'electric';
     this.e1 = Math.max(1, getNum(s, 'e1', 1)); this.e2 = Math.max(1, getNum(s, 'e2', 4));
     this.F1 = getNum(s, 'F', 100); this.th1 = getNum(s, 'th', 40); this.rs = getNum(s, 'rs', 0);
+    this.applyMode();
     this.buildControls();
+  },
+
+  /** Layer names and units follow the case: electric (E, D, P, V) or magnetic (B, H, M, A_z). */
+  applyMode() {
+    const mag = this.mode === 'magnetic';
+    const L = (id) => this.layers.find((l) => l.id === id);
+    Object.assign(L('V'), mag ? { label: 'Vector potential A_z', unit: 'T·m' } : { label: 'Potential V', unit: 'V' });
+    Object.assign(L('Fmag'), mag ? { label: '|B|', unit: 'T' } : { label: '|E|', unit: 'V/m' });
+    Object.assign(L('Fn'), mag ? { label: 'Normal component B_x', unit: 'T' } : { label: 'Normal component E_x', unit: 'V/m' });
+    Object.assign(L('Ft'), mag ? { label: 'Tangential component H_y', unit: 'A/m' } : { label: 'Tangential component E_y', unit: 'V/m' });
+    L('E').label = mag ? 'B field' : 'E field';
+    L('D').label = mag ? 'H field' : 'D field';
+    L('P').label = mag ? 'M field' : 'P field';
+    L('Veq').label = mag ? 'A_z contours' : 'Equipotentials';
+    this.shell.refreshLayers?.();
   },
 
   /** Solve the boundary conditions once; everything else is uniform fields. */
@@ -187,7 +205,8 @@ export default {
     const s = this.sol;
     if (!s) return '';
     if (s.cond) return `conductor: E inside = 0, ρs = D1·n = ${sci(s.rs, 3)} C/m²`;
-    return `tan θ2 / tan θ1 = ${sci(Math.tan(s.th2) / Math.tan(s.th1) || 0, 3)} = ${s.mag ? 'μ2/μ1' : 'ε2/ε1'} = ${sci(this.e2 / this.e1, 3)} (with ${s.mag ? 'K' : 'ρs'} = 0)`;
+    if (Math.abs(s.th1) < 1e-9) return `normal incidence: θ1 = θ2 = 0, ${s.mag ? 'B_n' : 'D_n'} continuous${this.rs ? '' : `, ${s.mag ? 'H_t' : 'E_t'} = 0 on both sides`}`;
+    return `tan θ2 / tan θ1 = ${sci(Math.tan(s.th2) / Math.tan(s.th1), 3)}${this.rs ? '' : ` = ${s.mag ? 'μ2/μ1' : 'ε2/ε1'} = ${sci(this.e2 / this.e1, 3)}`} (with ${s.mag ? 'K' : 'ρs'} = ${this.rs})`;
   },
 
   probe(x, y) {
@@ -240,7 +259,7 @@ export default {
     box.appendChild(ui.el('h1', '', 'Interface'));
     box.appendChild(ui.lead(shell, 'A uniform field meets a plane interface: which components are continuous, and how the field lines bend.'));
     const re = () => { shell.recompute(); shell.syncUrl(); };
-    box.appendChild(ui.field('Case', ui.select([['electric', 'Dielectric – dielectric (E, D, P)'], ['conductor', 'Dielectric – perfect conductor'], ['magnetic', 'Magnetic – magnetic (B, H, M)']], this.mode, (v) => { this.mode = v; this.buildControls(); re(); })));
+    box.appendChild(ui.field('Case', ui.select([['electric', 'Dielectric – dielectric (E, D, P)'], ['conductor', 'Dielectric – perfect conductor'], ['magnetic', 'Magnetic – magnetic (B, H, M)']], this.mode, (v) => { this.mode = v; this.applyMode(); this.buildControls(); re(); })));
     const mag = this.mode === 'magnetic', cond = this.mode === 'conductor';
     const sym = mag ? 'μr' : 'εr';
     const r1 = ui.el('div', 'row');

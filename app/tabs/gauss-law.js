@@ -14,7 +14,7 @@ import { plotView } from '../views.js';
 
 const BOX = { x: [0, 0.5], y: [0, 0.5], z: [-0.25, 0.25] };
 const DEFAULTS = [
-  { q: 2, x: 0.25, y: 0.25, z: 0.0 },
+  { q: 2, x: 0.22, y: 0.27, z: 0.02 },
   { q: -1, x: 0.4, y: 0.15, z: 0.05 },
   { q: 1, x: 0.15, y: 0.38, z: -0.08 },
   { q: -2, x: 0.38, y: 0.4, z: 0.1 },
@@ -59,11 +59,11 @@ export default {
       footer: true,
       controls: (ctl, inst) => {
         ctl.append(ui.el('span', '', 'Orbit:'));
-        ctl.appendChild(ui.range(this.cam.az, { min: -3.14, max: 3.14, step: 0.01, onInput: (v) => { this.cam.az = v; inst.update(); this.queueUrl(); } }));
+        ctl.appendChild(ui.range(this.cam.az, { min: -3.14, max: 3.14, step: 0.01, ariaLabel: 'orbit (azimuth)', onInput: (v) => { this.cam.az = v; inst.update(); this.queueUrl(); } }));
         ctl.append(ui.el('span', '', 'Tilt:'));
-        ctl.appendChild(ui.range(this.cam.el, { min: 0, max: 1.5, step: 0.01, onInput: (v) => { this.cam.el = v; inst.update(); this.queueUrl(); } }));
+        ctl.appendChild(ui.range(this.cam.el, { min: 0, max: 1.5, step: 0.01, ariaLabel: 'tilt (elevation)', onInput: (v) => { this.cam.el = v; inst.update(); this.queueUrl(); } }));
         ctl.append(ui.el('span', '', 'Field lines per charge:'));
-        ctl.appendChild(ui.range(this.density, { min: 0, max: 30, step: 1, onInput: (v) => { this.density = v; inst.update(); this.queueUrl(); } }));
+        ctl.appendChild(ui.range(this.density, { min: 0, max: 30, step: 1, ariaLabel: 'field lines per charge', onInput: (v) => { this.density = v; inst.update(); this.queueUrl(); } }));
         ctl.append(ui.el('span', '', 'Drag on the picture to orbit.'));
       },
     })];
@@ -267,7 +267,7 @@ export default {
     const sl = (label, key, min, max, step = 0.005) => {
       const wrap = ui.el('div', '');
       const lab = ui.el('div', 'hint', `${label}: ${this.surf[key].toFixed(3)} m`);
-      const r = ui.range(this.surf[key], { min, max, step, onInput: (v) => { this.surf[key] = v; lab.textContent = `${label}: ${v.toFixed(3)} m`; this.compute(); shell.updateStageView(); shell.refreshStatus?.(); this.queueUrl(); } });
+      const r = ui.range(this.surf[key], { min, max, step, ariaLabel: `surface ${label} (m)`, onInput: (v) => { this.surf[key] = v; lab.textContent = `${label}: ${v.toFixed(3)} m`; this.compute(); shell.updateStageView(); shell.refreshStatus?.(); this.queueUrl(); } });
       wrap.append(lab, r);
       return wrap;
     };
@@ -285,7 +285,7 @@ export default {
       const c = this.charges[k];
       const row = ui.el('div', 'source-row'); row.style.gridTemplateColumns = '22px 1fr 1fr 1fr 1fr';
       row.appendChild(ui.el('span', 'idx', String(k + 1)));
-      const mk = (key, min, max) => ui.number(c[key], { min, max, onChange: (v) => { c[key] = v; re(); } });
+      const mk = (key, min, max) => ui.number(c[key], { min, max, ariaLabel: `charge ${k + 1} ${({ q: 'q (C)', x: 'x (m)', y: 'y (m)', z: 'z (m)' })[key]}`, onChange: (v) => { c[key] = v; re(); } });
       row.append(mk('q', -5, 5), mk('x', 0.05, 0.45), mk('y', 0.05, 0.45), mk('z', -0.2, 0.2));
       box.appendChild(row);
     }

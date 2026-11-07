@@ -88,3 +88,11 @@ Tests: 17 new bench checks (174) and three smoke passes (URL round trip with one
 perturbed per tab, randomize-on-load, 900 px layout without horizontal overflow).
 Deferred to the polish batch: Interface units in magnetic mode, Gauss's-law default probe
 on a charge, accessibility labels on the charge-table inputs and 3D sliders.
+
+## Polish (patch 6h)
+Interface layer names and units follow the case (E/D/P/V or B/H/M/A_z) via applyMode();
+normal incidence gets its own status line. Gauss's-law default charge 1 moved off the
+probe/surface centre. Every input and slider has an accessible name (aria-label on the
+charge-table inputs, orbit/tilt/density, cut-plane and surface sliders) and the smoke test
+now fails on any control without one. README no longer lists build phases; the footer
+phase label is gone.

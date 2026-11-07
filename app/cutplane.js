@@ -40,7 +40,7 @@ export class CutPlane {
     this.offsetInput = off;
     this.offsetLabel = ui.field(`${this.def.normal} offset (m)`, off);
     box.appendChild(this.offsetLabel);
-    const slider = ui.range(this.offset, { min: this.range[0], max: this.range[1], step: (this.range[1] - this.range[0]) / 100, onInput: (v) => { this.offset = v; off.value = String(Number(v.toPrecision(4))); onChange('offset'); } });
+    const slider = ui.range(this.offset, { min: this.range[0], max: this.range[1], step: (this.range[1] - this.range[0]) / 100, ariaLabel: 'cut-plane offset (m)', onInput: (v) => { this.offset = v; off.value = String(Number(v.toPrecision(4))); onChange('offset'); } });
     this.slider = slider;
     const wrap = ui.el('div', '');
     wrap.style.flexBasis = '100%';

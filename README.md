@@ -30,7 +30,7 @@ core/                   em-core: the numerics, no DOM
   axisym.js             (r,z) neighbor-averaging solvers: Axisym (eps or sigma) and AxisymMag (psi = r A_phi)
 bench/
   run.js                closed-form benchmarks; `npm test`; gates every deploy
-docs/                   phase notes; docs/matlab has relax2d.m, the MATLAB twin of the solver
+docs/                   build notes per batch of work; docs/matlab has relax2d.m, the MATLAB twin of the solver
 ```
 
 ## Running locally
@@ -66,14 +66,3 @@ The GitHub Action runs both and refuses to deploy if either fails.
   shown on screen. No over-relaxation or multigrid in the default path.
 - Every number a student can read must be reproducible from the URL.
 - Tag a release per semester (`fall-2026`) so graded cohorts keep their numbers.
-
-## Phases
-
-0. Scaffold, shell, analytic core, bench, deploy — done
-1. Closed-form tabs: Point charges, Magnetic fields, Ring and line charge; cut-plane view — done
-2. `relax2d.js` + Sandbox tab (Lab 2 demo), MATLAB twin — done
-3. `axisym.js` (E, sigma) + Capacitors and Conduction tabs — done
-4. `AxisymMag` + Inductors tab — done
-5. 3D point charges; review fixes; app-layer tests, golden files, browser smoke test — done
-6. About page; nonlinear mu(B); Gauss's law, Interface, Transmission lines, Time-varying (FDTD) tabs — done
-7. Instructor tools, semester tag, handout edits

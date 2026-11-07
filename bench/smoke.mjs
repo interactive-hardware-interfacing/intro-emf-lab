@@ -76,6 +76,14 @@ for (const [id, read, defaults] of [
 }
 console.log('ok  randomize on load');
 
+// ---- Every form control has an accessible name (label, aria-label or label[for])
+for (const id of tabs) {
+  await page.goto(`${base}?tab=${id}`, { waitUntil: 'networkidle' }); await page.waitForTimeout(400);
+  const bare = await page.evaluate(() => [...document.querySelectorAll('input, select, textarea')].filter((i) => i.type !== 'hidden' && !i.closest('label') && !i.getAttribute('aria-label') && !i.getAttribute('aria-labelledby') && !(i.id && document.querySelector(`label[for="${i.id}"]`))).map((i) => `${i.tagName.toLowerCase()}[type=${i.type}]`));
+  if (bare.length) errors.push(`${id}: ${bare.length} control(s) without an accessible name: ${bare.join(', ')}`);
+}
+console.log('ok  accessible names');
+
 // ---- Narrow layout: nothing should overflow horizontally at 900 px
 await page.setViewportSize({ width: 900, height: 800 });
 for (const id of ['capacitors', 'fdtd', 'gauss-law', 'about']) {
