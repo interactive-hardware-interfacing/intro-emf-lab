@@ -350,6 +350,28 @@ mark('axisym magnetostatics (Phase 4)');
     check('axisym-mag sheet+rod: B_z in gap = mu0 H1 (1%)', bz.get(70, 3), MU0 * H1, 1e-2);
     check('axisym-mag sheet+rod: B_z outside sheet = mu0 H2 (1%)', bz.get(150, 3), MU0 * (H1 - K), 1e-2);
   }
+  // 1b. Saturating rod in the same 1-D geometry: with the B-H curve the rod's B must satisfy
+  //     B = mu0 H1 + Bsat tanh(mu0 (mu_i - 1) H1 / Bsat), with H1 fixed by the sheet and the
+  //     flux balance. Solve that transcendental system here and compare.
+  {
+    const h = 0.005, Rw = 1, Rc = 0.5, a = 0.2, muI = 50, K = 2e5, Bsat = 1.0;
+    const s = new AxisymMag(201, 7, { h, z0: 0, boundary: { zmin: 'neumann', zmax: 'neumann' } });
+    s.jWhere((r) => Math.abs(r - Rc) < h / 4, K / h);
+    s.muWhere((r) => r <= a + h / 4, muI);
+    const mask = new Uint8Array(s.eps.length); for (let k = 0; k < mask.length; k++) if (s.eps[k] === muI) mask[k] = 1;
+    s.setSaturation({ mask, muI, Bsat });
+    s.solve(1e-12, 1e6, 100);
+    // exact: unknown H1; rod B = Bcurve(H1); gap B = mu0 H1; outside H2 = H1 - K, B2 = mu0 H2; zero net flux
+    const Bcurve = (H) => AxisymMag.Bcurve(H, muI, Bsat);
+    const F = (H1) => Bcurve(H1) * a * a + MU0 * H1 * (Rc * Rc - a * a) + MU0 * (H1 - K) * (Rw * Rw - Rc * Rc);
+    let lo = 0, hi = K; for (let n = 0; n < 200; n++) { const mid = 0.5 * (lo + hi); if (F(mid) > 0) hi = mid; else lo = mid; }
+    const H1 = 0.5 * (lo + hi);
+    const [, bz] = s.B();
+    check('axisym-mag saturating rod: B in rod follows the B-H curve (1%)', bz.get(20, 3), Bcurve(H1), 1e-2);
+    check('axisym-mag saturating rod: mean mu_r matches the curve (3%)', s.meanMu(), Bcurve(H1) / (MU0 * H1), 3e-2);
+    check('axisym-mag muOfB: small-B limit is mu_i', AxisymMag.muOfB(1e-6, muI, Bsat), muI, 1e-3);
+    check('axisym-mag muOfB: large-B limit -> 1', AxisymMag.muOfB(50, muI, Bsat), 1, 3e-2);
+  }
   // 2. Finite single-layer coil, l = d (Nagaoka K_N = 0.6884): L from B.H energy and from J.A.
   {
     const s = solenoidWithObject({ N: 50, I: 1, Rc: 0.02, l: 0.04, tw: 0.0005, a: 0, Lo: 0, muR: 1, nr: 81, box: 8 });
@@ -392,6 +414,14 @@ mark('report');
   for (const f of files) { const r = spawnSync(process.execPath, ['--check', f]); if (r.status !== 0) { bad++; console.error(r.stderr.toString()); } }
   check(`syntax: all ${files.length} browser modules parse`, bad, 0, 0);
 }
+
+// ---------------------------------------------------------------- app layer (worker, state, contracts, golden files)
+mark('fdtd');
+(await import('./fdtd.js')).fdtdChecks(check);
+
+mark('app layer');
+await (await import('./app.js')).run(check);
+(await import('./tline.js')).tlineChecks(check); // transmission lines: closed forms and the Gauss-Seidel cross-section
 
 // ---------------------------------------------------------------- report
 const failed = results.filter((r) => !r.pass);

@@ -174,9 +174,9 @@ export default {
   render(layer, ctx, view, opts) {
     const eFn = (r, z) => [this.gridEr.sample(r, z), this.gridEz.sample(r, z)];
     switch (layer) {
-      case 'V': return drawScalarField(ctx, this.gridV, { map: opts.map, min: opts.min ?? 0, max: opts.max ?? this.meta.V });
-      case 'Emag': return drawScalarField(ctx, this.gridEmag, { map: opts.map, log: true, min: opts.min ?? this.eRange[0], max: opts.max ?? this.eRange[1] });
-      case 'w': return drawScalarField(ctx, this.gridW, { map: opts.map, log: true, min: opts.min ?? this.wRange[0], max: opts.max ?? this.wRange[1] });
+      case 'V': return drawScalarField(ctx, this.gridV, { map: opts.map, extent: opts.extent, min: opts.min ?? 0, max: opts.max ?? this.meta.V });
+      case 'Emag': return drawScalarField(ctx, this.gridEmag, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.eRange[0], max: opts.max ?? this.eRange[1] });
+      case 'w': return drawScalarField(ctx, this.gridW, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.wRange[0], max: opts.max ?? this.wRange[1] });
       case 'E':
         if (opts.style === 'lines') {
           const { g, R, t, h } = this.meta;
@@ -240,9 +240,12 @@ export default {
   },
 
   csv() {
-    const g = this.gridV;
+    // Always the solver's own half-plane grid, whatever the display shows.
+    const s = this.solver;
+    const gV = new Grid2D(s.nr, s.nz, s.extent, this.V);
+    const [er, ez] = gV.negGradient();
     const lines = ['r_m,z_m,V_V,Er_Vpm,Ez_Vpm,eps_r'];
-    for (let j = 0; j < g.ny; j++) for (let i = 0; i < g.nx; i++) lines.push(`${g.x(i)},${g.y(j)},${g.get(i, j)},${this.gridEr.get(i, j)},${this.gridEz.get(i, j)},${this.solver.eps[this.solver.idx(i, j)]}`);
+    for (let j = 0; j < s.nz; j++) for (let i = 0; i < s.nr; i++) { const k = s.idx(i, j); lines.push(`${s.r(i)},${s.z(j)},${this.V[k]},${er.data[k]},${ez.data[k]},${s.eps[k]}`); }
     return lines.join('\n');
   },
 
@@ -253,7 +256,7 @@ export default {
     const box = shell.controlsEl;
     box.innerHTML = '';
     box.appendChild(ui.el('h1', '', 'Capacitors'));
-    box.appendChild(ui.el('p', 'lead', 'Two circular plates with three dielectric layers between them, each one third of the gap. Solved in (r, z) with the same neighbour average as the Sandbox, weighted by radius. The walls are insulating, so all the top plate\'s charge ends on the bottom plate.'));
+    box.appendChild(ui.lead(shell, 'Two circular plates with a three-layer dielectric, solved in (r, z).'));
 
     const re = () => { this.client?.cancel(); this.build(); this.buildControls(); shell.recompute(); shell.syncUrl(); this.solve(); };
     const pf = (key, label, min, max) => ui.field(label, ui.number(this.p[key], { min, max, onChange: (v) => { this.p[key] = v; re(); } }));

@@ -2,26 +2,7 @@
 // Add a tab by importing its module and placing it in TABS. Nothing else to wire.
 
 import { Shell } from './shell.js';
-import pointCharges from './tabs/point-charges.js';
-import pointCharges3d from './tabs/point-charges-3d.js';
-import { makeTab as makeRingLine } from './tabs/ring-line.js';
-import magneticFields from './tabs/magnetic-fields.js';
-import sandbox from './tabs/sandbox.js';
-import capacitors from './tabs/capacitors.js';
-import conduction from './tabs/conduction.js';
-import inductors from './tabs/inductors.js';
-
-export const TABS = [
-  pointCharges,
-  pointCharges3d,
-  makeRingLine('ring'),
-  makeRingLine('rods'),
-  capacitors,
-  conduction,
-  magneticFields,
-  inductors,
-  sandbox,
-];
+import { TABS } from './tabs/index.js';
 
 function boot() {
   window.emf = new Shell(TABS);

@@ -71,7 +71,7 @@ export default {
     const box = shell.controlsEl;
     box.innerHTML = '';
     box.appendChild(ui.el('h1', '', 'Point charges'));
-    box.appendChild(ui.el('p', 'lead', 'Up to four point charges in a 0.5 m square. Fields are exact Coulomb superposition; the colour map is sampled on a 161 x 161 grid for display only.'));
+    box.appendChild(ui.lead(shell, 'Up to four point charges in a 0.5 m square, exact Coulomb superposition.'));
 
     const modeRow = ui.el('div', 'row');
     modeRow.appendChild(ui.field('Mode', ui.select([['set', 'Set charges'], ['random', 'Randomize (hidden)']], this.mode, (v) => {
@@ -190,9 +190,9 @@ export default {
     const inPlane = this.cut.plane === 'xy' && Math.abs(this.cut.offset) < 1e-9;
     switch (layer) {
       case 'V':
-        return drawScalarField(ctx, this.gridV, { map: opts.map, min: opts.min ?? this.vRange[0], max: opts.max ?? this.vRange[1] });
+        return drawScalarField(ctx, this.gridV, { map: opts.map, extent: opts.extent, min: opts.min ?? this.vRange[0], max: opts.max ?? this.vRange[1] });
       case 'Emag':
-        return drawScalarField(ctx, this.gridEmag, { map: opts.map, log: true, min: opts.min ?? this.eRange[0], max: opts.max ?? this.eRange[1] });
+        return drawScalarField(ctx, this.gridEmag, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.eRange[0], max: opts.max ?? this.eRange[1] });
       case 'E':
       case 'D':
         if (opts.style === 'lines') {

@@ -248,7 +248,7 @@ export default {
     const box = shell.controlsEl;
     box.innerHTML = '';
     box.appendChild(ui.el('h1', '', 'Sandbox'));
-    box.appendChild(ui.el('p', 'lead', 'Each free cell is replaced by the average of its four neighbours, over and over, until nothing changes. That is the whole solver. Watch it happen.'));
+    box.appendChild(ui.lead(shell, 'Draw a problem and watch the neighbour-averaging solver converge.'));
 
     // Solver run controls
     box.appendChild(ui.el('h2', '', 'Solver'));
@@ -390,9 +390,9 @@ export default {
   render(layer, ctx, view, opts) {
     const eFn = (x, y) => [this.gridEx.sample(x, y), this.gridEy.sample(x, y)];
     switch (layer) {
-      case 'V': return drawScalarField(ctx, this.gridV, { map: opts.map, min: opts.min ?? this.vRange[0], max: opts.max ?? this.vRange[1] });
-      case 'Emag': return drawScalarField(ctx, this.gridEmag, { map: opts.map, log: true, min: opts.min ?? this.eRange[0], max: opts.max ?? this.eRange[1] });
-      case 'res': return drawScalarField(ctx, this.gridRes, { map: opts.map, log: true, min: opts.min ?? this.tol * 0.01, max: opts.max ?? Math.max(this.residual, this.tol) });
+      case 'V': return drawScalarField(ctx, this.gridV, { map: opts.map, extent: opts.extent, min: opts.min ?? this.vRange[0], max: opts.max ?? this.vRange[1] });
+      case 'Emag': return drawScalarField(ctx, this.gridEmag, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.eRange[0], max: opts.max ?? this.eRange[1] });
+      case 'res': return drawScalarField(ctx, this.gridRes, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.tol * 0.01, max: opts.max ?? Math.max(this.residual, this.tol) });
       case 'E':
         if (opts.style === 'lines') {
           const seeds = [];

@@ -100,9 +100,11 @@ export const EQUATIONS = {
       { title: 'Vector potential, axisymmetric', tex: String.raw`\nabla \times \left(\frac{1}{\mu}\nabla \times A_\phi \hat{\boldsymbol{\phi}}\right) = J_\phi` },
       { title: 'Inductance two ways', tex: String.raw`L = \frac{N\Phi}{I} = \frac{2W}{I^2}, \qquad W = \tfrac{1}{2}\int \mathbf{B}\cdot\mathbf{H}\, dv` },
       { title: 'Long solenoid', tex: String.raw`L \approx \frac{\mu_0 N^2 A}{\ell}` },
+      { title: 'Saturating core (optional)', tex: String.raw`B(H) = \mu_0 H + B_\text{sat}\tanh\!\left(\frac{\mu_0(\mu_{r0}-1)H}{B_\text{sat}}\right), \qquad \mu_r = \frac{B}{\mu_0 H}` },
     ],
     layers: {
       B: { tex: String.raw`B_r = -\frac{\partial A_\phi}{\partial z}, \qquad B_z = \frac{1}{r}\frac{\partial (r A_\phi)}{\partial r}` },
+      mu: { tex: String.raw`\mu_r(|\mathbf{B}|) \text{ from the B–H curve; } \mu_r = \mu_{r0} \text{ when linear}` },
       H: { tex: String.raw`\mathbf{H} = \mathbf{B}/\mu` },
       M: { tex: String.raw`\mathbf{M} = \mathbf{B}/\mu_0 - \mathbf{H} = (\mu_r - 1)\mathbf{H}` },
       J: { tex: String.raw`J_\phi = \frac{N I}{\ell\, t}\text{ in the winding}, \qquad \nabla \times \mathbf{H} \text{ recovered from the solution}` },
@@ -122,10 +124,70 @@ export const EQUATIONS = {
     },
     solver: { tex: String.raw`\text{stop when } \max_{i,j} |V^{\,new}_{i,j} - V^{\,old}_{i,j}| < \text{tol}` },
   },
+  'gauss-law': {
+    governing: [
+      { title: "Gauss's law (integral form)", tex: String.raw`\oint_S \mathbf{E}\cdot d\mathbf{A} = \frac{Q_\text{enc}}{\varepsilon_0}` },
+      { title: 'Differential form', tex: String.raw`\nabla \cdot \mathbf{E} = \frac{\rho_v}{\varepsilon_0}` },
+      { title: 'Coulomb field used for E', tex: String.raw`\mathbf{E}(\mathbf{r}) = \sum_k \frac{q_k}{4\pi\varepsilon_0}\frac{\mathbf{r}-\mathbf{r}_k}{|\mathbf{r}-\mathbf{r}_k|^3}` },
+    ],
+    layers: {
+      En: { tex: String.raw`\Phi \approx \sum_\text{patches} (\mathbf{E}\cdot\hat{\mathbf{n}})\,\Delta A`, note: 'The colour on the surface is E·n; the flux is its sum over the patches.' },
+      E: { tex: String.raw`\mathbf{E} = -\nabla V` },
+    },
+  },
+
+  interface: {
+    governing: [
+      { title: 'Electric: tangential E, normal D', tex: String.raw`E_{1t} = E_{2t}, \qquad D_{2n} - D_{1n} = \rho_s` },
+      { title: 'Refraction of E lines (ρs = 0)', tex: String.raw`\frac{\tan\theta_2}{\tan\theta_1} = \frac{\varepsilon_2}{\varepsilon_1}` },
+      { title: 'Perfect conductor', tex: String.raw`\mathbf{E}_2 = 0, \qquad E_{1t} = 0, \qquad \rho_s = D_{1n}` },
+      { title: 'Magnetic: normal B, tangential H', tex: String.raw`B_{1n} = B_{2n}, \qquad H_{1t} - H_{2t} = K, \qquad \frac{\tan\theta_2}{\tan\theta_1} = \frac{\mu_2}{\mu_1}\ (K = 0)` },
+      { title: 'Bound surface charge', tex: String.raw`\rho_{sb} = (\mathbf{P}_1 - \mathbf{P}_2)\cdot\hat{\mathbf{n}}, \qquad \mathbf{P} = (\varepsilon_r - 1)\varepsilon_0\mathbf{E}` },
+    ],
+    layers: {
+      V: { tex: String.raw`V = -\int \mathbf{E}\cdot d\mathbf{l} \text{ (continuous across the interface)}` },
+      E: { tex: String.raw`\mathbf{E} = -\nabla V` },
+      D: { tex: String.raw`\mathbf{D} = \varepsilon \mathbf{E} = \varepsilon_0\mathbf{E} + \mathbf{P}` },
+      P: { tex: String.raw`\mathbf{P} = (\varepsilon_r - 1)\varepsilon_0\mathbf{E}, \qquad \mathbf{M} = (\mu_r - 1)\mathbf{H}` },
+    },
+  },
+
+  'transmission-lines': {
+    governing: [
+      { title: 'Per-unit-length parameters', tex: String.raw`C' = \frac{\lambda}{V}, \qquad L' = \frac{\Phi'}{I}, \qquad L'C' = \mu\varepsilon \ \text{(any TEM line)}` },
+      { title: 'Characteristic impedance and velocity', tex: String.raw`Z_0 = \sqrt{\frac{L'}{C'}}, \qquad v = \frac{1}{\sqrt{L'C'}} = \frac{c}{\sqrt{\varepsilon_r}}` },
+      { title: 'Coaxial line', tex: String.raw`C' = \frac{2\pi\varepsilon}{\ln(b/a)}, \qquad L' = \frac{\mu_0}{2\pi}\ln\frac{b}{a}, \qquad Z_0 = \frac{60\,\Omega}{\sqrt{\varepsilon_r}}\ln\frac{b}{a}` },
+      { title: 'Twin-lead (two wires, exact)', tex: String.raw`C' = \frac{\pi\varepsilon}{\cosh^{-1}(d/2a)}, \qquad Z_0 = \frac{120\,\Omega}{\sqrt{\varepsilon_r}}\cosh^{-1}\frac{d}{2a}` },
+      { title: 'Parallel plates (ideal)', tex: String.raw`C' \approx \frac{\varepsilon w}{d}, \qquad Z_0 \approx \frac{d}{w}\sqrt{\frac{\mu}{\varepsilon}}` },
+    ],
+    layers: {
+      V: { tex: String.raw`\text{coax: } V(r) = V_0\frac{\ln(b/r)}{\ln(b/a)}, \qquad \text{two wires: } V = \frac{\lambda}{2\pi\varepsilon}\ln\frac{r_-}{r_+}` },
+      E: { tex: String.raw`\mathbf{E} = -\nabla V, \qquad \text{coax: } E_r = \frac{V_0}{r\ln(b/a)}` },
+      D: { tex: String.raw`\mathbf{D} = \varepsilon_0\varepsilon_r\mathbf{E}, \qquad \lambda = \oint \mathbf{D}\cdot\hat{\mathbf{n}}\, dl` },
+    },
+    solver: { tex: String.raw`V_{i,j} \leftarrow \tfrac{1}{4}\left(V_{i+1,j} + V_{i-1,j} + V_{i,j+1} + V_{i,j-1}\right), \qquad C' = \frac{1}{V}\oint \mathbf{D}\cdot\hat{\mathbf{n}}\, dl` },
+  },
+
+  fdtd: {
+    governing: [
+      { title: 'Faraday', tex: MAXWELL.faraday },
+      { title: 'Ampère, with the displacement current on', tex: MAXWELL.ampere, note: 'Here J = σE only (no impressed current); the source is added to E_z directly.' },
+      { title: 'TMz in two dimensions (E along z, H in the plane)', tex: String.raw`\frac{\partial H_x}{\partial t} = -\frac{1}{\mu_0}\frac{\partial E_z}{\partial y}, \qquad \frac{\partial H_y}{\partial t} = \frac{1}{\mu_0}\frac{\partial E_z}{\partial x}, \qquad \varepsilon\frac{\partial E_z}{\partial t} = \frac{\partial H_y}{\partial x} - \frac{\partial H_x}{\partial y} - \sigma E_z` },
+      { title: 'Wave speed and impedance', tex: String.raw`v = \frac{1}{\sqrt{\mu_0\varepsilon}} = \frac{c}{\sqrt{\varepsilon_r}}, \qquad \eta = \sqrt{\mu_0/\varepsilon}` },
+      { title: 'Reflection at a dielectric step (normal incidence)', tex: String.raw`\Gamma = \frac{\eta_2-\eta_1}{\eta_2+\eta_1} = \frac{1-n}{1+n}, \qquad \tau = 1 + \Gamma` },
+      { title: 'Courant stability limit', tex: String.raw`c\,\Delta t \le \frac{h}{\sqrt{2}} \quad (\text{used: } c\,\Delta t = 0.99\,h/\sqrt{2})` },
+    ],
+    layers: {
+      E: { tex: String.raw`E_z^{\,n+1}_{i,j} = c_a E_z^{\,n}_{i,j} + c_b\left[(H_y^{\,n+\frac12}_{i+\frac12,j} - H_y^{\,n+\frac12}_{i-\frac12,j}) - (H_x^{\,n+\frac12}_{i,j+\frac12} - H_x^{\,n+\frac12}_{i,j-\frac12})\right]`, note: 'c_a = (1 − σΔt/2ε)/(1 + σΔt/2ε), c_b = (Δt/εh)/(1 + σΔt/2ε): the Yee update of E from the curl of H.' },
+      H: { tex: String.raw`H_x^{\,n+\frac12}_{i,j+\frac12} = H_x^{\,n-\frac12}_{i,j+\frac12} - \frac{\Delta t}{\mu_0 h}\left(E_z^{\,n}_{i,j+1} - E_z^{\,n}_{i,j}\right), \qquad H_y^{\,n+\frac12}_{i+\frac12,j} = H_y^{\,n-\frac12}_{i+\frac12,j} + \frac{\Delta t}{\mu_0 h}\left(E_z^{\,n}_{i+1,j} - E_z^{\,n}_{i,j}\right)`, note: 'H sits half a cell and half a time step away from E: leap-frog.' },
+      S: { tex: String.raw`\mathbf{S} = \mathbf{E}\times\mathbf{H}, \qquad |\mathbf{S}| = |E_z|\,|\mathbf{H}| \quad (\mathbf{E} \perp \mathbf{H})`, note: 'Instantaneous power flow per unit area.' },
+    },
+    solver: { tex: String.raw`\text{absorbing wall (Mur): } E^{\,n+1}_{0} = E^{\,n}_{1} + \frac{c\Delta t - h}{c\Delta t + h}\left(E^{\,n+1}_{1} - E^{\,n}_{0}\right)` },
+  },
 };
 
 /** Convenience: the governing list plus the layer entries for the layers switched on. */
-const ALIASES = { 'point-charges-3d': 'point-charges', 'ring-charge': 'ring-line', 'line-charge': 'ring-line' };
+export const ALIASES = { 'point-charges-3d': 'point-charges', 'ring-charge': 'ring-line', 'line-charge': 'ring-line' };
 
 export function equationsFor(tabId, layersOn, solverRunning = false) {
   const set = EQUATIONS[ALIASES[tabId] ?? tabId];

@@ -1,8 +1,8 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism). One static page,
-seven tabs organized by physics process, served from GitHub Pages. No build step, no
-dependencies beyond KaTeX (equations) loaded from a CDN.
+fourteen tabs organized by physics process (plus an About page with every equation),
+served from GitHub Pages. No build step, no dependencies beyond a vendored KaTeX.
 
 Live site: https://interactive-hardware-interfacing.github.io/intro-EMF-lab/
 
@@ -12,10 +12,12 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-EMF-lab/
 index.html              the single page
 app/
   main.js               tab registry, boot, URL state wiring
-  shell.js              shared UI: tab bar, controls, canvas stack, layers, probe, equations
+  shell.js              shared UI: tab bar, controls, canvas stack, layers, probe, export
   state.js              URL query-string <-> app state
   equations.js          TeX strings per tab and per layer
-  tabs/                 one module per tab (all seven tabs)
+  tabs/                 one module per tab; tabs/index.js is the registry
+  about.js              site introduction, per-tab descriptions (About page)
+  scene3d.js            orbit camera and 3D drawing shared by the 3D tabs
   workers/              relax-worker.js: the solver off the main thread
   cutplane.js           XY / XZ / YZ cut-plane control for closed-form 3D fields
   solverclient.js       promise wrapper around the worker for run-to-convergence tabs
@@ -46,9 +48,16 @@ python3 -m http.server 8000
 npm test
 ```
 
-`bench/run.js` checks every closed form in `core/analytic.js` against textbook results and,
-in later phases, every solver against a problem with a known answer. The GitHub Action
-refuses to deploy if any check fails.
+`bench/run.js` (112 checks) covers every closed form against textbook results, both solvers
+against problems with known answers, discrete identities, the worker protocol, URL state,
+the Sandbox geometry encoding, mirroring, tab/equation/DOM contracts, a parse of every
+module, and **golden files**: `bench/golden.json` freezes the numbers quoted in the
+handouts (Lab 3 run 1, Lab 5 default, probe values) to 0.5%. If a solver change is meant
+to move one of them, run `npm run freeze` and say so in the commit.
+
+`npm run smoke` opens every tab and every view in headless Chromium and fails on any
+console error (needs `npm install --no-save playwright && npx playwright install chromium`).
+The GitHub Action runs both and refuses to deploy if either fails.
 
 ## Conventions
 
@@ -65,4 +74,6 @@ refuses to deploy if any check fails.
 2. `relax2d.js` + Sandbox tab (Lab 2 demo), MATLAB twin — done
 3. `axisym.js` (E, sigma) + Capacitors and Conduction tabs — done
 4. `AxisymMag` + Inductors tab — done
-5. Instructor tools, semester tag, handout edits
+5. 3D point charges; review fixes; app-layer tests, golden files, browser smoke test — done
+6. About page; nonlinear mu(B); Gauss's law, Interface, Transmission lines, Time-varying (FDTD) tabs — done
+7. Instructor tools, semester tag, handout edits

@@ -198,8 +198,8 @@ export default {
     const seeds = () => { const out = []; const [i0] = this.cellOf(0.1 + 2 * this.solver.h, 0); for (let j = 1; j < this.n - 1; j += Math.max(2, Math.round(this.n / 32))) { if (this.solver.eps[this.idx(i0, j)] > 0 && !this.solver.fixed[this.idx(i0, j)]) out.push([i0 * this.solver.h, j * this.solver.h]); } return out; };
     const stop = (x, y) => { const [i, j] = this.cellOf(x, y); return !inCond(x, y) || this.solver.fixed[this.idx(i, j)] === 1; };
     switch (layer) {
-      case 'V': return drawScalarField(ctx, this.gridV, { map: opts.map, min: opts.min ?? 0, max: opts.max ?? this.V0 });
-      case 'Jmag': return drawScalarField(ctx, this.gridJmag, { map: opts.map, log: true, min: opts.min ?? this.jRange[0], max: opts.max ?? this.jRange[1] });
+      case 'V': return drawScalarField(ctx, this.gridV, { map: opts.map, extent: opts.extent, min: opts.min ?? 0, max: opts.max ?? this.V0 });
+      case 'Jmag': return drawScalarField(ctx, this.gridJmag, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.jRange[0], max: opts.max ?? this.jRange[1] });
       case 'E':
         if (opts.style === 'lines') drawStreamlines(ctx, view, eFn, seeds(), { stopFn: stop, color: 'rgba(255,255,255,0.7)' });
         else drawQuiver(ctx, view, (x, y) => (inCond(x, y) ? eFn(x, y) : [0, 0]), { normalize: true, spacing: 24, color: 'rgba(255,255,255,0.75)' });
@@ -269,17 +269,7 @@ export default {
     const shell = this.shell, box = shell.controlsEl;
     box.innerHTML = '';
     box.appendChild(ui.el('h1', '', 'Conduction (J)'));
-    box.appendChild(ui.el('p', 'lead', 'What a resistor looks like from the inside. A sheet of resistive material (conductivity σ, per metre of depth) sits between a 0 V electrode on the left and V₀ on the right. The solver finds the potential, and from it the field E = −∇V and the current density J = σE at every point.'));
-    const intro = ui.el('div', 'placeholder');
-    intro.innerHTML = `<p><strong>Why it matters.</strong> Ohm's law V = IR is the circuit-level summary of a field problem. Here you can see the field version, J = σE, and watch R = V/I come out of the geometry: for the uniform bar it reproduces R = ℓ/(σA) exactly, and for every other shape it gives the answer the formula can't.</p>
-<p><strong>What to look for.</strong></p>
-<ul>
-<li>Current lines (J) run from electrode to electrode and never cross an insulator; equipotentials cross them at right angles.</li>
-<li>The current through <em>any</em> cut is the same (∇·J = 0): Kirchhoff's current law at the field level. Drag the cut and check.</li>
-<li>Constrictions and holes crowd the current and raise R; the |J| colour map shows where the heat goes (J·E).</li>
-<li>Same equation as electrostatics with σ in place of ε, which is why the Sandbox solver works here unchanged.</li>
-</ul>`;
-    box.appendChild(intro);
+    box.appendChild(ui.lead(shell, 'A resistor from the inside: steady current in a resistive sheet, J = σE.'));
     const re = () => { this.client?.cancel(); this.build(); this.buildControls(); shell.recompute(); shell.syncUrl(); this.solve(); };
     box.appendChild(ui.field('Geometry', ui.select(PRESETS, this.preset, (v) => { this.preset = v; re(); })));
     const r1 = ui.el('div', 'row');

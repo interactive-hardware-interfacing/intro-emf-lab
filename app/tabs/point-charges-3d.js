@@ -6,7 +6,7 @@
 
 import { pointChargesField } from '../../core/analytic.js';
 import { Grid2D } from '../../core/grid.js';
-import { drawScalarField } from '../../core/render.js';
+import { camera, depthOf, drawPlane, drawBoxOutline, drawChargeSphere, drawFieldLines3d, bindOrbit } from '../scene3d.js';
 import { getNum } from '../state.js';
 import { ui } from '../shell.js';
 import { plotView } from '../views.js';
@@ -94,18 +94,7 @@ export default {
 
   // ------------------------------------------------------------ 3D drawing
 
-  camera(w, h) {
-    const { az, el } = this.cam;
-    const cx = 0.25, cy = 0.25, cz = 0;
-    const ca = Math.cos(az), sa = Math.sin(az), ce = Math.cos(el), se = Math.sin(el);
-    const s = 0.78 * Math.min(w, h) / 0.75;
-    const P = (x, y, z) => {
-      const xr = (x - cx) * ca - (y - cy) * sa;
-      const yr = (x - cx) * sa + (y - cy) * ca;
-      return [w / 2 + xr * s, h / 2 - ((z - cz) * ce + yr * se) * s, yr * ce - (z - cz) * se];
-    };
-    return { P, s };
-  },
+  camera(w, h) { return camera(w, h, { center: [0.25, 0.25, 0], size: 0.75, az: this.cam.az, el: this.cam.el }); },
 
   draw3d(ctx, w, h) {
     this.compute();
@@ -121,100 +110,36 @@ export default {
     const [x0, x1] = BOX.x, [y0, y1] = BOX.y, [z0, z1] = BOX.z;
     const q = (p) => (log ? Math.hypot(...this.field(p).E) : this.field(p).V);
 
-    // Planes: image + world corners (origin, u-axis end, v-axis end)
+    // Planes: image + world corners (origin, u-axis end, v-axis end), painted far first
     const planes = [];
     if (id && on('pxy')) planes.push({ grid: Grid2D.fromFunction(PLANE_N, PLANE_N, [x0, x1, y0, y1], (x, y) => q([x, y, this.cut.z])), o: [x0, y1, this.cut.z], u: [x1, y1, this.cut.z], v: [x0, y0, this.cut.z], c: [0.25, 0.25, this.cut.z], label: `z = ${this.cut.z.toFixed(3)} m` });
     if (id && on('pxz')) planes.push({ grid: Grid2D.fromFunction(PLANE_N, PLANE_N, [x0, x1, z0, z1], (x, z) => q([x, this.cut.y, z])), o: [x0, this.cut.y, z1], u: [x1, this.cut.y, z1], v: [x0, this.cut.y, z0], c: [0.25, this.cut.y, 0], label: `y = ${this.cut.y.toFixed(3)} m` });
     if (id && on('pyz')) planes.push({ grid: Grid2D.fromFunction(PLANE_N, PLANE_N, [y0, y1, z0, z1], (y, z) => q([this.cut.x, y, z])), o: [this.cut.x, y0, z1], u: [this.cut.x, y1, z1], v: [this.cut.x, y0, z0], c: [this.cut.x, 0.25, 0], label: `x = ${this.cut.x.toFixed(3)} m` });
-    for (const pl of planes) pl.depth = P(...pl.c)[2];
-    planes.sort((a, b) => b.depth - a.depth); // far first
+    for (const pl of planes) pl.depth = depthOf(P, pl.c);
+    planes.sort((a, b) => b.depth - a.depth);
     let range = null;
-    for (const pl of planes) {
-      const img = document.createElement('canvas'); img.width = 256; img.height = 256;
-      range = drawScalarField(img.getContext('2d'), pl.grid, opts);
-      const [ox, oy] = P(...pl.o), [ux, uy] = P(...pl.u), [vx, vy] = P(...pl.v);
-      ctx.save();
-      ctx.globalAlpha = 0.92;
-      ctx.setTransform((ux - ox) / 256, (uy - oy) / 256, (vx - ox) / 256, (vy - oy) / 256, ox, oy);
-      ctx.drawImage(img, 0, 0);
-      ctx.restore();
-      ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
-      const [wx, wy] = P(pl.u[0] + pl.v[0] - pl.o[0], pl.u[1] + pl.v[1] - pl.o[1], pl.u[2] + pl.v[2] - pl.o[2]);
-      ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ux, uy); ctx.lineTo(wx, wy); ctx.lineTo(vx, vy); ctx.closePath(); ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = '11px system-ui'; ctx.fillText(pl.label, ox + 4, oy - 4);
-      ctx.restore();
-    }
+    for (const pl of planes) range = drawPlane(ctx, P, { ...pl, opts });
     const scalar = shell.tab.layers.find((L) => L.id === id);
     if (range && scalar) { shell.drawColorbar({ ...range, layer: scalar }, opts.map); } else shell.drawColorbar(null);
 
-    // Box outline
-    if (on('box')) {
-      ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
-      const C = [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0], [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]];
-      const E = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]];
-      for (const [a, b] of E) { const [ax, ay] = P(...C[a]), [bx, by] = P(...C[b]); ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); }
-      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '11px system-ui';
-      const lab = (p, t) => { const [lx, ly] = P(...p); ctx.fillText(t, lx + 4, ly + 12); };
-      lab([x1, y0, z0], 'x'); lab([x0, y1, z0], 'y'); lab([x0, y0, z1], 'z');
-      ctx.restore();
-    }
+    if (on('box')) drawBoxOutline(ctx, P, BOX);
 
-    // Field lines traced in 3D
     if (on('lines') && this.density > 0) {
       const charges = this.active();
-      const inside = (p) => p[0] >= x0 && p[0] <= x1 && p[1] >= y0 && p[1] <= y1 && p[2] >= z0 && p[2] <= z1;
-      const near = (p) => charges.some((c) => Math.hypot(p[0] - c.pos[0], p[1] - c.pos[1], p[2] - c.pos[2]) < 0.006);
-      const hStep = 0.004;
-      ctx.save(); ctx.lineWidth = 1;
-      for (const c of charges) {
-        const dir = c.q > 0 ? 1 : -1;
-        const N = this.density;
-        for (let k = 0; k < N; k++) {
-          // golden-spiral seeds on a small sphere
-          const t = (k + 0.5) / N, phi = Math.acos(1 - 2 * t), th = Math.PI * (1 + Math.sqrt(5)) * k;
-          let p = [c.pos[0] + 0.008 * Math.sin(phi) * Math.cos(th), c.pos[1] + 0.008 * Math.sin(phi) * Math.sin(th), c.pos[2] + 0.008 * Math.cos(phi)];
-          const pts = [P(...p)];
-          for (let n = 0; n < 700; n++) {
-            const e1 = this.field(p).E, m1 = Math.hypot(...e1); if (!(m1 > 0)) break;
-            const mid = [p[0] + dir * hStep * 0.5 * e1[0] / m1, p[1] + dir * hStep * 0.5 * e1[1] / m1, p[2] + dir * hStep * 0.5 * e1[2] / m1];
-            const e2 = this.field(mid).E, m2 = Math.hypot(...e2); if (!(m2 > 0)) break;
-            p = [p[0] + dir * hStep * e2[0] / m2, p[1] + dir * hStep * e2[1] / m2, p[2] + dir * hStep * e2[2] / m2];
-            if (!inside(p) || near(p)) { pts.push(P(...p)); break; }
-            pts.push(P(...p));
-          }
-          // shade by depth: nearer lines brighter
-          ctx.beginPath();
-          pts.forEach(([sx, sy], i) => (i === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy)));
-          const d = pts[Math.floor(pts.length / 2)][2];
-          ctx.strokeStyle = `rgba(255,255,255,${(0.75 - 0.9 * d).toFixed(2)})`;
-          ctx.stroke();
-        }
-      }
-      ctx.restore();
+      drawFieldLines3d(ctx, P, charges, (p) => this.field(p), {
+        density: this.density,
+        inside: (p) => p[0] >= x0 && p[0] <= x1 && p[1] >= y0 && p[1] <= y1 && p[2] >= z0 && p[2] <= z1,
+        stop: (p) => charges.some((c) => Math.hypot(p[0] - c.pos[0], p[1] - c.pos[1], p[2] - c.pos[2]) < 0.006),
+      });
     }
 
     // Charges as spheres, far first
     const spheres = this.active().map((c, k) => ({ c, k, s: P(...c.pos) })).sort((a, b) => b.s[2] - a.s[2]);
-    for (const { c, k, s } of spheres) {
-      const r = 9;
-      const g = ctx.createRadialGradient(s[0] - r / 3, s[1] - r / 3, 1, s[0], s[1], r);
-      g.addColorStop(0, c.q > 0 ? '#ff9a9e' : '#9ec5ff'); g.addColorStop(1, c.q > 0 ? '#c0282d' : '#1d4ed8');
-      ctx.beginPath(); ctx.arc(s[0], s[1], r, 0, 2 * Math.PI); ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(`${k + 1}`, s[0], s[1]); ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
-    }
+    for (const { c, k, s } of spheres) drawChargeSphere(ctx, s, c.q, k + 1);
     ctx.fillStyle = '#ddd'; ctx.font = '12px system-ui';
     ctx.fillText(`colour = ${scalar?.label ?? 'none'} on the cut planes · field lines leave + and enter −`, 12, h - 10);
 
-    // orbit by dragging
-    if (ctx.canvas.dataset.orbit !== '1') {
-      const c = ctx.canvas;
-      c.dataset.orbit = '1';
-      let last = null;
-      c.addEventListener('pointerdown', (e) => { last = [e.clientX, e.clientY]; c.setPointerCapture(e.pointerId); });
-      c.addEventListener('pointermove', (e) => { if (!last) return; this.cam.az += (e.clientX - last[0]) * 0.01; this.cam.el = Math.min(1.5, Math.max(0, this.cam.el + (e.clientY - last[1]) * 0.01)); last = [e.clientX, e.clientY]; this.shell.updateStageView(); this.queueUrl(); });
-      c.addEventListener('pointerup', () => { last = null; });
-    }
+    bindOrbit(ctx.canvas, this.cam, () => { this.shell.updateStageView(); this.queueUrl(); });
   },
 
   // ------------------------------------------------------------ shell hooks
@@ -253,7 +178,7 @@ export default {
     const shell = this.shell, box = shell.controlsEl;
     box.innerHTML = '';
     box.appendChild(ui.el('h1', '', '3D point charges'));
-    box.appendChild(ui.el('p', 'lead', 'The same Coulomb superposition as the Point charges tab, but the charges can sit anywhere in a 0.5 × 0.5 × 0.5 m box and the field is shown in three dimensions: colour on movable cut planes, field lines traced through space, and a view you can orbit.'));
+    box.appendChild(ui.lead(shell, 'Point charges anywhere in a 0.5 m box, shown in 3D with cut planes and field lines.'));
     const re = () => { shell.recompute(); shell.syncUrl(); };
     box.appendChild(ui.field('Number of charges', ui.select([[1, '1'], [2, '2'], [3, '3'], [4, '4']], String(this.n), (v) => { this.n = parseInt(v, 10); this.buildControls(); re(); })));
     const head = ui.el('div', 'source-row'); head.style.gridTemplateColumns = '22px 1fr 1fr 1fr 1fr';

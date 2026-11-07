@@ -34,6 +34,7 @@ export default {
     { id: 'Bz', label: 'B_z', kind: 'scalar', unit: 'T', signed: true, eq: 'B' },
     { id: 'Hmag', label: '|H|', kind: 'scalar', unit: 'A/m', log: true, eq: 'H' },
     { id: 'Mmag', label: '|M|', kind: 'scalar', unit: 'A/m', log: true, eq: 'M' },
+    { id: 'mu', label: 'μr (object)', kind: 'scalar', unit: '', log: true, note: 'Uniform unless “Saturating core” is on; then μr falls where |B| approaches B_sat.' },
     { id: 'Jphi', label: 'J_φ (coil)', kind: 'scalar', unit: 'A/m²', eq: 'J' },
     { id: 'B', label: 'B field', kind: 'vector', styles: ['arrows', 'lines'] },
     { id: 'H', label: 'H field', kind: 'vector', styles: ['arrows'] },
@@ -45,6 +46,8 @@ export default {
   p: { ...MODES.solenoid },   // mm for lengths in the UI
   nr: 81,
   objectIn: true,
+  sat: false,
+  Bsat: 1.5,   // tesla
   zoom: 'coil',
   mirror: true,
 
@@ -56,6 +59,8 @@ export default {
     for (const k of ['N', 'I', 'Rc', 'l', 'tw', 'a', 'Lo', 'muR', 'zPos']) this.p[k] = getNum(s, `i_${k}`, this.p[k]);
     this.nr = [61, 81, 121].includes(getNum(s, 'nr', 81)) ? getNum(s, 'nr', 81) : 81;
     this.objectIn = s.obj !== '0';
+    this.sat = s.sat === '1';
+    this.Bsat = Math.max(0.01, getNum(s, 'bsat', 1.5));
     this.zoom = s.zoom === 'box' ? 'box' : 'coil';
     this.mirror = s.half !== '1';
     const sw = MODES[this.mode].sweep;
@@ -99,7 +104,8 @@ export default {
 
   build(p = this.p) {
     const mm = 1e-3;
-    this.solver = solenoidWithObject({ N: p.N, I: p.I, Rc: p.Rc * mm, l: p.l * mm, tw: p.tw * mm, a: this.objectIn ? p.a * mm : 0, Lo: p.Lo * mm, muR: this.objectIn ? p.muR : 1, zPos: p.zPos * mm, nr: this.nr, box: 8 });
+    this.solver = solenoidWithObject({ N: p.N, I: p.I, Rc: p.Rc * mm, l: p.l * mm, tw: p.tw * mm, a: this.objectIn ? p.a * mm : 0, Lo: p.Lo * mm, muR: this.objectIn ? p.muR : 1, zPos: p.zPos * mm, nr: this.nr, box: 8, Bsat: this.sat ? this.Bsat : 0 });
+    this.meanMu = this.sat ? p.muR : NaN;
     this.meta = this.solver.meta;
     this.applyZoom();
     this.V = new Float64Array(this.solver.V);
@@ -125,6 +131,7 @@ export default {
       await this.client.init(this.solver, 'axisym-mag');
       const done = await this.client.run({ k: 50, tol: this.tol() });
       this.V = done.V; this.sweeps = done.sweeps; this.residual = done.residual; this.converged = done.converged;
+      if (done.eps) { this.solver.eps.set(done.eps); this.meanMu = done.meanMu; }
       this.finish();
     } catch { /* cancelled */ }
     this.running = false; this.shell.solverRunning = false; this.shell.renderEquations(); this.shell.refreshStatus();
@@ -132,6 +139,7 @@ export default {
 
   onFrame(m) {
     this.V = m.V; this.sweeps = m.sweeps; this.residual = m.residual;
+    if (m.eps) { this.solver.eps.set(m.eps); this.meanMu = m.meanMu; } // nonlinear mu(B): the worker's material comes back with the field
     if (!this.raf) this.raf = requestAnimationFrame(() => { this.raf = null; this.shell.recompute(); });
   },
 
@@ -166,7 +174,9 @@ export default {
     const bzm = abz[Math.floor(0.985 * (abz.length - 1))] || 1e-9;
     this.bzRange = [-bzm, bzm];
     this.gridPsi = new Grid2D(s.nr, s.nz, s.extent, this.V);
+    this.gridMu = new Grid2D(s.nr, s.nz, s.extent, new Float64Array(s.eps));
     if (this.mirror) {
+      this.gridMu = mirrorGrid(this.gridMu);
       this.gridBr = mirrorGrid(this.gridBr, true); this.gridBz = mirrorGrid(this.gridBz); this.gridBmag = mirrorGrid(this.gridBmag);
       this.gridHmag = mirrorGrid(this.gridHmag); this.gridMmag = mirrorGrid(this.gridMmag); this.gridJ = mirrorGrid(this.gridJ); this.gridPsi = mirrorGrid(this.gridPsi);
     }
@@ -179,11 +189,12 @@ export default {
   render(layer, ctx, view, opts) {
     const bFn = (r, z) => [this.gridBr.sample(r, z), this.gridBz.sample(r, z)];
     switch (layer) {
-      case 'Bmag': return drawScalarField(ctx, this.gridBmag, { map: opts.map, log: true, min: opts.min ?? this.bRange[0], max: opts.max ?? this.bRange[1] });
-      case 'Bz': return drawScalarField(ctx, this.gridBz, { map: opts.map, min: opts.min ?? this.bzRange[0], max: opts.max ?? this.bzRange[1] });
-      case 'Hmag': return drawScalarField(ctx, this.gridHmag, { map: opts.map, log: true, min: opts.min ?? this.hRange[0], max: opts.max ?? this.hRange[1] });
-      case 'Mmag': return drawScalarField(ctx, this.gridMmag, { map: opts.map, log: true, min: opts.min ?? Math.max(this.mRange[0], 1e-6), max: opts.max ?? this.mRange[1] });
-      case 'Jphi': return drawScalarField(ctx, this.gridJ, { map: opts.map, min: opts.min ?? 0, max: opts.max ?? this.meta.J });
+      case 'Bmag': return drawScalarField(ctx, this.gridBmag, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.bRange[0], max: opts.max ?? this.bRange[1] });
+      case 'Bz': return drawScalarField(ctx, this.gridBz, { map: opts.map, extent: opts.extent, min: opts.min ?? this.bzRange[0], max: opts.max ?? this.bzRange[1] });
+      case 'Hmag': return drawScalarField(ctx, this.gridHmag, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.hRange[0], max: opts.max ?? this.hRange[1] });
+      case 'Mmag': return drawScalarField(ctx, this.gridMmag, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? Math.max(this.mRange[0], 1e-6), max: opts.max ?? this.mRange[1] });
+      case 'Jphi': return drawScalarField(ctx, this.gridJ, { map: opts.map, extent: opts.extent, min: opts.min ?? 0, max: opts.max ?? this.meta.J });
+      case 'mu': return drawScalarField(ctx, this.gridMu, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? 1, max: opts.max ?? Math.max(1.5, this.meta.muR) });
       case 'B':
         if (opts.style === 'lines') {
           const { Rc } = this.meta, seeds = [], rMax = view.extent[1];
@@ -237,15 +248,17 @@ export default {
   },
 
   getState() {
-    const s = { mode: this.mode, nr: this.nr, obj: this.objectIn ? '1' : '0', zoom: this.zoom, half: this.mirror ? '0' : '1', sw0: this.sweep.from, sw1: this.sweep.to, swn: this.sweep.n };
+    const s = { mode: this.mode, nr: this.nr, obj: this.objectIn ? '1' : '0', sat: this.sat ? '1' : '0', bsat: this.Bsat, zoom: this.zoom, half: this.mirror ? '0' : '1', sw0: this.sweep.from, sw1: this.sweep.to, swn: this.sweep.n };
     for (const k of ['N', 'I', 'Rc', 'l', 'tw', 'a', 'Lo', 'muR', 'zPos']) s[`i_${k}`] = this.p[k];
     return s;
   },
 
   csv() {
-    const g = this.gridBz, s = this.solver;
+    // Always the solver's own half-plane grid, whatever the display shows.
+    const s = this.solverWithV();
+    const [br, bz] = s.B();
     const lines = ['r_m,z_m,Br_T,Bz_T,mu_r,Jphi_Apm2,psi_Tm2'];
-    for (let j = 0; j < g.ny; j++) for (let i = 0; i < g.nx; i++) { const k = s.idx(i, j); lines.push(`${g.x(i)},${g.y(j)},${this.gridBr.get(i, j)},${g.get(i, j)},${s.eps[k]},${s.rho[k]},${this.V[k]}`); }
+    for (let j = 0; j < s.nz; j++) for (let i = 0; i < s.nr; i++) { const k = s.idx(i, j); lines.push(`${s.r(i)},${s.z(j)},${br.data[k]},${bz.data[k]},${s.eps[k]},${s.rho[k]},${s.V[k]}`); }
     return lines.join('\n');
   },
 
@@ -255,7 +268,7 @@ export default {
     const shell = this.shell, box = shell.controlsEl;
     box.innerHTML = '';
     box.appendChild(ui.el('h1', '', 'Inductors'));
-    box.appendChild(ui.el('p', 'lead', 'A coil of N turns carrying I, with a cylindrical object of permeability μr at a variable position. Solved in (r, z) for ψ = r·A_φ by the same neighbour average; the flux lines are the contours of ψ.'));
+    box.appendChild(ui.lead(shell, 'A coil with a permeable object at a variable position, solved in (r, z).'));
     const re = () => { this.client?.cancel(); this.build(); this.buildControls(); shell.recompute(); shell.syncUrl(); this.solve(); };
     box.appendChild(ui.field('Mode', ui.select(Object.entries(MODES).map(([k, v]) => [k, v.label]), this.mode, (v) => { this.mode = v; this.p = { ...MODES[v] }; const sw = MODES[v].sweep; this.sweep.from = sw[0]; this.sweep.to = sw[1]; this.sweep.n = sw[2]; re(); })));
     const pf = (key, label, min, max) => ui.field(label, ui.number(this.p[key], { min, max, onChange: (v) => { this.p[key] = v; re(); } }));
@@ -268,7 +281,18 @@ export default {
     objC.addEventListener('change', () => { this.objectIn = objC.checked; re(); });
     objRow.append(objC, ui.el('span', '', 'Object inside the sensor'));
     box.appendChild(objRow);
-    const r3 = ui.el('div', 'row'); r3.append(pf('a', 'Object radius (mm)', 0.5, 150), pf('Lo', 'Object length (mm)', 0.5, 400), pf('muR', 'Relative permeability μr', 1, 1e4)); box.appendChild(r3);
+    const r3 = ui.el('div', 'row'); r3.append(pf('a', 'Object radius (mm)', 0.5, 150), pf('Lo', 'Object length (mm)', 0.5, 400), pf('muR', this.sat ? 'Initial permeability μr' : 'Relative permeability μr', 1, 1e4)); box.appendChild(r3);
+    const satRow = document.createElement('label'); satRow.className = 'layer';
+    const satC = document.createElement('input'); satC.type = 'checkbox'; satC.checked = this.sat;
+    satC.addEventListener('change', () => { this.sat = satC.checked; re(); this.buildControls(); });
+    satRow.append(satC, ui.el('span', '', 'Saturating core (nonlinear μ(B))'));
+    box.appendChild(satRow);
+    if (this.sat) {
+      const r3b = ui.el('div', 'row');
+      r3b.appendChild(ui.field('Saturation B_sat (T)', ui.number(this.Bsat, { min: 0.01, max: 5, step: 0.1, onChange: (v) => { this.Bsat = Math.max(0.01, v); re(); } })));
+      box.appendChild(r3b);
+      box.appendChild(ui.el('p', 'hint', 'B(H) = μ₀H + B_sat·tanh(μ₀(μr−1)H/B_sat): the object starts at the permeability above and its μr falls towards 1 wherever |B| approaches B_sat. The solver re-evaluates μr(|B|) in every cell between sweeps until field and material agree. Turn on the “μr (object)” layer to see it. Try I = 100 A with the defaults: B at the centre drops from about 2.1 T to 1.6 T and the mean μr halves.'));
+    }
     box.appendChild(ui.field(`Position of the object's bottom end, relative to the sensor centre (mm): ${this.p.zPos}`, ui.range(this.p.zPos, { min: -80, max: 80, step: 1, onInput: (v) => { this.p.zPos = v; this.posLabel.firstChild.textContent = `Position of the object's bottom end, relative to the sensor centre (mm): ${v}`; } })));
     this.posLabel = box.lastChild;
     this.posLabel.querySelector('input').addEventListener('change', () => re());
@@ -310,6 +334,7 @@ export default {
     row('μ₀N²A/ℓ, empty coil', uH(r.Llong));
     row(`× Nagaoka ${nagaoka(2 * this.meta.Rc, this.meta.l).toFixed(3)}`, uH(r.Lnag));
     if (this.objectIn && this.meta.muR > 1) row('object', `μr = ${this.meta.muR}, bottom at ${(this.meta.zPos * 1e3).toFixed(1)} mm`);
+    if (this.sat && this.objectIn) row('mean μr(B) in object', Number.isFinite(this.meanMu) ? this.meanMu.toFixed(2) : '—');
     row('B_z at centre', `${sci(this.gridBz?.sample(0, 0) ?? NaN, 4)} T`);
   },
 
@@ -376,6 +401,7 @@ export default {
         const done = await this.client.run({ k: 50, tol: this.tol() });
         if (!this.sweep.running) break;
         this.V = done.V; this.sweeps = done.sweeps; this.residual = done.residual; this.converged = done.converged;
+        if (done.eps) { this.solver.eps.set(done.eps); this.meanMu = done.meanMu; }
         prevV = done.V;
         this.finish();
         this.sweep.rows.push({ zPos, ...this.results });

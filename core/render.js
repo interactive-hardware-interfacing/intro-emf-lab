@@ -62,9 +62,11 @@ export function colormap(name = 'viridis') {
 
 /**
  * Paint a scalar grid as a colour map filling the canvas.
- * opts: { min, max, map: 'viridis'|'coolwarm', log: false }
+ * opts: { min, max, map: 'viridis'|'coolwarm', log: false, extent }
  * When min/max are omitted the grid's own range is used. With log, |value| is mapped on a
- * log10 scale between min and max (both must be > 0).
+ * log10 scale between min and max (both must be > 0). `extent` is the physical window the
+ * canvas shows (default: the grid's own extent); the grid is sampled there, so a zoomed
+ * view paints only the zoomed region.
  */
 export function drawScalarField(ctx, grid, opts = {}) {
   const { width, height } = ctx.canvas;
@@ -77,7 +79,7 @@ export function drawScalarField(ctx, grid, opts = {}) {
 
   const img = ctx.createImageData(width, height);
   const px = img.data;
-  const [x0, x1, y0, y1] = grid.extent;
+  const [x0, x1, y0, y1] = opts.extent ?? grid.extent;
   for (let py = 0; py < height; py++) {
     const y = y1 - ((py + 0.5) / height) * (y1 - y0);
     for (let pxi = 0; pxi < width; pxi++) {

@@ -24,6 +24,10 @@ jobs:
         with:
           node-version: 22
       - run: node bench/run.js
+      - name: Browser smoke test (every tab loads without console errors)
+        run: |
+          npm install --no-save playwright@1.47.0 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          node bench/smoke.mjs
 
   deploy:
     name: Deploy

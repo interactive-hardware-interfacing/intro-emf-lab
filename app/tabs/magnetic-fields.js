@@ -95,7 +95,7 @@ export default {
     const box = shell.controlsEl;
     box.innerHTML = '';
     box.appendChild(ui.el('h1', '', 'Magnetic fields'));
-    box.appendChild(ui.el('p', 'lead', 'Infinite straight currents, B = μ₀I/2πr each, summed. The sheet is the closed-form integral of that over its width.'));
+    box.appendChild(ui.lead(shell, 'Infinite straight currents and a sheet current, closed form.'));
     box.appendChild(ui.field('Module', ui.select([[2, 'Up to four line currents'], [1, 'Line currents vs sheet current']], String(this.module), (v) => {
       this.module = parseInt(v, 10);
       this.applyModule();
@@ -225,11 +225,11 @@ export default {
     const bFn = (u, v) => this.field(u, v).B;
     switch (layer) {
       case 'Bmag':
-        return drawScalarField(ctx, this.gridBmag, { map: opts.map, log: true, min: opts.min ?? this.bRange[0], max: opts.max ?? this.bRange[1] });
+        return drawScalarField(ctx, this.gridBmag, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.bRange[0], max: opts.max ?? this.bRange[1] });
       case 'Az':
-        return drawScalarField(ctx, this.gridAz, { map: opts.map, min: opts.min ?? this.aRange[0], max: opts.max ?? this.aRange[1] });
+        return drawScalarField(ctx, this.gridAz, { map: opts.map, extent: opts.extent, min: opts.min ?? this.aRange[0], max: opts.max ?? this.aRange[1] });
       case 'diff':
-        return drawScalarField(ctx, this.gridDiff, { map: opts.map, min: opts.min ?? this.dRange[0], max: opts.max ?? this.dRange[1] });
+        return drawScalarField(ctx, this.gridDiff, { map: opts.map, extent: opts.extent, min: opts.min ?? this.dRange[0], max: opts.max ?? this.dRange[1] });
       case 'B':
         if (opts.style === 'lines') {
           const seeds = [];

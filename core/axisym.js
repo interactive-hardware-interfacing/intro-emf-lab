@@ -28,6 +28,14 @@ export class Axisym {
     this.eps = new Float64Array(nr * nz).fill(1);
     this.rho = new Float64Array(nr * nz);
     this.delta = new Float64Array(nr * nz);
+    // Permittivity lives on the FACES between nodes: faceR[k] is the face between node k and
+    // k+1 (radial), faceZ[k] between k and k+nr (axial). By default they are built from the
+    // node array (harmonic mean, conductor rule); a geometry builder may set them directly so
+    // that material interfaces fall exactly where the geometry puts them (setFacesFrom).
+    this.faceR = new Float64Array(nr * nz);
+    this.faceZ = new Float64Array(nr * nz);
+    this.facesExplicit = false;
+    this.facesDirty = true;
     this.boundary = { rmax: 'dirichlet', zmin: 'dirichlet', zmax: 'dirichlet', ...boundary };
     this.boxV = boxV;
     this.sweeps = 0;
@@ -35,6 +43,37 @@ export class Axisym {
     this.history = [];
     this.applyBoundary();
   }
+
+  /** Build the face arrays from the node permittivities (harmonic mean; a conductor cell takes no part). */
+  buildFaces() {
+    const { nr, nz, eps, fixed, faceR, faceZ } = this;
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nr; i++) {
+      const k = j * nr + i;
+      faceR[k] = i + 1 < nr ? faceEps(eps, fixed, k, k + 1) : 0;
+      faceZ[k] = j + 1 < nz ? faceEps(eps, fixed, k, k + nr) : 0;
+    }
+    this.facesDirty = false;
+  }
+
+  /**
+   * Assign the face permittivities from a material function epsAt(r, z) evaluated at each
+   * face centre, so an interface at z = c lands on the faces either side of it exactly.
+   * A face between two conductor nodes gets 0. Node eps is also refreshed (for display).
+   */
+  setFacesFrom(epsAt) {
+    const { nr, nz, fixed, faceR, faceZ, h } = this;
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nr; i++) {
+      const k = j * nr + i;
+      this.eps[k] = epsAt(this.r(i), this.z(j));
+      faceR[k] = i + 1 < nr ? (fixed[k] && fixed[k + 1] ? 0 : epsAt(this.r(i) + h / 2, this.z(j))) : 0;
+      faceZ[k] = j + 1 < nz ? (fixed[k] && fixed[k + nr] ? 0 : epsAt(this.r(i), this.z(j) + h / 2)) : 0;
+    }
+    this.facesExplicit = true;
+    this.facesDirty = false;
+  }
+
+  /** Make sure the face arrays reflect the node arrays (unless they were set explicitly). */
+  prepare() { if (this.facesDirty && !this.facesExplicit) this.buildFaces(); }
 
   r(i) { return i * this.h; }
   z(j) { return this.z0 + j * this.h; }
@@ -57,9 +96,9 @@ export class Axisym {
     if (boundary.zmax === 'dirichlet') for (let i = 0; i < nr; i++) this.setFixed(i, nz - 1, this.boxV);
   }
 
-  setFixed(i, j, value) { const k = this.idx(i, j); this.fixed[k] = 1; this.V[k] = value; }
+  setFixed(i, j, value) { const k = this.idx(i, j); this.fixed[k] = 1; this.V[k] = value; this.facesDirty = true; }
   fixWhere(fn, value) { for (let j = 0; j < this.nz; j++) for (let i = 0; i < this.nr; i++) if (fn(this.r(i), this.z(j))) this.setFixed(i, j, value); }
-  epsWhere(fn, value) { for (let j = 0; j < this.nz; j++) for (let i = 0; i < this.nr; i++) if (fn(this.r(i), this.z(j))) this.eps[this.idx(i, j)] = value; }
+  epsWhere(fn, value) { for (let j = 0; j < this.nz; j++) for (let i = 0; i < this.nr; i++) if (fn(this.r(i), this.z(j))) this.eps[this.idx(i, j)] = value; this.facesDirty = true; }
 
   reset(guess = 0) {
     for (let k = 0; k < this.V.length; k++) if (!this.fixed[k]) this.V[k] = guess;
@@ -69,8 +108,8 @@ export class Axisym {
 
   /** One Gauss-Seidel sweep in place. Returns max |dV|. */
   sweep() {
-    const { nr, nz, V, fixed, eps, rho, delta, boundary } = this;
-    const fe = (ka, kb) => faceEps(eps, fixed, ka, kb);
+    this.prepare();
+    const { nr, nz, V, fixed, rho, delta, boundary, faceR, faceZ } = this;
     const h2e0 = (this.h * this.h) / EPS0;
     const nR = boundary.rmax === 'neumann', nZ0 = boundary.zmin === 'neumann', nZ1 = boundary.zmax === 'neumann';
     let maxd = 0;
@@ -78,20 +117,19 @@ export class Axisym {
       for (let i = 0; i < nr; i++) {
         const k = j * nr + i;
         if (fixed[k]) { delta[k] = 0; continue; }
-        const ec = eps[k];
         let num = 0, den = 0, src;
         if (i === 0) {
           // axis: 2 d2V/dr2 + d2V/dz2  ->  weights 4 (east), 1, 1
-          const e = 4 * fe(k, k + 1); num += e * V[k + 1]; den += e;
-          if (j + 1 < nz) { const a = fe(k, k + nr); num += a * V[k + nr]; den += a; } else if (nZ1) { const a = fe(k, k - nr); num += a * V[k - nr]; den += a; }
-          if (j > 0) { const a = fe(k, k - nr); num += a * V[k - nr]; den += a; } else if (nZ0) { const a = fe(k, k + nr); num += a * V[k + nr]; den += a; }
+          const e = 4 * faceR[k]; num += e * V[k + 1]; den += e;
+          if (j + 1 < nz) { const a = faceZ[k]; num += a * V[k + nr]; den += a; } else if (nZ1) { const a = faceZ[k - nr]; num += a * V[k - nr]; den += a; }
+          if (j > 0) { const a = faceZ[k - nr]; num += a * V[k - nr]; den += a; } else if (nZ0) { const a = faceZ[k]; num += a * V[k + nr]; den += a; }
           src = rho[k] * h2e0;
         } else {
           const rE = i + 0.5, rW = i - 0.5, rC = i;
-          if (i + 1 < nr) { const e = rE * fe(k, k + 1); num += e * V[k + 1]; den += e; } else if (nR) { const e = rE * fe(k, k - 1); num += e * V[k - 1]; den += e; }
-          { const w = rW * fe(k, k - 1); num += w * V[k - 1]; den += w; }
-          if (j + 1 < nz) { const a = rC * fe(k, k + nr); num += a * V[k + nr]; den += a; } else if (nZ1) { const a = rC * fe(k, k - nr); num += a * V[k - nr]; den += a; }
-          if (j > 0) { const a = rC * fe(k, k - nr); num += a * V[k - nr]; den += a; } else if (nZ0) { const a = rC * fe(k, k + nr); num += a * V[k + nr]; den += a; }
+          if (i + 1 < nr) { const e = rE * faceR[k]; num += e * V[k + 1]; den += e; } else if (nR) { const e = rE * faceR[k - 1]; num += e * V[k - 1]; den += e; }
+          { const w = rW * faceR[k - 1]; num += w * V[k - 1]; den += w; }
+          if (j + 1 < nz) { const a = rC * faceZ[k]; num += a * V[k + nr]; den += a; } else if (nZ1) { const a = rC * faceZ[k - nr]; num += a * V[k - nr]; den += a; }
+          if (j > 0) { const a = rC * faceZ[k - nr]; num += a * V[k - nr]; den += a; } else if (nZ0) { const a = rC * faceZ[k]; num += a * V[k + nr]; den += a; }
           src = rho[k] * h2e0 * rC;
         }
         if (den === 0) continue;
@@ -138,14 +176,14 @@ export class Axisym {
    * 2 W = Q V holds exactly for the discrete solution: energy and Gauss agree to round-off.
    */
   energy() {
-    const { nr, nz, V, eps, fixed, h } = this;
-    const fe = (a, b) => faceEps(eps, fixed, a, b);
+    this.prepare();
+    const { nr, nz, V, h, faceR, faceZ } = this;
     let w = 0;
     const dz = (j) => (j === 0 || j === nz - 1 ? h / 2 : h);
     for (let j = 0; j < nz; j++) for (let i = 0; i < nr; i++) {
       const k = this.idx(i, j);
-      if (i + 1 < nr) { const d = V[k + 1] - V[k]; w += fe(k, k + 1) * d * d * 2 * PI * (i + 0.5) * dz(j); }   // radial face: area 2 pi r_f dz, / h
-      if (j + 1 < nz) { const d = V[k + nr] - V[k]; w += fe(k, k + nr) * d * d * this.annulus(i) / h; }      // axial face: area annulus, / h
+      if (i + 1 < nr) { const d = V[k + 1] - V[k]; w += faceR[k] * d * d * 2 * PI * (i + 0.5) * dz(j); }   // radial face: area 2 pi r_f dz, / h
+      if (j + 1 < nz) { const d = V[k + nr] - V[k]; w += faceZ[k] * d * d * this.annulus(i) / h; }      // axial face: area annulus, / h
     }
     return 0.5 * EPS0 * w;
   }
@@ -157,19 +195,20 @@ export class Axisym {
    * (a disk of radius h/2 for the axis cell).
    */
   gaussCharge(i0, j0, i1, j1) {
-    const { nr, nz, V, eps, fixed, h } = this;
-    const fe = (a, b) => faceEps(eps, fixed, a, b);
+    this.prepare();
+    const { nr, nz, V, h, faceR, faceZ } = this;
     const ia = Math.max(0, Math.min(i0, i1)), ib = Math.min(nr - 1, Math.max(i0, i1));
     const ja = Math.max(0, Math.min(j0, j1)), jb = Math.min(nz - 1, Math.max(j0, j1));
     let flux = 0; // sum of eps_face * E_n * area
     // Radial faces: cylinder of radius r_face and height h per node (half height at the z ends of the box).
     const dz = (j) => (j === 0 || j === nz - 1 ? h / 2 : h);
-    if (ib + 1 < nr) for (let j = ja; j <= jb; j++) { const k = this.idx(ib, j); flux += fe(k, k + 1) * (-(V[k + 1] - V[k]) / h) * 2 * PI * (this.r(ib) + h / 2) * dz(j); }
-    if (ia > 0) for (let j = ja; j <= jb; j++) { const k = this.idx(ia, j); flux += fe(k, k - 1) * (-(V[k - 1] - V[k]) / h) * 2 * PI * (this.r(ia) - h / 2) * dz(j); }
-    // Axial faces: annular control-volume areas (clipped so a box from the axis to ib covers pi r_face^2 exactly).
-    const ann = (i) => { const rIn = Math.max(0, (i - 0.5) * h), rOut = Math.min((ib + 0.5) * h, (i + 0.5) * h); return PI * (rOut * rOut - Math.max(rIn, i === ia ? Math.max(0, (ia - 0.5) * h) : rIn) ** 2); };
-    if (jb + 1 < nz) for (let i = ia; i <= ib; i++) { const k = this.idx(i, jb); flux += fe(k, k + nr) * (-(V[k + nr] - V[k]) / h) * ann(i); }
-    if (ja > 0) for (let i = ia; i <= ib; i++) { const k = this.idx(i, ja); flux += fe(k, k - nr) * (-(V[k - nr] - V[k]) / h) * ann(i); }
+    if (ib + 1 < nr) for (let j = ja; j <= jb; j++) { const k = this.idx(ib, j); flux += faceR[k] * (-(V[k + 1] - V[k]) / h) * 2 * PI * (this.r(ib) + h / 2) * dz(j); }
+    if (ia > 0) for (let j = ja; j <= jb; j++) { const k = this.idx(ia, j); flux += faceR[k - 1] * (-(V[k - 1] - V[k]) / h) * 2 * PI * (this.r(ia) - h / 2) * dz(j); }
+    // Axial faces: annular control-volume areas, clipped to the box [ia-1/2, ib+1/2] and to r_max.
+    const rMax = (nr - 1) * h;
+    const ann = (i) => { const rIn = Math.max(0, (i - 0.5) * h, (ia - 0.5) * h), rOut = Math.min((ib + 0.5) * h, (i + 0.5) * h, rMax); return PI * Math.max(0, rOut * rOut - rIn * rIn); };
+    if (jb + 1 < nz) for (let i = ia; i <= ib; i++) { const k = this.idx(i, jb); flux += faceZ[k] * (-(V[k + nr] - V[k]) / h) * ann(i); }
+    if (ja > 0) for (let i = ia; i <= ib; i++) { const k = this.idx(i, ja); flux += faceZ[k - nr] * (-(V[k - nr] - V[k]) / h) * ann(i); }
     return EPS0 * flux;
   }
 
@@ -178,13 +217,13 @@ export class Axisym {
    * I = int sigma E_z dA over the disk, using the face between rows j and j+1.
    */
   currentThroughZ(j, { iMax = this.nr - 1 } = {}) {
-    const { nr, V, eps, fixed, h } = this;
-    const fe = (a, b) => faceEps(eps, fixed, a, b);
+    this.prepare();
+    const { nr, V, h, faceZ } = this;
     if (j < 0 || j + 1 >= this.nz) return NaN;
     let I = 0;
     for (let i = 0; i <= iMax; i++) {
       const k = this.idx(i, j);
-      const sig = fe(k, k + nr);
+      const sig = faceZ[k];
       const ez = -(V[k + nr] - V[k]) / h;
       I += sig * ez * this.annulus(i);
     }
@@ -216,6 +255,9 @@ function faceEps(eps, fixed, a, b) {
  */
 export function diskCapacitor({ V = 5, g = 4e-3, R = 6e-3, t = 0.5e-3, epsR = 5, epsR2 = 5, cellsPerLayer = 4, boxFactor = 2.5, walls = 'neumann', maxCells = 300 } = {}) {
   const S = g + boxFactor * R;
+  // The plate faces must land on nodes (gap exactly g) and the layer interfaces on faces,
+  // which needs an even number of cells per layer; round up if an odd value is asked for.
+  cellsPerLayer = Math.max(2, Math.ceil(cellsPerLayer / 2) * 2);
   let h = g / (3 * cellsPerLayer);
   let coarsened = false;
   if (S / h > maxCells) { h = S / maxCells; coarsened = true; } // keep the grid tractable for plain Gauss-Seidel
@@ -229,8 +271,9 @@ export function diskCapacitor({ V = 5, g = 4e-3, R = 6e-3, t = 0.5e-3, epsR = 5,
   s.fixWhere((r, z) => r <= R + h / 4 && z >= g / 2 - h / 4 && z <= g / 2 + tC + h / 4, V);
   s.fixWhere((r, z) => r <= R + h / 4 && z <= -g / 2 + h / 4 && z >= -g / 2 - tC - h / 4, 0);
   // Dielectric fills the gap out to the plate radius (as in the COMSOL model); air beyond.
-  s.epsWhere((r, z) => r <= R + h / 4 && Math.abs(z) < g / 2 - h / 4, epsR2);
-  s.epsWhere((r, z) => r <= R + h / 4 && Math.abs(z) < g / 6 - h / 4, epsR);
+  // Materials are assigned on the FACES from the geometry, so each layer gets exactly g/3
+  // of faces: cellsPerLayer faces for the centre layer and for each outer layer.
+  s.setFacesFrom((r, z) => (r <= R + h / 4 && Math.abs(z) < g / 2 ? (Math.abs(z) < g / 6 ? epsR : epsR2) : 1));
   s.meta = { V, g, R, t: tC, epsR, epsR2, h, S, walls, coarsened };
   return s;
 }
@@ -296,6 +339,66 @@ export class AxisymMag {
   /** Face coefficient between cells a and b at face radius rf: 1 / (mu_face * rf). */
   coef(a, b, rf) { return 1 / (0.5 * (this.eps[a] + this.eps[b]) * rf); }
 
+  /**
+   * Nonlinear (saturating) material: cells flagged in `mask` take mu_r from a B-H curve
+   *   B(H) = mu0 H + Bsat tanh( mu0 (mu_i - 1) H / Bsat )
+   * which starts with relative permeability mu_i and saturates at magnetisation Bsat.
+   * mu_r(B) is found by inverting B(H) with Newton's method. Call updateMu() every few
+   * sweeps (the worker does); it re-evaluates mu_r at each masked cell from the current
+   * |B|, with damping so the fixed-point iteration converges, and returns the largest
+   * relative change in mu_r.
+   */
+  setSaturation({ mask, muI, Bsat, damping = 0.5 }) {
+    this.sat = { mask, muI, Bsat, damping };
+  }
+
+  /** The B-H curve itself: B(H) = mu0 H + Bsat tanh(mu0 (mu_i - 1) H / Bsat). */
+  static Bcurve(H, muI, Bsat) { return MU0 * H + Bsat * Math.tanh(MU0 * (muI - 1) * H / Bsat); }
+
+  /** mu_r at a given |B|, found by inverting the B-H curve with Newton's method. */
+  static muOfB(B, muI, Bsat) {
+    if (B < 1e-9 * Bsat) return muI;
+    const k = MU0 * (muI - 1) / Bsat;
+    let H = B / (MU0 * muI);
+    for (let n = 0; n < 30; n++) {
+      const t = Math.tanh(k * H);
+      const f = MU0 * H + Bsat * t - B;
+      const df = MU0 + Bsat * k * (1 - t * t);
+      const dH = f / df;
+      H -= dH;
+      if (Math.abs(dH) < 1e-12 * Math.max(H, 1)) break;
+    }
+    return B / (MU0 * H);
+  }
+
+  updateMu() {
+    if (!this.sat) return 0;
+    const { mask, muI, Bsat, damping } = this.sat;
+    const [br, bz] = this.B();
+    let maxChange = 0;
+    for (let k = 0; k < this.eps.length; k++) {
+      if (!mask[k]) continue;
+      // Successive substitution from the H side: H = |B| / (mu0 mu_current), then
+      // mu_new = B(H) / (mu0 H). Because B(H) is concave this map is a contraction
+      // (the B-side map mu = mu(|B|) is not near the knee of the curve).
+      const Bn = Math.hypot(br.data[k], bz.data[k]);
+      const H = Bn / (MU0 * this.eps[k]);
+      const target = H > 0 ? AxisymMag.Bcurve(H, muI, Bsat) / (MU0 * H) : muI;
+      const next = this.eps[k] + damping * (target - this.eps[k]);
+      maxChange = Math.max(maxChange, Math.abs(next - this.eps[k]) / this.eps[k]);
+      this.eps[k] = next;
+    }
+    return maxChange;
+  }
+
+  /** Mean relative permeability over the saturating cells (for display). */
+  meanMu() {
+    if (!this.sat) return NaN;
+    let sum = 0, n = 0;
+    for (let k = 0; k < this.eps.length; k++) if (this.sat.mask[k]) { sum += this.eps[k]; n++; }
+    return n ? sum / n : NaN;
+  }
+
   sweep() {
     const { nr, nz, V, fixed, rho, delta, boundary, h } = this;
     const src0 = MU0 * h * h;
@@ -325,9 +428,10 @@ export class AxisymMag {
     while (this.sweeps < maxSweeps) {
       let r = Infinity;
       for (let n = 0; n < k; n++) r = this.sweep();
+      const muChange = this.sat ? this.updateMu() : 0;
       this.history.push([this.sweeps, r]);
-      const converged = r < tol;
-      yield { sweeps: this.sweeps, residual: r, converged };
+      const converged = r < tol && muChange < 1e-4;
+      yield { sweeps: this.sweeps, residual: r, converged, muChange };
       if (converged) return;
     }
     yield { sweeps: this.sweeps, residual: this.residual, converged: false, hitMax: true };
@@ -381,7 +485,7 @@ export class AxisymMag {
  * sits at z = zPos (sensor centre at z = 0). Square box of half-size `box` times the largest
  * dimension, psi = 0 on the walls: with box = 8 the walls lower L by about 1-2%.
  */
-export function solenoidWithObject({ N = 100, I = 1, Rc = 15e-3, l = 30e-3, tw = 1e-3, a = 5e-3, Lo = 20e-3, muR = 100, zPos = -10e-3, nr = 81, box = 8 } = {}) {
+export function solenoidWithObject({ N = 100, I = 1, Rc = 15e-3, l = 30e-3, tw = 1e-3, a = 5e-3, Lo = 20e-3, muR = 100, zPos = -10e-3, nr = 81, box = 8, Bsat = 0 } = {}) {
   const S = box * Math.max(Rc + tw, a, l / 2, Lo / 2);      // half-size of the box
   const h = S / (nr - 1);
   const nz = 2 * Math.round(S / h) + 1;
@@ -394,7 +498,16 @@ export function solenoidWithObject({ N = 100, I = 1, Rc = 15e-3, l = 30e-3, tw =
   let cells = 0; for (let k = 0; k < s.rho.length; k++) if (s.rho[k] !== 0) cells++;
   const Jexact = (N * I) / (cells * h * h);
   for (let k = 0; k < s.rho.length; k++) if (s.rho[k] !== 0) s.rho[k] = Jexact;
-  if (muR !== 1 && a > 0 && Lo > 0) s.muWhere((r, z) => r <= a + h / 4 && z >= zPos - h / 4 && z <= zPos + Lo + h / 4, muR);
-  s.meta = { N, I, Rc, l, tw: twC, a, Lo, muR, zPos, h, S, J: Jexact };
+  const inObject = (r, z) => r <= a + h / 4 && z >= zPos - h / 4 && z <= zPos + Lo + h / 4;
+  if (muR !== 1 && a > 0 && Lo > 0) {
+    s.muWhere(inObject, muR);
+    if (Bsat > 0) {
+      // Saturating core: start at mu_i = muR and let updateMu() lower it where |B| approaches Bsat.
+      const mask = new Uint8Array(s.eps.length);
+      for (let j = 0; j < s.nz; j++) for (let i = 0; i < s.nr; i++) if (inObject(s.r(i), s.z(j))) mask[s.idx(i, j)] = 1;
+      s.setSaturation({ mask, muI: muR, Bsat });
+    }
+  }
+  s.meta = { N, I, Rc, l, tw: twC, a, Lo, muR, zPos, h, S, J: Jexact, Bsat };
   return s;
 }

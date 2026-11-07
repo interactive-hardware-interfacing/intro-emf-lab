@@ -6,6 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "node bench/run.js",
+    "smoke": "node bench/smoke.mjs",
+    "freeze": "node bench/run.js --freeze",
     "serve": "python3 -m http.server 8000"
   },
   "license": "MIT"

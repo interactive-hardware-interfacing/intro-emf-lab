@@ -18,6 +18,8 @@ export class SolverClient {
   /** Send a solver and its arrays. `kind` is 'axisym' or 'cartesian'. */
   init(solver, kind) {
     const base = { cmd: 'init', kind, V: solver.V, fixed: solver.fixed, eps: solver.eps, rho: solver.rho, boundary: solver.boundary, boxV: solver.boxV };
+    if (solver.faceR) { solver.prepare?.(); Object.assign(base, { faceR: solver.faceR, faceZ: solver.faceZ, facesExplicit: solver.facesExplicit }); }
+    if (solver.sat) base.sat = { mask: solver.sat.mask, muI: solver.sat.muI, Bsat: solver.sat.Bsat, damping: solver.sat.damping };
     if (kind === 'axisym' || kind === 'axisym-mag') Object.assign(base, { nr: solver.nr, nz: solver.nz, h: solver.h, z0: solver.z0 });
     else Object.assign(base, { nx: solver.nx, ny: solver.ny, extent: solver.extent });
     return new Promise((resolve) => { this.ready = resolve; this.worker.postMessage(base); });

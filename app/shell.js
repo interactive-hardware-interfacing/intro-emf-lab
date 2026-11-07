@@ -17,7 +17,6 @@
 //   }
 
 import { Viewport, drawColorbar, drawProbeMarker } from '../core/render.js';
-import { equationsFor } from './equations.js';
 import { readState, writeState, getNum, getList, copyToClipboard, downloadText, num } from './state.js';
 
 const CANVAS_PX = 640;
@@ -103,8 +102,8 @@ export class Shell {
     // Layer state from URL or defaults
     const scalars = (tab.layers ?? []).filter((L) => L.kind === 'scalar' && L.available !== false);
     const urlColor = this.state.color;
-    this.colorLayer = scalars.find((L) => L.id === urlColor)?.id ?? scalars.find((L) => L.default)?.id ?? scalars[0]?.id ?? null;
-    const urlOv = getList(this.state, 'ov', null);
+    this.colorLayer = urlColor === 'none' ? null : scalars.find((L) => L.id === urlColor)?.id ?? scalars.find((L) => L.default)?.id ?? scalars[0]?.id ?? null;
+    const urlOv = this.state.ov === 'none' ? [] : getList(this.state, 'ov', null);
     for (const L of tab.layers ?? []) {
       if (L.kind === 'scalar') continue;
       const on = urlOv ? urlOv.includes(L.id) : !!L.default;
@@ -123,6 +122,7 @@ export class Shell {
     this.$('probe-y').value = num(this.probePt[1]);
 
     this.buildLayerPanel();
+    document.querySelector('.panel-right').classList.toggle('panel-empty', !(tab.layers?.length));
     this.controlsEl.innerHTML = '';
     tab.init?.(this);
     this.buildStageViews();
@@ -164,6 +164,7 @@ export class Shell {
     this.stackEl.hidden = !isField;
     const host = this.$('stage-view');
     host.hidden = isField;
+    host.classList.toggle('page', !!v.page);
     document.querySelector('.stage-footer').style.visibility = isField || v.footer ? 'visible' : 'hidden';
     if (!isField) {
       let inst = this.stageInstances.get(v.id);
@@ -179,6 +180,13 @@ export class Shell {
       inst.update?.();
     }
     if (!silent) this.redraw();
+  }
+
+  /** Open the About page at a tab's section. */
+  openAbout(tabId) {
+    this.state = { tab: 'about' };
+    this.selectTab('about', { push: true });
+    setTimeout(() => this.tab.scrollTo?.(`about-${tabId}`), 50);
   }
 
   /** Called after every redraw so a custom view stays in sync with the solution. */
@@ -317,7 +325,7 @@ export class Shell {
 
   redraw() {
     const tab = this.tab;
-    const opts = { map: this.$('cmap').value, min: parseFloat(this.$('cmin').value), max: parseFloat(this.$('cmax').value) };
+    const opts = { map: this.$('cmap').value, min: parseFloat(this.$('cmin').value), max: parseFloat(this.$('cmax').value), extent: this.view.extent };
     if (!Number.isFinite(opts.min)) opts.min = undefined;
     if (!Number.isFinite(opts.max)) opts.max = undefined;
     let range = null;
@@ -379,30 +387,8 @@ export class Shell {
 
   // ---------------------------------------------------------------- equations
 
-  renderEquations() {
-    const box = this.$('equations');
-    box.innerHTML = '';
-    const list = equationsFor(this.tab.id, this.layersOn(), this.solverRunning);
-    for (const e of list) {
-      const d = document.createElement('div');
-      d.className = `eq eq-${e.kind}${e.zero ? ' eq-zero' : ''}`;
-      const t = document.createElement('div');
-      t.className = 'eq-title';
-      t.textContent = e.title;
-      d.appendChild(t);
-      const tex = document.createElement('div');
-      tex.className = 'eq-tex';
-      renderTeX(tex, e.tex);
-      d.appendChild(tex);
-      if (e.note) {
-        const n = document.createElement('div');
-        n.className = 'eq-note';
-        n.textContent = e.note;
-        d.appendChild(n);
-      }
-      box.appendChild(d);
-    }
-  }
+  /** Equations live on the About page (app/about.js); kept as a no-op so tabs can still call it. */
+  renderEquations() {}
 
   // ---------------------------------------------------------------- probe
 
@@ -568,8 +554,8 @@ export class Shell {
   syncUrl({ push = false } = {}) {
     const s = {
       tab: this.tab.id,
-      color: this.colorLayer ?? '',
-      ov: [...this.layerOn].filter(([, on]) => on).map(([id]) => id),
+      color: this.colorLayer ?? 'none',
+      ov: (() => { const on = [...this.layerOn].filter(([, o]) => o).map(([id]) => id); return on.length ? on : 'none'; })(),
       cmap: this.$('cmap').value,
       cmin: this.$('cmin').value,
       cmax: this.$('cmax').value,
@@ -678,5 +664,16 @@ export const ui = {
     if (cls) e.className = cls;
     if (text !== undefined) e.textContent = text;
     return e;
+  },
+  /** A one-line lead with a link to the tab's section on the About page. */
+  lead(shell, text) {
+    const p = document.createElement('p');
+    p.className = 'lead';
+    p.textContent = text + ' ';
+    const a = document.createElement('a');
+    a.href = '#'; a.textContent = 'More on the About page ↗'; a.className = 'about-link';
+    a.addEventListener('click', (e) => { e.preventDefault(); shell.openAbout(shell.tab.id); });
+    p.appendChild(a);
+    return p;
   },
 };

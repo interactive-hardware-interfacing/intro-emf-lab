@@ -4,6 +4,7 @@
 //   Mode "rods" (Lab 2 Module 0 reference): two oppositely charged infinite line charges
 //     +-lambda at (+-d, 0), the analytic picture the students' solver must reproduce.
 
+import { EPS0 } from '../../core/constants.js';
 import { pointChargesField, ringChargeField, ringAsPointCharges, lineChargeE, lineChargeV } from '../../core/analytic.js';
 import { Grid2D, magnitude } from '../../core/grid.js';
 import { drawScalarField, drawQuiver, drawStreamlines, drawContours, levelsBetween, drawMarker, radialSeeds } from '../../core/render.js';
@@ -86,7 +87,7 @@ const TAB = {
     box.appendChild(ui.el('h1', '', this.title));
     const re = () => { shell.recompute(); shell.syncUrl(); };
     if (this.mode === 'ring') {
-      box.appendChild(ui.el('p', 'lead', 'A ring of radius R in the z = 0 plane. Compare N discrete charges of q each with a continuous line density λ. Equal total charge means λ = Nq / 2πR.'));
+      box.appendChild(ui.lead(shell, 'A ring of N point charges versus a continuous line charge, in 3D.'));
       box.appendChild(ui.field('Show', ui.select([['discrete', 'Discrete: N point charges'], ['continuous', 'Continuous: line charge λ']], this.source, (v) => { this.source = v; re(); })));
       const r1 = ui.el('div', 'row');
       r1.appendChild(ui.field('Number of point charges N', ui.number(this.N, { min: 1, max: 400, onChange: (v) => { this.N = Math.round(v); re(); } })));
@@ -106,7 +107,7 @@ const TAB = {
       }));
       box.appendChild(ui.el('p', 'hint', 'The field is computed in 3D. XY at z = 0 is the plane of the ring; YZ at x = 0 cuts through the axis. Move the offset to leave the plane of the ring. The box is 1 m square, so the ring radius is limited to 0.45 m.'));
     } else {
-      box.appendChild(ui.el('p', 'lead', 'Two infinitely long rods of radius a at x = ±d, carrying −λ (left) and +λ (right). Outside the rods the field is that of two line charges, which is the analytic solution your own solver should reproduce.'));
+      box.appendChild(ui.lead(shell, 'Two conducting rods in cross-section: the exact two-line-charge field.'));
       const r1 = ui.el('div', 'row');
       r1.appendChild(ui.field('Half separation d (m)', ui.number(this.d, { min: 0.05, max: 0.9, onChange: (v) => { this.d = v; re(); } })));
       r1.appendChild(ui.field('Rod radius a (m)', ui.number(this.a, { min: 0.01, max: 0.5, onChange: (v) => { this.a = Math.min(v, this.d - 0.01); re(); } })));
@@ -114,7 +115,7 @@ const TAB = {
       box.appendChild(ui.field('Line charge λ (C/m)', ui.number(this.lam, { onChange: (v) => { this.lam = v; re(); } })));
       const vRod = this.rodPotential();
       const p = ui.el('p', 'hint');
-      p.textContent = `Potential of the right rod surface (reference V = 0 at x = 0): ${vRod.toPrecision(4)} V. Capacitance per unit length between the rods: ${(this.lam / (2 * vRod)).toExponential(3)} F/m, i.e. πε₀ / ln((2d − a)/a).`;
+      p.textContent = `Rod surface potentials ±${vRod.toPrecision(4)} V (reference V = 0 at x = 0). Capacitance per unit length between the rods: ${(this.lam / (2 * vRod)).toExponential(3)} F/m = πε₀ / acosh(d/a). The thin-wire approximation πε₀ / ln(2d/a) gives ${(Math.PI * EPS0 / Math.log(2 * this.d / this.a)).toExponential(3)} F/m.`;
       box.appendChild(p);
       box.appendChild(ui.el('p', 'hint', 'Use this as the cutline comparison for your own solver: set the rod potentials to ±V shown here and compare V and E along the x-axis.'));
     }
@@ -132,11 +133,15 @@ const TAB = {
     return { E: f.E, V: f.V, Ed: disc.E, Ec: cont.E };
   },
 
-  rodPotential() {
-    // V on the surface of the right rod (point nearest the axis), zero on the x = 0 plane
-    const x = this.d - this.a;
-    return lineChargeV(this.lam, [this.d, 0], [x, 0], 1) + lineChargeV(-this.lam, [-this.d, 0], [x, 0], 1);
-  },
+  /**
+   * Exact solution for two conducting cylinders of radius a centred at x = +-d: the field
+   * outside the rods is that of two line charges +-lambda at x = +-b with b = sqrt(d^2 - a^2)
+   * (the images), for which the rod surfaces are exact equipotentials at
+   * +-V_rod = (lambda / 2 pi eps0) acosh(d/a). Capacitance per unit length pi eps0 / acosh(d/a).
+   */
+  imageOffset() { return Math.sqrt(Math.max(this.d * this.d - this.a * this.a, 1e-12)); },
+
+  rodPotential() { return (this.lam / (2 * Math.PI * EPS0)) * Math.acosh(this.d / this.a); },
 
   rodsField(x, y) {
     const inLeft = Math.hypot(x + this.d, y) <= this.a, inRight = Math.hypot(x - this.d, y) <= this.a;
@@ -144,8 +149,9 @@ const TAB = {
       // Inside a conductor: E = 0, V = the surface value
       return { E: [0, 0], V: inRight ? this.rodPotential() : -this.rodPotential() };
     }
-    const e1 = lineChargeE(this.lam, [this.d, 0], [x, y]), e2 = lineChargeE(-this.lam, [-this.d, 0], [x, y]);
-    const v = lineChargeV(this.lam, [this.d, 0], [x, y], 1) + lineChargeV(-this.lam, [-this.d, 0], [x, y], 1);
+    const b = this.imageOffset();
+    const e1 = lineChargeE(this.lam, [b, 0], [x, y]), e2 = lineChargeE(-this.lam, [-b, 0], [x, y]);
+    const v = lineChargeV(this.lam, [b, 0], [x, y], 1) + lineChargeV(-this.lam, [-b, 0], [x, y], 1);
     return { E: [e1[0] + e2[0], e1[1] + e2[1]], V: v };
   },
 
@@ -180,15 +186,15 @@ const TAB = {
   render(layer, ctx, view, opts) {
     const eFn = (u, v) => this.at(u, v).E;
     switch (layer) {
-      case 'V': return drawScalarField(ctx, this.gridV, { map: opts.map, min: opts.min ?? this.vRange[0], max: opts.max ?? this.vRange[1] });
-      case 'Emag': return drawScalarField(ctx, this.gridEmag, { map: opts.map, log: true, min: opts.min ?? this.eRange[0], max: opts.max ?? this.eRange[1] });
-      case 'diff': return drawScalarField(ctx, this.gridDiff, { map: opts.map, min: opts.min ?? this.dRange[0], max: opts.max ?? this.dRange[1] });
-      case 'En': return drawScalarField(ctx, this.gridEn, { map: opts.map, min: opts.min ?? this.nRange[0], max: opts.max ?? this.nRange[1] });
+      case 'V': return drawScalarField(ctx, this.gridV, { map: opts.map, extent: opts.extent, min: opts.min ?? this.vRange[0], max: opts.max ?? this.vRange[1] });
+      case 'Emag': return drawScalarField(ctx, this.gridEmag, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.eRange[0], max: opts.max ?? this.eRange[1] });
+      case 'diff': return drawScalarField(ctx, this.gridDiff, { map: opts.map, extent: opts.extent, min: opts.min ?? this.dRange[0], max: opts.max ?? this.dRange[1] });
+      case 'En': return drawScalarField(ctx, this.gridEn, { map: opts.map, extent: opts.extent, min: opts.min ?? this.nRange[0], max: opts.max ?? this.nRange[1] });
       case 'E':
         if (opts.style === 'lines') {
           const seeds = [];
           if (this.mode === 'rods') {
-            seeds.push(...radialSeeds(this.d, 0, this.a + 0.01, 20), ...radialSeeds(-this.d, 0, this.a + 0.01, 20));
+            seeds.push(...radialSeeds(this.d, 0, this.a * 1.08, 20), ...radialSeeds(-this.d, 0, this.a * 1.08, 20));
             const stop = (x, y) => Math.hypot(x - this.d, y) < this.a || Math.hypot(x + this.d, y) < this.a;
             drawStreamlines(ctx, view, eFn, seeds, { stopFn: stop });
           } else {
