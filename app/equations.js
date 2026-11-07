@@ -125,8 +125,10 @@ export const EQUATIONS = {
 };
 
 /** Convenience: the governing list plus the layer entries for the layers switched on. */
+const ALIASES = { 'point-charges-3d': 'point-charges', 'ring-charge': 'ring-line', 'line-charge': 'ring-line' };
+
 export function equationsFor(tabId, layersOn, solverRunning = false) {
-  const set = EQUATIONS[tabId];
+  const set = EQUATIONS[ALIASES[tabId] ?? tabId];
   if (!set) return [];
   const out = set.governing.map((e) => ({ ...e, kind: 'governing' }));
   for (const L of layersOn) {

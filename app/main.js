@@ -3,6 +3,7 @@
 
 import { Shell } from './shell.js';
 import pointCharges from './tabs/point-charges.js';
+import pointCharges3d from './tabs/point-charges-3d.js';
 import { makeTab as makeRingLine } from './tabs/ring-line.js';
 import magneticFields from './tabs/magnetic-fields.js';
 import sandbox from './tabs/sandbox.js';
@@ -12,6 +13,7 @@ import inductors from './tabs/inductors.js';
 
 export const TABS = [
   pointCharges,
+  pointCharges3d,
   makeRingLine('ring'),
   makeRingLine('rods'),
   capacitors,

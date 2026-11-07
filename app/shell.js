@@ -141,7 +141,7 @@ export class Shell {
     nav.innerHTML = '';
     this.stageInstances = new Map();
     this.$('stage-view').innerHTML = '';
-    const views = [{ id: 'field', label: 'Field' }, ...(this.tab.views ?? [])];
+    const views = [...(this.tab.hideField ? [] : [{ id: 'field', label: 'Field' }]), ...(this.tab.views ?? [])];
     this.stageViews = views;
     if (views.length > 1) {
       for (const v of views) {
@@ -151,7 +151,7 @@ export class Shell {
         nav.appendChild(b);
       }
     }
-    const wanted = this.state.sv && views.some((v) => v.id === this.state.sv) ? this.state.sv : 'field';
+    const wanted = this.state.sv && views.some((v) => v.id === this.state.sv) ? this.state.sv : views[0].id;
     this.setStageView(wanted, { silent: true });
   }
 

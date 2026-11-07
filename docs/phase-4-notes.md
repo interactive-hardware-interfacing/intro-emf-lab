@@ -71,3 +71,17 @@ with setTransform and clipped to the cut shapes); no 3D library.
 - Inductors: Field, 3D, Axis plots (B, H, M), Sweep (L vs position).
 - Sandbox: Field, Convergence (residual vs sweep, log scale, tolerance line).
 Also: the cut-plane slider and text box are now two-way synced (Ring charge, Point charges).
+
+## 3D point charges tab, sweep fixes, conduction intro
+- `app/tabs/point-charges-3d.js`: charges anywhere in a 0.5 m box; three movable cut planes
+  (XY/XZ/YZ) painted with V or |E| on one shared scale; field lines traced in 3D (RK2) from
+  golden-spiral seeds around each charge, shaded by depth; charges as spheres; orthographic
+  camera with orbit/tilt sliders or drag. A tab may set `hideField: true` to have no 2D
+  field view; equations are aliased (`ALIASES` in equations.js), which also fixed the
+  split Ring/Line tabs having lost their equation panel.
+- Capacitor sweep: ran at the main resolution, so a thin-gap point could take minutes with
+  nothing visible, and re-clicking re-entered the loop. Sweeps now run at coarse
+  resolution with a 120-cell cap (seconds per point), switch to the Sweep view, report
+  "sweep point k of n" in the status line, ignore re-entry, and re-solve the main case at
+  the end. Inductors got the same guards.
+- Conduction tab: an introduction (what it shows, why it matters, what to look for).

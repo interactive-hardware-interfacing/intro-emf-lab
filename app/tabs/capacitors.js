@@ -48,7 +48,7 @@ export default {
     this.res = [2, 4, 6].includes(getNum(s, 'res', 4)) ? getNum(s, 'res', 4) : 4;
     this.walls = s.walls === 'dirichlet' ? 'dirichlet' : 'neumann';
     this.mirror = s.half !== '1';
-    this.sweep = { param: s.sw ?? 'g', from: getNum(s, 'sw0', 1), to: getNum(s, 'sw1', 4), n: Math.round(getNum(s, 'swn', 4)), rows: [], running: false };
+    this.sweep = { param: s.sw ?? 'g', from: getNum(s, 'sw0', 2), to: getNum(s, 'sw1', 8), n: Math.round(getNum(s, 'swn', 5)), rows: [], running: false, progress: '' };
     this.client = new SolverClient({ onFrame: (m) => this.onFrame(m) });
     this.build();
     this.views = [
@@ -86,9 +86,10 @@ export default {
 
   // ------------------------------------------------------------ model
 
-  build(p = this.p) {
+  build(p = this.p, { forSweep = false } = {}) {
     const mm = 1e-3;
-    this.solver = diskCapacitor({ V: p.V, g: p.g * mm, R: p.R * mm, t: p.t * mm, epsR: p.epsR, epsR2: p.epsR2, cellsPerLayer: this.res, walls: this.walls });
+    // Sweeps run at coarse resolution with a tighter grid cap so each point takes seconds, not minutes.
+    this.solver = diskCapacitor({ V: p.V, g: p.g * mm, R: p.R * mm, t: p.t * mm, epsR: p.epsR, epsR2: p.epsR2, cellsPerLayer: forSweep ? 2 : this.res, maxCells: forSweep ? 120 : 300, walls: this.walls });
     this.meta = this.solver.meta;
     this.applyView();
     this.V = new Float64Array(this.solver.V);
@@ -215,7 +216,7 @@ export default {
 
   statusText() {
     const r = Number.isFinite(this.residual) ? this.residual.toExponential(2) : '—';
-    return `${this.solver.nr}×${this.solver.nz} (r,z) grid, h = ${(this.meta.h * 1e3).toFixed(3)} mm${this.meta.coarsened ? ' (coarsened to fit)' : ''} · sweep ${this.sweeps} · max |ΔV| = ${r} V · ${this.running ? 'solving' : this.converged ? 'converged' : 'not converged'}`;
+    return `${this.sweep?.progress ? this.sweep.progress + ' · ' : ''}${this.solver.nr}×${this.solver.nz} (r,z) grid, h = ${(this.meta.h * 1e3).toFixed(3)} mm${this.meta.coarsened ? ' (coarsened to fit)' : ''} · sweep ${this.sweeps} · max |ΔV| = ${r} V · ${this.running ? 'solving' : this.converged ? 'converged' : 'not converged'}`;
   },
 
   probe(x, z) {
@@ -290,7 +291,7 @@ export default {
     box.appendChild(sr3);
     this.sweepEl = ui.el('table', 'probe-table'); this.sweepEl.appendChild(document.createElement('tbody'));
     box.appendChild(this.sweepEl);
-    box.appendChild(ui.el('p', 'hint', 'Each point is a full solve at the current resolution; coarse resolution is fine for a sweep. Other parameters stay at the values above. The curve is in the "Sweep" view.'));
+    box.appendChild(ui.el('p', 'hint', 'Each point is a full solve at coarse resolution (so a point takes seconds); the status line under the plot counts them off and the curve grows in the "Sweep" view. Other parameters stay at the values above, and the main case is re-solved when the sweep ends.'));
     this.renderResults();
     this.renderSweep();
   },
@@ -369,28 +370,32 @@ export default {
   // ------------------------------------------------------------ sweep
 
   async runSweep() {
+    if (this.sweep.running) return;
     const { param, from, to, n } = this.sweep;
     this.sweep.rows = []; this.sweep.running = true; this.btnSweep.textContent = 'Stop sweep';
     this.client?.cancel();
+    this.shell.setStageView('sweep'); this.shell.syncUrl();
     const saved = { ...this.p };
     for (let k = 0; k < n && this.sweep.running; k++) {
       const value = from + (k * (to - from)) / (n - 1);
+      this.sweep.progress = `sweep point ${k + 1} of ${n} (${SWEEPABLE.find(([q]) => q === param)?.[1] ?? param} = ${sci(value, 4)})`;
       const p = { ...saved, [param]: value };
-      this.build(p);
+      this.build(p, { forSweep: true });
       this.shell.recompute();
       this.shell.solverRunning = true;
       try {
         await this.client.init(this.solver, 'axisym');
         const done = await this.client.run({ k: 50, tol: 2e-6 * this.meta.V });
+        if (!this.sweep.running) break;
         this.V = done.V; this.sweeps = done.sweeps; this.residual = done.residual; this.converged = done.converged;
         this.finish();
         this.sweep.rows.push({ value, ...this.results });
         this.renderSweep();
       } catch { break; }
     }
-    this.sweep.running = false; this.btnSweep.textContent = 'Run sweep';
+    this.sweep.running = false; this.sweep.progress = ''; this.btnSweep.textContent = 'Run sweep';
     this.shell.solverRunning = false;
-    // restore the main configuration
+    // restore the main configuration and re-solve it at the normal resolution
     this.p = saved; this.build(); this.buildControls(); this.shell.recompute(); this.solve();
   },
 

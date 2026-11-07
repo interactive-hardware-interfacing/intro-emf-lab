@@ -219,7 +219,7 @@ export default {
 
   statusText() {
     const r = Number.isFinite(this.residual) ? this.residual.toExponential(2) : '—';
-    return `${this.solver.nr}×${this.solver.nz} (r,z) grid, h = ${(this.meta.h * 1e3).toFixed(2)} mm · sweep ${this.sweeps} · max |Δψ| = ${r} · ${this.running ? 'solving' : this.converged ? 'converged' : 'not converged'}`;
+    return `${this.sweep?.progress ? this.sweep.progress + ' · ' : ''}${this.solver.nr}×${this.solver.nz} (r,z) grid, h = ${(this.meta.h * 1e3).toFixed(2)} mm · sweep ${this.sweeps} · max |Δψ| = ${r} · ${this.running ? 'solving' : this.converged ? 'converged' : 'not converged'}`;
   },
 
   probe(x, z) {
@@ -358,19 +358,23 @@ export default {
   // ------------------------------------------------------------ sweep
 
   async runSweep() {
+    if (this.sweep.running) return;
     const { from, to, n } = this.sweep;
     this.sweep.rows = []; this.sweep.running = true; this.btnSweep.textContent = 'Stop sweep';
     this.client?.cancel();
+    this.shell.setStageView('sweep'); this.shell.syncUrl();
     const saved = { ...this.p };
     let prevV = null;
     for (let k = 0; k < n && this.sweep.running; k++) {
       const zPos = from + (k * (to - from)) / (n - 1);
+      this.sweep.progress = `sweep point ${k + 1} of ${n} (position ${zPos.toFixed(1)} mm)`;
       this.build({ ...saved, zPos });
       if (prevV && prevV.length === this.solver.V.length) for (let q = 0; q < prevV.length; q++) if (!this.solver.fixed[q]) this.solver.V[q] = prevV[q]; // warm start
       this.shell.recompute(); this.shell.solverRunning = true;
       try {
         await this.client.init(this.solver, 'axisym-mag');
         const done = await this.client.run({ k: 50, tol: this.tol() });
+        if (!this.sweep.running) break;
         this.V = done.V; this.sweeps = done.sweeps; this.residual = done.residual; this.converged = done.converged;
         prevV = done.V;
         this.finish();
@@ -378,7 +382,7 @@ export default {
         this.renderSweep();
       } catch { break; }
     }
-    this.sweep.running = false; this.btnSweep.textContent = 'Run sweep'; this.shell.solverRunning = false;
+    this.sweep.running = false; this.sweep.progress = ''; this.btnSweep.textContent = 'Run sweep'; this.shell.solverRunning = false;
     this.p = saved; this.build(); this.buildControls(); this.shell.recompute(); this.solve();
   },
 

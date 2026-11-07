@@ -269,7 +269,17 @@ export default {
     const shell = this.shell, box = shell.controlsEl;
     box.innerHTML = '';
     box.appendChild(ui.el('h1', '', 'Conduction (J)'));
-    box.appendChild(ui.el('p', 'lead', 'A resistive sheet (per metre of depth) between a 0 V electrode on the left and V₀ on the right. Same solver as the Sandbox with σ in place of ε: current has nowhere to go but through the conductor, so ∇·J = 0.'));
+    box.appendChild(ui.el('p', 'lead', 'What a resistor looks like from the inside. A sheet of resistive material (conductivity σ, per metre of depth) sits between a 0 V electrode on the left and V₀ on the right. The solver finds the potential, and from it the field E = −∇V and the current density J = σE at every point.'));
+    const intro = ui.el('div', 'placeholder');
+    intro.innerHTML = `<p><strong>Why it matters.</strong> Ohm's law V = IR is the circuit-level summary of a field problem. Here you can see the field version, J = σE, and watch R = V/I come out of the geometry: for the uniform bar it reproduces R = ℓ/(σA) exactly, and for every other shape it gives the answer the formula can't.</p>
+<p><strong>What to look for.</strong></p>
+<ul>
+<li>Current lines (J) run from electrode to electrode and never cross an insulator; equipotentials cross them at right angles.</li>
+<li>The current through <em>any</em> cut is the same (∇·J = 0): Kirchhoff's current law at the field level. Drag the cut and check.</li>
+<li>Constrictions and holes crowd the current and raise R; the |J| colour map shows where the heat goes (J·E).</li>
+<li>Same equation as electrostatics with σ in place of ε, which is why the Sandbox solver works here unchanged.</li>
+</ul>`;
+    box.appendChild(intro);
     const re = () => { this.client?.cancel(); this.build(); this.buildControls(); shell.recompute(); shell.syncUrl(); this.solve(); };
     box.appendChild(ui.field('Geometry', ui.select(PRESETS, this.preset, (v) => { this.preset = v; re(); })));
     const r1 = ui.el('div', 'row');

@@ -52,9 +52,9 @@ input[type=range] { width: 100%; }
 .brand { display: flex; flex-direction: column; line-height: 1.1; min-width: 150px; }
 .brand-title { font-weight: 700; font-size: 15px; }
 .brand-sub { font-size: 11px; color: var(--ink-2); }
-.tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+.tabs { display: flex; flex-wrap: wrap; gap: 2px; flex: 1; }
 .tab {
-  font: inherit; font-size: 13px; padding: 7px 11px; border: 0; border-bottom: 2px solid transparent;
+  font: inherit; font-size: 13px; padding: 6px 9px; border: 0; border-bottom: 2px solid transparent;
   background: transparent; color: var(--ink-2); cursor: pointer; white-space: nowrap;
 }
 .tab:hover { color: var(--ink); }
