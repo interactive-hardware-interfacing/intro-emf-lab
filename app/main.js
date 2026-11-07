@@ -8,7 +8,7 @@ import magneticFields from './tabs/magnetic-fields.js';
 import sandbox from './tabs/sandbox.js';
 import capacitors from './tabs/capacitors.js';
 import conduction from './tabs/conduction.js';
-import { inductors } from './tabs/placeholder.js';
+import inductors from './tabs/inductors.js';
 
 export const TABS = [
   pointCharges,

@@ -18,7 +18,7 @@ export class SolverClient {
   /** Send a solver and its arrays. `kind` is 'axisym' or 'cartesian'. */
   init(solver, kind) {
     const base = { cmd: 'init', kind, V: solver.V, fixed: solver.fixed, eps: solver.eps, rho: solver.rho, boundary: solver.boundary, boxV: solver.boxV };
-    if (kind === 'axisym') Object.assign(base, { nr: solver.nr, nz: solver.nz, h: solver.h, z0: solver.z0 });
+    if (kind === 'axisym' || kind === 'axisym-mag') Object.assign(base, { nr: solver.nr, nz: solver.nz, h: solver.h, z0: solver.z0 });
     else Object.assign(base, { nx: solver.nx, ny: solver.ny, extent: solver.extent });
     return new Promise((resolve) => { this.ready = resolve; this.worker.postMessage(base); });
   }

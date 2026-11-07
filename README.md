@@ -15,7 +15,7 @@ app/
   shell.js              shared UI: tab bar, controls, canvas stack, layers, probe, equations
   state.js              URL query-string <-> app state
   equations.js          TeX strings per tab and per layer
-  tabs/                 one module per tab (point-charges, magnetic-fields, ring-line, sandbox, capacitors, conduction)
+  tabs/                 one module per tab (all seven tabs)
   workers/              relax-worker.js: the solver off the main thread
   cutplane.js           XY / XZ / YZ cut-plane control for closed-form 3D fields
   solverclient.js       promise wrapper around the worker for run-to-convergence tabs
@@ -25,7 +25,7 @@ core/                   em-core: the numerics, no DOM
   analytic.js           closed forms: point/line/ring charges, wires, sheets, loops
   render.js             colormap, quiver, streamlines, contours, viewport transforms
   relax2d.js            plain neighbor-averaging Laplace/Poisson solver + Lab 2 presets
-  axisym.js             (r,z) neighbor-averaging solver: capacitors (eps), conduction (sigma); magnetostatics in Phase 4
+  axisym.js             (r,z) neighbor-averaging solvers: Axisym (eps or sigma) and AxisymMag (psi = r A_phi)
 bench/
   run.js                closed-form benchmarks; `npm test`; gates every deploy
 docs/                   phase notes; docs/matlab has relax2d.m, the MATLAB twin of the solver
@@ -64,5 +64,5 @@ refuses to deploy if any check fails.
 1. Closed-form tabs: Point charges, Magnetic fields, Ring and line charge; cut-plane view — done
 2. `relax2d.js` + Sandbox tab (Lab 2 demo), MATLAB twin — done
 3. `axisym.js` (E, sigma) + Capacitors and Conduction tabs — done
-4. `axisym.js` (B) + Inductors tab
+4. `AxisymMag` + Inductors tab — done
 5. Instructor tools, semester tag, handout edits

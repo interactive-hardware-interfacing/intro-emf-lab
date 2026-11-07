@@ -2,6 +2,7 @@
 // neighbour-averaging solver runs. Protocol (postMessage):
 //   { cmd: 'init', nx, ny, extent, boundary, V, fixed, eps, rho }   arrays are copied in
 //   { cmd: 'init', kind: 'axisym', nr, nz, h, z0, boundary: {rmax, zmin, zmax}, V, fixed, eps, rho }
+//   { cmd: 'init', kind: 'axisym-mag', ... }  same shape; V holds psi = r A_phi, eps holds mu_r, rho holds J_phi
 //   { cmd: 'run', k, tol, maxSweeps }      run until converged, posting a frame every k sweeps
 //   { cmd: 'step', k }                      run exactly k sweeps, post one frame, stop
 //   { cmd: 'pause' }
@@ -10,7 +11,7 @@
 // Done:   { type: 'done', sweeps, residual, converged, hitMax }
 
 import { Relax2D } from '../../core/relax2d.js';
-import { Axisym } from '../../core/axisym.js';
+import { Axisym, AxisymMag } from '../../core/axisym.js';
 
 let solver = null;
 let running = false;
@@ -49,7 +50,9 @@ self.onmessage = (ev) => {
       clearTimeout(timer);
       solver = m.kind === 'axisym'
         ? new Axisym(m.nr, m.nz, { h: m.h, z0: m.z0, boundary: m.boundary, boxV: m.boxV ?? 0 })
-        : new Relax2D(m.nx, m.ny, m.extent, { boundary: m.boundary, boxV: m.boxV ?? 0 });
+        : m.kind === 'axisym-mag'
+          ? new AxisymMag(m.nr, m.nz, { h: m.h, z0: m.z0, boundary: m.boundary })
+          : new Relax2D(m.nx, m.ny, m.extent, { boundary: m.boundary, boxV: m.boxV ?? 0 });
       solver.V.set(m.V);
       solver.fixed.set(m.fixed);
       solver.eps.set(m.eps);

@@ -51,23 +51,6 @@ export const magneticFields = placeholderTab({
   ],
 });
 
-export const inductors = placeholderTab({
-  id: 'inductors',
-  title: 'Inductors',
-  phase: 4,
-  summary: 'A finite solenoid with a permeable object at a variable axial position, solved in (r, z) for A_φ. Inductance two ways and a position sweep.',
-  serves: 'Lab 5. Mode toggle: simple cylinder, or the ring-sensor prototype.',
-  plan: 'axisym.js magnetostatic flavour. Controls: coil I, turns, radius, length; object μr, radius, length, position. L = NΦ/I and L = 2W/I²; L vs position with CSV export.',
-  axes: ['r', 'z'],
-  layers: [
-    { id: 'Bmag', label: '|B|', kind: 'scalar', unit: 'T' },
-    { id: 'B', label: 'B field', kind: 'vector', styles: ['arrows', 'lines'] },
-    { id: 'H', label: 'H field', kind: 'vector', styles: ['arrows'] },
-    { id: 'M', label: 'M field', kind: 'vector', styles: ['arrows'] },
-    { id: 'J', label: 'J_φ', kind: 'scalar', unit: 'A/m²' },
-  ],
-});
-
 export const sandbox = placeholderTab({
   id: 'sandbox',
   title: 'Sandbox',

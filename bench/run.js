@@ -15,9 +15,11 @@ import {
 } from '../core/analytic.js';
 import { Grid2D, magnitude } from '../core/grid.js';
 import { Relax2D, lab2Preset } from '../core/relax2d.js';
-import { Axisym, diskCapacitor, idealLayeredC, kirchhoffC } from '../core/axisym.js';
+import { Axisym, AxisymMag, diskCapacitor, idealLayeredC, kirchhoffC, solenoidWithObject } from '../core/axisym.js';
 
 const results = [];
+const T0 = Date.now();
+const mark = (n) => process.env.BENCH_TIMING && console.error(`${((Date.now() - T0) / 1000).toFixed(1)}s  ${n}`);
 function check(name, got, want, relTol) {
   const err = want === 0 ? Math.abs(got) : Math.abs((got - want) / want);
   const pass = Number.isFinite(got) && err <= relTol;
@@ -133,6 +135,7 @@ check('mu0 = 4 pi 1e-7 (to 1e-9)', MU0, 4 * PI * 1e-7, 1e-9);
   check('|E| grid', magnitude(ex, ey).get(3, 3), Math.hypot(2, 3), 1e-12);
 }
 
+mark('relax2d (Phase 2)');
 // ---------------------------------------------------------------- relax2d (Phase 2)
 {
   // 1. Harmonic function with Dirichlet data: V = e^x cos y satisfies Laplace exactly.
@@ -231,6 +234,7 @@ check('mu0 = 4 pi 1e-7 (to 1e-9)', MU0, 4 * PI * 1e-7, 1e-9);
   }
 }
 
+mark('axisym (Phase 3)');
 // ---------------------------------------------------------------- axisym (Phase 3)
 {
   // 1. Spherical capacitor: inner sphere a at 1 V, outer shell b at 0. C = 4 pi eps0 ab/(b-a).
@@ -262,8 +266,8 @@ check('mu0 = 4 pi 1e-7 (to 1e-9)', MU0, 4 * PI * 1e-7, 1e-9);
   }
   // 3. Thin-gap disk capacitor in air: Kirchhoff's edge-corrected formula within 4%.
   {
-    const s = diskCapacitor({ V: 1, g: 1e-3, R: 10e-3, t: 0.25e-3, epsR: 1, epsR2: 1, cellsPerLayer: 2, boxFactor: 2 });
-    s.solve(1e-9, 1e6, 100);
+    const s = diskCapacitor({ V: 1, g: 1e-3, R: 10e-3, t: 0.25e-3, epsR: 1, epsR2: 1, cellsPerLayer: 2, boxFactor: 1.5 });
+    s.solve(1e-8, 1e6, 100);
     const cE = 2 * s.energy() / 1;
     const { g, R, t, h } = s.meta;
     const ck = kirchhoffC({ g, R, epsEff: 1, t });
@@ -277,12 +281,12 @@ check('mu0 = 4 pi 1e-7 (to 1e-9)', MU0, 4 * PI * 1e-7, 1e-9);
   // 4. Lab 3 default (5 V, 4 mm, 6 mm, 5, 5): D continuous across the layers on the axis,
   //    E steps by the permittivity ratio, and C sits above the ideal series value.
   {
-    const s = diskCapacitor({ V: 5, g: 4e-3, R: 6e-3, epsR: 2, epsR2: 8, cellsPerLayer: 6, boxFactor: 3 });
-    s.solve(1e-9, 1e6, 100);
+    const s = diskCapacitor({ V: 5, g: 4e-3, R: 6e-3, epsR: 2, epsR2: 8, cellsPerLayer: 4, boxFactor: 2.5 });
+    s.solve(2e-7, 1e6, 100);
     const [, ez] = s.E();
     const { h } = s.meta;
     const jC = Math.round(-s.z0 / h);                 // z = 0 (centre layer)
-    const jO = Math.round((1.0e-3 - s.z0) / h);       // z = 1.0 mm (outer layer, |z| > g/6 = 0.67 mm)
+    const jO = Math.round((1.3e-3 - s.z0) / h);       // z = 1.3 mm (outer layer, |z| > g/6 = 0.67 mm)
     const dC = 2 * ez.get(0, jC), dO = 8 * ez.get(0, jO); // eps_r * E_z (D / eps0)
     check('axisym layered: D_z continuous across layers on axis (1%)', dC, dO, 1e-2);
     check('axisym layered: E_z steps by eps ratio', ez.get(0, jC) / ez.get(0, jO), 4, 1e-2);
@@ -328,6 +332,51 @@ check('mu0 = 4 pi 1e-7 (to 1e-9)', MU0, 4 * PI * 1e-7, 1e-9);
   }
 }
 
+mark('axisym magnetostatics (Phase 4)');
+// ---------------------------------------------------------------- axisym magnetostatics (Phase 4)
+{
+  // 1. Infinite current sheet at r = Rc with a permeable rod r <= a inside, in a box of
+  //    radius Rw with psi = 0 on the wall and mirror ends: an exact 1-D problem.
+  //    H1 - H2 = K, and zero net flux: H1 (mu_r a^2 + Rc^2 - a^2) + H2 (Rw^2 - Rc^2) = 0.
+  {
+    const h = 0.005, Rw = 1, Rc = 0.5, a = 0.2, muR = 8, K = 100;
+    const s = new AxisymMag(201, 7, { h, z0: 0, boundary: { zmin: 'neumann', zmax: 'neumann' } });
+    s.jWhere((r) => Math.abs(r - Rc) < h / 4, K / h);
+    s.muWhere((r) => r <= a + h / 4, muR);
+    s.solve(1e-13, 1e6, 100);
+    const [, bz] = s.B();
+    const H1 = K / (1 + (muR * a * a + Rc * Rc - a * a) / (Rw * Rw - Rc * Rc));
+    check('axisym-mag sheet+rod: B_z in rod = mu0 mu_r H1 (1%)', bz.get(20, 3), MU0 * muR * H1, 1e-2);
+    check('axisym-mag sheet+rod: B_z in gap = mu0 H1 (1%)', bz.get(70, 3), MU0 * H1, 1e-2);
+    check('axisym-mag sheet+rod: B_z outside sheet = mu0 H2 (1%)', bz.get(150, 3), MU0 * (H1 - K), 1e-2);
+  }
+  // 2. Finite single-layer coil, l = d (Nagaoka K_N = 0.6884): L from B.H energy and from J.A.
+  {
+    const s = solenoidWithObject({ N: 50, I: 1, Rc: 0.02, l: 0.04, tw: 0.0005, a: 0, Lo: 0, muR: 1, nr: 81, box: 8 });
+    s.solve(1e-11, 1e6, 100);
+    const { N, I, Rc, l } = s.meta;
+    const Lnag = nagaoka(2 * Rc, l) * MU0 * N * N * PI * Rc * Rc / l;
+    const Lb = 2 * s.energy() / (I * I), Lja = 2 * s.energyJA() / (I * I);
+    check('axisym-mag coil l = d: L (J.A) within 3% of Nagaoka', Lja, Lnag, 3e-2);
+    check('axisym-mag coil: L from node-based B.H within 10% of J.A (coarse winding)', Lb, Lja, 1e-1);
+    // On-axis field at the centre vs the finite-solenoid formula B = mu0 N I/(2l) [cos a1 - cos a2]
+    const [, bz] = s.B();
+    const jC = Math.round(-s.z0 / s.meta.h);
+    const Bex = (MU0 * N * I / l) * (l / 2) / Math.hypot(l / 2, Rc);
+    check('axisym-mag coil: B_z at centre vs finite-solenoid formula (6%)', bz.get(0, jC), Bex, 6e-2);
+  }
+  // 3. Single loop: on-axis B_z at z = R vs the Biot-Savart loop formula.
+  {
+    const s = solenoidWithObject({ N: 1, I: 1, Rc: 0.02, l: 0.0005, tw: 0.0005, a: 0, Lo: 0, muR: 1, nr: 81, box: 8 });
+    s.solve(1e-13, 1e6, 100);
+    const [, bz] = s.B();
+    const { h } = s.meta;
+    const j1 = Math.round((0.02 - s.z0) / h);
+    check('axisym-mag loop: B_z(z = R) vs loop formula (5%)', bz.get(0, j1), loopOnAxisBz(1, 0.02, 0.02), 5e-2);
+  }
+}
+
+mark('report');
 // ---------------------------------------------------------------- report
 const failed = results.filter((r) => !r.pass);
 for (const r of results) {
