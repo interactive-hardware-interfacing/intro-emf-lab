@@ -53,14 +53,14 @@ export function iso3dView(id, label, source, shell) {
     controls: (ctl, inst) => {
       const [zmin, zmax] = source.zRange();
       state.zc = Math.min(Math.max(state.zc, zmin), zmax);
-      const lab = ui.el('span', '', 'Horizontal cut height z');
+      const lab = ui.el('span', '', 'Cut height z:');
       const rng = ui.range(state.zc, { min: zmin, max: zmax, step: (zmax - zmin) / 200, onInput: (v) => { state.zc = v; val.textContent = `${(v * 1e3).toFixed(2)} mm`; inst.update(); } });
       const val = ui.el('span', '', `${(state.zc * 1e3).toFixed(2)} mm`);
       val.style.fontFamily = 'var(--mono)';
       const turn = ui.range(state.turn, { min: 0.2, max: 0.9, step: 0.01, onInput: (v) => { state.turn = v; inst.update(); } });
       const hv = document.createElement('label'); const hc = document.createElement('input'); hc.type = 'checkbox'; hc.checked = true; hc.addEventListener('change', () => { state.showH = hc.checked; inst.update(); }); hv.append(hc, ui.el('span', '', 'horizontal cut'));
       const vv = document.createElement('label'); const vc = document.createElement('input'); vc.type = 'checkbox'; vc.checked = true; vc.addEventListener('change', () => { state.showV = vc.checked; inst.update(); }); vv.append(vc, ui.el('span', '', 'vertical cut'));
-      ctl.append(lab, rng, val, ui.el('span', '', 'view angle'), turn, hv, vv);
+      ctl.append(lab, rng, val, ui.el('span', '', 'Angle:'), turn, hv, vv);
     },
   });
 }

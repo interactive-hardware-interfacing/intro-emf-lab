@@ -77,7 +77,7 @@ export default {
       get log() { return !!tab.layers.find((L) => L.id === tab.shell.colorLayer)?.log; },
       zRange: () => [this.solver.extent[2], this.solver.extent[3]],
       cylinders: () => { const { g, R, t } = this.meta; return [
-        { r0: 0, r1: R, z0: -g / 2, z1: g / 2, color: 'rgba(80,220,220,0.8)', label: 'dielectric' },
+        { r0: 0, r1: R, z0: -g / 2, z1: g / 2, color: 'rgba(80,220,220,0.8)' },
         { r0: 0, r1: R, z0: g / 2, z1: g / 2 + t, color: '#fff', fill: 'rgba(229,72,77,0.55)', label: `+${this.meta.V} V` },
         { r0: 0, r1: R, z0: -g / 2 - t, z1: -g / 2, color: '#fff', fill: 'rgba(59,130,246,0.55)', label: '0 V' },
       ]; },
@@ -318,8 +318,8 @@ export default {
     for (let j = 0; j < s.nz; j++) {
       const z = s.z(j);
       if (z < -g / 2 - t - 3 * s.h || z > g / 2 + t + 3 * s.h) continue;
-      const k = s.idx(0, j);
-      const ez = this.gridEz.data[k], e = s.eps[k];
+      const k = s.idx(0, j);                       // solver (half-plane) index for materials
+      const ez = this.gridEz.sample(0, z), e = s.eps[k]; // sample by position: display grids may be mirrored
       out.push({ z, Ez: ez, D: EPS0 * e * ez, e0E: EPS0 * ez, P: EPS0 * (e - 1) * ez, eps: e, conductor: s.fixed[k] });
     }
     return out;
@@ -334,7 +334,7 @@ export default {
     const zs = rows.map((r) => r.z), z0 = Math.min(...zs), z1 = Math.max(...zs);
     const vals = rows.flatMap((r) => [r.D, r.e0E, r.P]).filter(Number.isFinite);
     const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
-    const L = 80, T = 30, B = 50, Rm = 20;
+    const L = 80, T = 58, B = 56, Rm = 20;
     const px = (z) => L + ((z - z0) / (z1 - z0 || 1)) * (c.width - L - Rm);
     const py = (v) => T + (1 - (v - lo) / (hi - lo || 1)) * (c.height - T - B);
     // axes and ticks
@@ -356,9 +356,9 @@ export default {
       rows.forEach((r, k) => { const X = px(r.z), Y = py(r[key]); if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); });
       ctx.stroke();
     }
-    let lx = c.width - 200;
-    for (const [, color, name] of series) { ctx.fillStyle = color; ctx.fillRect(lx, T - 18, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText(name, lx + 16, T - 8); lx += 60; }
-    ctx.fillStyle = '#5a5955'; ctx.fillText('D (normal) is continuous across the layers; E and P step by the permittivity ratio. Shaded bands: the plates.', L, T - 8);
+    let lx = L;
+    for (const [, color, name] of series) { ctx.fillStyle = color; ctx.fillRect(lx, 10, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText(name, lx + 16, 20); lx += 60; }
+    ctx.fillStyle = '#5a5955'; ctx.fillText('D (normal) is continuous across the layers; E and P step by the permittivity ratio. Shaded bands: the plates.', L, 40);
   },
 
   cutlineCSV() {
@@ -412,7 +412,7 @@ export default {
     const name = SWEEPABLE.find(([k]) => k === this.sweep.param)?.[1] ?? this.sweep.param;
     const xs = rows.map((r) => r.value), ys = rows.map((r) => r.cEnergy), yi = rows.map((r) => r.cIdeal);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = 0, y1 = Math.max(...ys, ...yi) * 1.05;
-    const L = 80, T = 30, B = 50, Rm = 20;
+    const L = 80, T = 44, B = 56, Rm = 20;
     const px = (x) => L + ((x - x0) / (x1 - x0 || 1)) * (W - L - Rm), py = (y) => T + (1 - (y - y0) / (y1 - y0 || 1)) * (H - T - B);
     ctx.strokeStyle = '#ccc'; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - Rm, H - B); ctx.stroke();
     for (let k = 0; k <= 4; k++) { const v = y0 + (k / 4) * (y1 - y0); ctx.fillText(sci(v, 3), 4, py(v) + 4); ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(L, py(v)); ctx.lineTo(W - Rm, py(v)); ctx.stroke(); }
@@ -422,8 +422,8 @@ export default {
     const line = (vals, color, dash) => { ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash(dash); ctx.beginPath(); rows.forEach((r, k) => { const X = px(r.value), Y = py(vals[k]); if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); }); ctx.stroke(); ctx.setLineDash([]); };
     line(yi, '#999', [5, 4]); line(ys, '#1f5fbf', []);
     ctx.fillStyle = '#1f5fbf'; for (const r of rows) { ctx.beginPath(); ctx.arc(px(r.value), py(r.cEnergy), 3.5, 0, 2 * Math.PI); ctx.fill(); }
-    ctx.fillStyle = '#1f5fbf'; ctx.fillRect(W - 230, T - 18, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText('simulated C', W - 214, T - 8);
-    ctx.fillStyle = '#999'; ctx.fillRect(W - 120, T - 18, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText('ideal (no fringing)', W - 104, T - 8);
+    ctx.fillStyle = '#1f5fbf'; ctx.fillRect(L, 10, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText('simulated C', L + 16, 20);
+    ctx.fillStyle = '#999'; ctx.fillRect(L + 110, 10, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText('ideal (no fringing)', L + 126, 20);
   },
 
   sweepCSV() {

@@ -310,14 +310,14 @@ export default {
     row('μ₀N²A/ℓ, empty coil', uH(r.Llong));
     row(`× Nagaoka ${nagaoka(2 * this.meta.Rc, this.meta.l).toFixed(3)}`, uH(r.Lnag));
     if (this.objectIn && this.meta.muR > 1) row('object', `μr = ${this.meta.muR}, bottom at ${(this.meta.zPos * 1e3).toFixed(1)} mm`);
-    row('B_z at centre', `${sci(this.gridBz?.get(0, Math.round(-this.solver.z0 / this.meta.h)) ?? NaN, 4)} T`);
+    row('B_z at centre', `${sci(this.gridBz?.sample(0, 0) ?? NaN, 4)} T`);
   },
 
   cutline() {
     if (!this.gridBz) this.compute();
     const s = this.solver, out = [];
     for (let j = 0; j < s.nz; j++) {
-      const k = s.idx(0, j), mu = s.eps[k], bz = this.gridBz.data[k];
+      const k = s.idx(0, j), mu = s.eps[k], bz = this.gridBz.sample(0, s.z(j)); // sample: display grid may be mirrored
       out.push({ z: s.z(j), Bz: bz, Hz: bz / (MU0 * mu), Mz: (mu - 1) * bz / (MU0 * mu), mu });
     }
     return out;
@@ -329,7 +329,7 @@ export default {
     const Z = this.shell.view.extent[3];
     const vis = rows.filter((r) => Math.abs(r.z) <= Z);
     const z0 = vis[0].z, z1 = vis[vis.length - 1].z;
-    const L = 80, T = 30, B = 50, Rm = 20;
+    const L = 80, T = 58, B = 56, Rm = 20;
     const px = (z) => L + ((z - z0) / (z1 - z0 || 1)) * (W - L - Rm);
     ctx.font = '12px system-ui'; ctx.fillStyle = '#5a5955';
     ctx.strokeStyle = '#ccc'; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - Rm, H - B); ctx.stroke();
@@ -348,9 +348,9 @@ export default {
       ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
       vis.forEach((r, k) => { const X = px(r.z), Y = T + (1 - (r[key] / m + 1) / 2) * (H - T - B); if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); });
       ctx.stroke();
-      ctx.fillStyle = color; ctx.fillRect(lx, T - 18, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText(`${label}, scaled to its max ${sci(m, 3)}`, lx + 16, T - 8); lx += 230;
+      ctx.fillStyle = color; ctx.fillRect(lx, 10, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText(`${label}, peak ${sci(m, 3)}`, lx + 16, 20); lx += 190;
     }
-    ctx.fillStyle = '#5a5955'; ctx.fillText('Each curve is normalised to its own peak (centre line = 0). Orange band: coil; grey band: object.', L, H - 26);
+    ctx.fillStyle = '#5a5955'; ctx.fillText('Each curve is scaled to its own peak (centre line = 0). Orange band: coil; grey band: object.', L, 40);
   },
 
   cutlineCSV() { return ['z_m,mu_r,Bz_T,Hz_Apm,Mz_Apm', ...this.cutline().map((r) => `${r.z},${r.mu},${r.Bz},${r.Hz},${r.Mz}`)].join('\n'); },
@@ -397,7 +397,7 @@ export default {
     if (!rows.length) { ctx.fillText('Run a position sweep from the side panel to plot L against the object position here.', 20, 30); return; }
     const xs = rows.map((r) => r.zPos), ys = rows.map((r) => r.Lflux * 1e6);
     const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys) * 0.98, y1 = Math.max(...ys) * 1.02;
-    const L = 80, T = 30, B = 50, Rm = 20;
+    const L = 80, T = 44, B = 56, Rm = 20;
     const px = (x) => L + ((x - x0) / (x1 - x0 || 1)) * (W - L - Rm), py = (y) => T + (1 - (y - y0) / (y1 - y0 || 1)) * (H - T - B);
     ctx.strokeStyle = '#ccc'; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - Rm, H - B); ctx.stroke();
     for (let k = 0; k <= 4; k++) { const v = y0 + (k / 4) * (y1 - y0); ctx.fillText(v.toPrecision(4), 10, py(v) + 4); ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(L, py(v)); ctx.lineTo(W - Rm, py(v)); ctx.stroke(); }
@@ -410,7 +410,7 @@ export default {
     rows.forEach((r, k) => { const X = px(r.zPos), Y = py(r.Lflux * 1e6); if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); });
     ctx.stroke();
     ctx.fillStyle = '#1f5fbf'; for (const r of rows) { ctx.beginPath(); ctx.arc(px(r.zPos), py(r.Lflux * 1e6), 3.5, 0, 2 * Math.PI); ctx.fill(); }
-    ctx.fillStyle = '#5a5955'; ctx.fillText('Orange band: positions where the object overlaps the coil.', L, T - 8);
+    ctx.fillStyle = '#5a5955'; ctx.fillText('Orange band: positions where the object overlaps the coil.', L, 20);
   },
 
   sweepCSV() { return ['zPos_mm,L_flux_H,L_energy_H', ...this.sweep.rows.map((r) => `${r.zPos},${r.Lflux},${r.Lenergy}`)].join('\n'); },
