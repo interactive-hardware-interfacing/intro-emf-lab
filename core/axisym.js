@@ -214,9 +214,11 @@ function faceEps(eps, fixed, a, b) {
  * outer layers epsR2, centre layer epsR. The box is square: r in [0, S], z in [-S/2, S/2],
  * S = g + boxFactor R (insulating walls, one plate radius or more beyond the edge). cellsPerLayer sets h.
  */
-export function diskCapacitor({ V = 5, g = 4e-3, R = 6e-3, t = 0.5e-3, epsR = 5, epsR2 = 5, cellsPerLayer = 4, boxFactor = 2.5, walls = 'neumann' } = {}) {
-  const h = g / (3 * cellsPerLayer);
+export function diskCapacitor({ V = 5, g = 4e-3, R = 6e-3, t = 0.5e-3, epsR = 5, epsR2 = 5, cellsPerLayer = 4, boxFactor = 2.5, walls = 'neumann', maxCells = 300 } = {}) {
   const S = g + boxFactor * R;
+  let h = g / (3 * cellsPerLayer);
+  let coarsened = false;
+  if (S / h > maxCells) { h = S / maxCells; coarsened = true; } // keep the grid tractable for plain Gauss-Seidel
   const nr = Math.round(S / h) + 1;
   const nz = 2 * Math.round(S / (2 * h)) + 1; // odd, so z = 0 is a node
   const z0 = -(nz - 1) / 2 * h;
@@ -229,7 +231,7 @@ export function diskCapacitor({ V = 5, g = 4e-3, R = 6e-3, t = 0.5e-3, epsR = 5,
   // Dielectric fills the gap out to the plate radius (as in the COMSOL model); air beyond.
   s.epsWhere((r, z) => r <= R + h / 4 && Math.abs(z) < g / 2 - h / 4, epsR2);
   s.epsWhere((r, z) => r <= R + h / 4 && Math.abs(z) < g / 6 - h / 4, epsR);
-  s.meta = { V, g, R, t: tC, epsR, epsR2, h, S, walls };
+  s.meta = { V, g, R, t: tC, epsR, epsR2, h, S, walls, coarsened };
   return s;
 }
 

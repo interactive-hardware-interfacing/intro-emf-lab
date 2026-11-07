@@ -11,11 +11,12 @@ import { Grid2D, magnitude } from '../../core/grid.js';
 import { AxisymMag, solenoidWithObject } from '../../core/axisym.js';
 import { drawScalarField, drawQuiver, drawStreamlines, drawContours, levelsBetween } from '../../core/render.js';
 import { SolverClient } from '../solverclient.js';
+import { mirrorGrid } from '../mirror.js';
 import { getNum, downloadText } from '../state.js';
 import { ui, sci } from '../shell.js';
 
 const MODES = {
-  solenoid: { label: 'Solenoid with cylinder inside (Lab 5)', N: 100, I: 1, Rc: 15, l: 30, tw: 1, a: 5, Lo: 20, muR: 100, zPos: -10, sweep: [-40, 40, 17] },
+  solenoid: { label: 'Solenoid with a cylinder inside', N: 100, I: 1, Rc: 15, l: 30, tw: 1, a: 5, Lo: 20, muR: 100, zPos: -10, sweep: [-40, 40, 17] },
   ring: { label: 'Ring sensor, object passing through', N: 20, I: 1, Rc: 15, l: 4, tw: 2, a: 5, Lo: 20, muR: 100, zPos: -10, sweep: [-40, 20, 13] },
 };
 
@@ -24,7 +25,7 @@ export default {
   title: 'Inductors',
   phase: 4,
   available: true,
-  summary: 'Solenoid or ring sensor with a permeable object, solved in (r, z). Lab 5.',
+  summary: 'Solenoid or ring sensor with a permeable object, solved in (r, z).',
   extent: [0, 0.128, -0.128, 0.128],
   axes: ['r', 'z'],
   layers: [
@@ -44,6 +45,7 @@ export default {
   nr: 81,
   objectIn: true,
   zoom: 'coil',
+  mirror: true,
 
   init(shell) {
     this.shell = shell;
@@ -54,6 +56,7 @@ export default {
     this.nr = [61, 81, 121].includes(getNum(s, 'nr', 81)) ? getNum(s, 'nr', 81) : 81;
     this.objectIn = s.obj !== '0';
     this.zoom = s.zoom === 'box' ? 'box' : 'coil';
+    this.mirror = s.half !== '1';
     const sw = MODES[this.mode].sweep;
     this.sweep = { from: getNum(s, 'sw0', sw[0]), to: getNum(s, 'sw1', sw[1]), n: Math.round(getNum(s, 'swn', sw[2])), rows: [], running: false };
     this.client = new SolverClient({ onFrame: (m) => this.onFrame(m) });
@@ -80,7 +83,8 @@ export default {
   applyZoom() {
     const { S } = this.meta;
     const Z = this.zoom === 'box' ? S : S / 4;
-    this.shell.setExtent([0, 2 * Z, -Z, Z], ['r', 'z']);
+    if (this.mirror) this.shell.setExtent([-Z, Z, -Z, Z], ['x', 'z']);
+    else this.shell.setExtent([0, 2 * Z, -Z, Z], ['r', 'z']);
   },
 
   tol() { return 1e-7 * MU0 * this.meta.N * this.meta.I * this.meta.Rc; }, // psi scale ~ mu0 N I Rc
@@ -135,11 +139,15 @@ export default {
     const bzm = abz[Math.floor(0.985 * (abz.length - 1))] || 1e-9;
     this.bzRange = [-bzm, bzm];
     this.gridPsi = new Grid2D(s.nr, s.nz, s.extent, this.V);
+    if (this.mirror) {
+      this.gridBr = mirrorGrid(this.gridBr, true); this.gridBz = mirrorGrid(this.gridBz); this.gridBmag = mirrorGrid(this.gridBmag);
+      this.gridHmag = mirrorGrid(this.gridHmag); this.gridMmag = mirrorGrid(this.gridMmag); this.gridJ = mirrorGrid(this.gridJ); this.gridPsi = mirrorGrid(this.gridPsi);
+    }
     const pm = Math.max(...Array.from(this.V).filter(Number.isFinite)), pn = Math.min(...Array.from(this.V).filter(Number.isFinite));
     this.psiRange = [pn, pm];
   },
 
-  muAt(r, z) { const s = this.solver; const i = Math.min(s.nr - 1, Math.max(0, Math.round(r / s.h))), j = Math.min(s.nz - 1, Math.max(0, Math.round((z - s.z0) / s.h))); return s.eps[s.idx(i, j)]; },
+  muAt(x, z) { const s = this.solver, r = this.mirror ? Math.abs(x) : x; const i = Math.min(s.nr - 1, Math.max(0, Math.round(r / s.h))), j = Math.min(s.nz - 1, Math.max(0, Math.round((z - s.z0) / s.h))); return s.eps[s.idx(i, j)]; },
 
   render(layer, ctx, view, opts) {
     const bFn = (r, z) => [this.gridBr.sample(r, z), this.gridBz.sample(r, z)];
@@ -152,8 +160,10 @@ export default {
       case 'B':
         if (opts.style === 'lines') {
           const { Rc } = this.meta, seeds = [], rMax = view.extent[1];
-          for (let k = 1; k <= 10; k++) seeds.push([(k / 11) * Rc, 0]);
-          for (let k = 1; k <= 5; k++) seeds.push([Rc + (k / 6) * (rMax - Rc), 0]);
+          for (const sgn of this.mirror ? [-1, 1] : [1]) {
+            for (let k = 1; k <= 10; k++) seeds.push([sgn * (k / 11) * Rc, 0]);
+            for (let k = 1; k <= 5; k++) seeds.push([sgn * (Rc + (k / 6) * (rMax - Rc)), 0]);
+          }
           drawStreamlines(ctx, view, bFn, seeds, { maxSteps: 4000 });
         } else drawQuiver(ctx, view, bFn, { normalize: true, spacing: 24 });
         return null;
@@ -173,7 +183,8 @@ export default {
     };
     ctx.save();
     rect(Rc - tw / 2, Rc + tw / 2, -l / 2, l / 2, 'rgba(245,166,35,0.85)', '#fff'); // winding
-    if (this.objectIn && a > 0) rect(0, a, zPos, zPos + Lo, muR > 1 ? 'rgba(120,120,140,0.75)' : 'rgba(120,120,140,0.3)', '#fff'); // object
+    if (this.mirror) rect(-Rc - tw / 2, -Rc + tw / 2, -l / 2, l / 2, 'rgba(245,166,35,0.85)', '#fff');
+    if (this.objectIn && a > 0) rect(this.mirror ? -a : 0, a, zPos, zPos + Lo, muR > 1 ? 'rgba(120,120,140,0.75)' : 'rgba(120,120,140,0.3)', '#fff'); // object
     const [ax, ay0] = view.toPx(0, view.extent[2]), [, ay1] = view.toPx(0, view.extent[3]);
     ctx.setLineDash([4, 4]); ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.beginPath(); ctx.moveTo(ax + 1, ay0); ctx.lineTo(ax + 1, ay1); ctx.stroke();
     ctx.restore();
@@ -184,21 +195,22 @@ export default {
     return `${this.solver.nr}×${this.solver.nz} (r,z) grid, h = ${(this.meta.h * 1e3).toFixed(2)} mm · sweep ${this.sweeps} · max |Δψ| = ${r} · ${this.running ? 'solving' : this.converged ? 'converged' : 'not converged'}`;
   },
 
-  probe(r, z) {
-    const br = this.gridBr.sample(r, z), bz = this.gridBz.sample(r, z), mu = this.muAt(r, z);
+  probe(x, z) {
+    const br = this.gridBr.sample(x, z), bz = this.gridBz.sample(x, z), mu = this.muAt(x, z);
     const B = Math.hypot(br, bz), H = B / (MU0 * mu);
+    const r = this.mirror ? Math.abs(x) : x;
     return [
-      { label: 'Br', value: br, unit: 'T' }, { label: 'Bz', value: bz, unit: 'T' }, { label: '|B|', value: B, unit: 'T' },
+      { label: this.mirror ? 'Bx (= ±Br)' : 'Br', value: br, unit: 'T' }, { label: 'Bz', value: bz, unit: 'T' }, { label: '|B|', value: B, unit: 'T' },
       { label: 'μr here', value: mu, unit: '' },
       { label: '|H| = |B|/μ', value: H, unit: 'A/m' },
       { label: '|M| = (μr−1)|H|', value: (mu - 1) * H, unit: 'A/m' },
-      { label: 'A_φ = ψ/r', value: r > 0 ? this.gridPsi.sample(r, z) / r : 0, unit: 'T·m' },
-      { label: 'flux inside r, 2πψ', value: 2 * PI * this.gridPsi.sample(r, z), unit: 'Wb' },
+      { label: 'A_φ = ψ/r', value: r > 0 ? this.gridPsi.sample(x, z) / r : 0, unit: 'T·m' },
+      { label: 'flux inside r, 2πψ', value: 2 * PI * this.gridPsi.sample(x, z), unit: 'Wb' },
     ];
   },
 
   getState() {
-    const s = { mode: this.mode, nr: this.nr, obj: this.objectIn ? '1' : '0', zoom: this.zoom, sw0: this.sweep.from, sw1: this.sweep.to, swn: this.sweep.n };
+    const s = { mode: this.mode, nr: this.nr, obj: this.objectIn ? '1' : '0', zoom: this.zoom, half: this.mirror ? '0' : '1', sw0: this.sweep.from, sw1: this.sweep.to, swn: this.sweep.n };
     for (const k of ['N', 'I', 'Rc', 'l', 'tw', 'a', 'Lo', 'muR', 'zPos']) s[`i_${k}`] = this.p[k];
     return s;
   },
@@ -236,8 +248,9 @@ export default {
     const r4 = ui.el('div', 'row');
     r4.appendChild(ui.field('Resolution', ui.select([[61, 'coarse (61 radial cells)'], [81, 'normal (81)'], [121, 'fine (121)']], String(this.nr), (v) => { this.nr = parseInt(v, 10); re(); })));
     r4.appendChild(ui.field('View', ui.select([['coil', 'Coil region'], ['box', 'Whole box']], this.zoom, (v) => { this.zoom = v; this.applyZoom(); shell.recompute(); shell.syncUrl(); })));
+    r4.appendChild(ui.field('Section', ui.select([['full', 'Full cross-section'], ['half', 'r–z half-plane']], this.mirror ? 'full' : 'half', (v) => { this.mirror = v === 'full'; this.applyZoom(); shell.recompute(); shell.syncUrl(); })));
     box.appendChild(r4);
-    box.appendChild(ui.el('p', 'hint', 'Defaults follow the Lab 5 sensor: a 0.5 cm × 2 cm metallic cylinder. The box is 8× the largest dimension with ψ = 0 on its walls, which lowers L by roughly 1–2%. Release the slider to re-solve.'));
+    box.appendChild(ui.el('p', 'hint', 'Solved in the r–z half-plane and mirrored for display. The box is 8× the largest dimension with ψ = 0 on its walls, which lowers L by roughly 1–2%. Release the slider to re-solve.'));
 
     box.appendChild(ui.el('h2', '', 'Inductance'));
     this.resultsEl = ui.el('table', 'probe-table'); this.resultsEl.appendChild(document.createElement('tbody')); box.appendChild(this.resultsEl);
@@ -261,7 +274,7 @@ export default {
     this.sweepCanvas.style.width = '100%'; this.sweepCanvas.style.border = '1px solid var(--line)'; this.sweepCanvas.style.borderRadius = '6px'; this.sweepCanvas.style.background = '#fff';
     box.appendChild(this.sweepCanvas);
     this.sweepEl = ui.el('table', 'probe-table'); this.sweepEl.appendChild(document.createElement('tbody')); box.appendChild(this.sweepEl);
-    box.appendChild(ui.el('p', 'hint', 'Each point is a full solve, warm-started from the previous position. This is the "Height Sweep" window of the COMSOL app.'));
+    box.appendChild(ui.el('p', 'hint', 'Each point is a full solve, warm-started from the previous position.'));
     this.renderResults(); this.renderSweep(); this.drawCutline();
   },
 

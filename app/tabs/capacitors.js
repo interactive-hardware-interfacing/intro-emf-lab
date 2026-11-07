@@ -8,6 +8,7 @@ import { Grid2D, magnitude } from '../../core/grid.js';
 import { Axisym, diskCapacitor, idealLayeredC, kirchhoffC } from '../../core/axisym.js';
 import { drawScalarField, drawQuiver, drawStreamlines, drawContours, levelsBetween } from '../../core/render.js';
 import { SolverClient } from '../solverclient.js';
+import { mirrorGrid } from '../mirror.js';
 import { getNum, downloadText } from '../state.js';
 import { ui, sci } from '../shell.js';
 
@@ -18,7 +19,7 @@ export default {
   title: 'Capacitors',
   phase: 3,
   available: true,
-  summary: 'Disk capacitor with a three-layer dielectric, solved in (r, z). Lab 3 Modules 0, 1 and bonus.',
+  summary: 'Disk capacitor with a three-layer dielectric, solved in (r, z).',
   extent: [0, 0.028, -0.014, 0.014],
   axes: ['r', 'z'],
   layers: [
@@ -33,15 +34,19 @@ export default {
   ],
 
   p: { V: 5, g: 4, R: 6, t: 0.5, epsR: 5, epsR2: 5 }, // mm for lengths in the UI
+  pDefaults: { V: 5, g: 4, R: 6, t: 0.5, epsR: 5, epsR2: 5 },
   res: 4,
   walls: 'neumann',
+  mirror: true,
 
   init(shell) {
     this.shell = shell;
     const s = shell.state;
+    this.p = { ...this.pDefaults };
     for (const k of Object.keys(this.p)) this.p[k] = getNum(s, `c_${k}`, this.p[k]);
     this.res = [2, 4, 6].includes(getNum(s, 'res', 4)) ? getNum(s, 'res', 4) : 4;
     this.walls = s.walls === 'dirichlet' ? 'dirichlet' : 'neumann';
+    this.mirror = s.half !== '1';
     this.sweep = { param: s.sw ?? 'g', from: getNum(s, 'sw0', 1), to: getNum(s, 'sw1', 4), n: Math.round(getNum(s, 'swn', 4)), rows: [], running: false };
     this.client = new SolverClient({ onFrame: (m) => this.onFrame(m) });
     this.build();
@@ -57,11 +62,21 @@ export default {
     const mm = 1e-3;
     this.solver = diskCapacitor({ V: p.V, g: p.g * mm, R: p.R * mm, t: p.t * mm, epsR: p.epsR, epsR2: p.epsR2, cellsPerLayer: this.res, walls: this.walls });
     this.meta = this.solver.meta;
-    this.shell.setExtent(this.solver.extent, ['r', 'z']);
+    this.applyView();
     this.V = new Float64Array(this.solver.V);
     this.results = null;
     this.sweeps = 0; this.residual = Infinity; this.converged = false;
   },
+
+  /** Full cross-section (mirrored across the axis, device in the middle) or the r-z half-plane. */
+  applyView() {
+    const e = this.solver.extent;
+    if (this.mirror) this.shell.setExtent([-e[1], e[1], e[2], e[3]], ['x', 'z']);
+    else this.shell.setExtent(e, ['r', 'z']);
+  },
+
+  /** Mirror-aware sampling: x may be negative in the full cross-section. */
+  rOf(x) { return this.mirror ? Math.abs(x) : x; },
 
   async solve() {
     if (!this.client) return;
@@ -113,13 +128,17 @@ export default {
     this.gridEmag = magnitude(this.gridEr, this.gridEz);
     this.gridW = new Grid2D(s.nr, s.nz, s.extent);
     for (let k = 0; k < this.gridW.data.length; k++) this.gridW.data[k] = 0.5 * EPS0 * s.eps[k] * this.gridEmag.data[k] ** 2;
+    if (this.mirror) {
+      this.gridV = mirrorGrid(this.gridV); this.gridEr = mirrorGrid(this.gridEr, true); this.gridEz = mirrorGrid(this.gridEz);
+      this.gridEmag = mirrorGrid(this.gridEmag); this.gridW = mirrorGrid(this.gridW);
+    }
     const e = Array.from(this.gridEmag.data).filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
     this.eRange = e.length ? [e[Math.floor(0.05 * (e.length - 1))], e[Math.floor(0.995 * (e.length - 1))]] : [1, 10];
     this.wRange = [0.5 * EPS0 * this.eRange[0] ** 2, 0.5 * EPS0 * this.meta.epsR2 * this.eRange[1] ** 2];
   },
 
-  epsAt(r, z) {
-    const s = this.solver;
+  epsAt(x, z) {
+    const s = this.solver, r = this.rOf(x);
     const i = Math.min(s.nr - 1, Math.max(0, Math.round(r / s.h))), j = Math.min(s.nz - 1, Math.max(0, Math.round((z - s.z0) / s.h)));
     return s.eps[s.idx(i, j)];
   },
@@ -134,9 +153,11 @@ export default {
         if (opts.style === 'lines') {
           const { g, R, t, h } = this.meta;
           const seeds = [];
-          for (let k = 0; k < 14; k++) seeds.push([(k + 0.5) * (R + 3 * h) / 14, g / 2 + t + 2 * h]);
-          for (let k = 1; k < 6; k++) seeds.push([R + 2 * h, g / 2 + t + k * (this.meta.S / 2 - g / 2 - t) / 6]);
-          const stop = (r, z) => { const s = this.solver; const i = Math.round(r / s.h), j = Math.round((z - s.z0) / s.h); return i < 0 || j < 0 || i >= s.nr || j >= s.nz || s.fixed[s.idx(i, j)] === 1; };
+          for (const sgn of this.mirror ? [-1, 1] : [1]) {
+            for (let k = 0; k < 14; k++) seeds.push([sgn * (k + 0.5) * (R + 3 * h) / 14, g / 2 + t + 2 * h]);
+            for (let k = 1; k < 6; k++) seeds.push([sgn * (R + 2 * h), g / 2 + t + k * (this.meta.S / 2 - g / 2 - t) / 6]);
+          }
+          const stop = (x, z) => { const s = this.solver; const i = Math.round(this.rOf(x) / s.h), j = Math.round((z - s.z0) / s.h); return i < 0 || j < 0 || i >= s.nr || j >= s.nz || s.fixed[s.idx(i, j)] === 1; };
           drawStreamlines(ctx, view, eFn, seeds, { stopFn: stop, maxSteps: 2500 });
         } else drawQuiver(ctx, view, eFn, { normalize: true, spacing: 24 });
         return null;
@@ -150,7 +171,7 @@ export default {
   drawOverlay(ctx, view) {
     const { g, R, t } = this.meta;
     const rect = (r0, r1, z0, z1, fill, stroke) => {
-      const [x0, y0] = view.toPx(r0, z1), [x1, y1] = view.toPx(r1, z0);
+      const [x0, y0] = view.toPx(this.mirror ? -r1 : r0, z1), [x1, y1] = view.toPx(r1, z0);
       ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = 1;
       ctx.fillRect(x0, y0, x1 - x0, y1 - y0); ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
     };
@@ -167,14 +188,14 @@ export default {
 
   statusText() {
     const r = Number.isFinite(this.residual) ? this.residual.toExponential(2) : '—';
-    return `${this.solver.nr}×${this.solver.nz} (r,z) grid, h = ${(this.meta.h * 1e3).toFixed(3)} mm · sweep ${this.sweeps} · max |ΔV| = ${r} V · ${this.running ? 'solving' : this.converged ? 'converged' : 'not converged'}`;
+    return `${this.solver.nr}×${this.solver.nz} (r,z) grid, h = ${(this.meta.h * 1e3).toFixed(3)} mm${this.meta.coarsened ? ' (coarsened to fit)' : ''} · sweep ${this.sweeps} · max |ΔV| = ${r} V · ${this.running ? 'solving' : this.converged ? 'converged' : 'not converged'}`;
   },
 
-  probe(r, z) {
-    const er = this.gridEr.sample(r, z), ez = this.gridEz.sample(r, z), e = this.epsAt(r, z);
+  probe(x, z) {
+    const er = this.gridEr.sample(x, z), ez = this.gridEz.sample(x, z), e = this.epsAt(x, z);
     return [
-      { label: 'V', value: this.gridV.sample(r, z), unit: 'V' },
-      { label: 'Er', value: er, unit: 'V/m' },
+      { label: 'V', value: this.gridV.sample(x, z), unit: 'V' },
+      { label: this.mirror ? 'Ex (= ±Er)' : 'Er', value: er, unit: 'V/m' },
       { label: 'Ez', value: ez, unit: 'V/m' },
       { label: '|E|', value: Math.hypot(er, ez), unit: 'V/m' },
       { label: 'εr here', value: e, unit: '' },
@@ -185,7 +206,7 @@ export default {
   },
 
   getState() {
-    const s = { res: this.res, walls: this.walls, sw: this.sweep.param, sw0: this.sweep.from, sw1: this.sweep.to, swn: this.sweep.n };
+    const s = { res: this.res, walls: this.walls, half: this.mirror ? '0' : '1', sw: this.sweep.param, sw0: this.sweep.from, sw1: this.sweep.to, swn: this.sweep.n };
     for (const [k, v] of Object.entries(this.p)) s[`c_${k}`] = v;
     return s;
   },
@@ -208,14 +229,15 @@ export default {
 
     const re = () => { this.client?.cancel(); this.build(); this.buildControls(); shell.recompute(); shell.syncUrl(); this.solve(); };
     const pf = (key, label, min, max) => ui.field(label, ui.number(this.p[key], { min, max, onChange: (v) => { this.p[key] = v; re(); } }));
-    const r1 = ui.el('div', 'row'); r1.append(pf('V', 'Applied voltage (V)', 0.01, 1e5), pf('g', 'Cap height / gap (mm)', 0.3, 30)); box.appendChild(r1);
-    const r2 = ui.el('div', 'row'); r2.append(pf('R', 'Plate radius (mm)', 0.5, 50), pf('t', 'Plate thickness (mm)', 0.05, 5)); box.appendChild(r2);
+    const r1 = ui.el('div', 'row'); r1.append(pf('V', 'Applied voltage (V)', 0.01, 1e5), pf('g', 'Cap height / gap (mm)', 0.1, 200)); box.appendChild(r1);
+    const r2 = ui.el('div', 'row'); r2.append(pf('R', 'Plate radius (mm)', 0.5, 200), pf('t', 'Plate thickness (mm)', 0.05, 20)); box.appendChild(r2);
     const r3 = ui.el('div', 'row'); r3.append(pf('epsR', 'Epsilon R (centre)', 1, 1e4), pf('epsR2', 'Epsilon R 2 (outer)', 1, 1e4)); box.appendChild(r3);
     const r4 = ui.el('div', 'row');
     r4.appendChild(ui.field('Resolution', ui.select([[2, 'coarse (2 cells/layer)'], [4, 'normal (4 cells/layer)'], [6, 'fine (6 cells/layer)']], String(this.res), (v) => { this.res = parseInt(v, 10); re(); })));
     r4.appendChild(ui.field('Box walls', ui.select([['neumann', 'Insulating (isolated)'], ['dirichlet', 'Grounded enclosure']], this.walls, (v) => { this.walls = v; re(); })));
+    r4.appendChild(ui.field('View', ui.select([['full', 'Full cross-section'], ['half', 'r–z half-plane']], this.mirror ? 'full' : 'half', (v) => { this.mirror = v === 'full'; this.applyView(); shell.recompute(); shell.syncUrl(); })));
     box.appendChild(r4);
-    box.appendChild(ui.el('p', 'hint', 'Defaults are the Lab 3 Module 0 run 1. The box is (g + 2.5R) square. Solve time grows roughly as (grid side)⁴ with plain neighbour averaging: thin gaps or large plates get slow at normal resolution, so use coarse for the Module 0 table and refine one case to see how much the answer moves.'));
+    box.appendChild(ui.el('p', 'hint', 'The problem is solved in the r–z half-plane (the capacitor is symmetric about its axis) and mirrored for display. The box is (g + 2.5R) square. Solve time grows roughly as (grid side)⁴ with plain neighbour averaging: thin gaps or large plates get slow at normal resolution, so use coarse for a table of runs and refine one case to see how much the answer moves. Grids are capped at about 300 cells a side; the status line says when a case has been coarsened.'));
 
     box.appendChild(ui.el('h2', '', 'Capacitance'));
     this.resultsEl = ui.el('table', 'probe-table'); this.resultsEl.appendChild(document.createElement('tbody'));

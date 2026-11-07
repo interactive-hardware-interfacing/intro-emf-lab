@@ -42,3 +42,18 @@ empty coil 204 uH (Nagaoka 204 uH), object centred 276 uH.
   the object at normal resolution; use fine resolution for mu_r > 300.
 - No nonlinear mu(B) yet; the plan's note about re-evaluating mu every few sweeps still
   applies if a saturating core is ever wanted.
+
+## Feedback patch (after Phase 4)
+- Ring charge and Line charge are separate tabs (`makeTab('ring' | 'rods')` in ring-line.js).
+- "Reset tab" button in the top bar returns any tab to its defaults (re-runs init with an
+  empty URL state; tabs keep constant defaults for this).
+- Every numeric field shows its allowed range under the label and in a tooltip.
+- Lab/module references removed from tab text; they belong in the handouts.
+- Capacitors and Inductors default to the full cross-section (mirrored across the axis,
+  device in the middle); the r-z half-plane is still selectable. The stage now follows the
+  physical aspect ratio (the capacitor view is 2:1). `app/mirror.js` does the mirroring.
+- Capacitor limits widened (gap 0.1-200 mm, radius 0.5-200 mm, thickness 0.05-20 mm);
+  `diskCapacitor` caps the grid at 300 cells a side and flags `coarsened` in the status.
+- Side panels are resizable by dragging the divider; widths persist in localStorage.
+- Bench parses every browser module with `node --check` (76 checks): a dropped comma
+  in a tab file now fails CI instead of blanking the page.

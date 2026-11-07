@@ -28,7 +28,7 @@ export default {
   title: 'Magnetic fields',
   phase: 1,
   available: true,
-  summary: 'Line currents and a sheet current, closed form. Lab 4 Modules 1, 2 and bonus.',
+  summary: 'Line currents and a sheet current, closed form.',
   extent: EXTENT,
   axes: ['x', 'y'],
   layers: [
@@ -96,7 +96,7 @@ export default {
     box.innerHTML = '';
     box.appendChild(ui.el('h1', '', 'Magnetic fields'));
     box.appendChild(ui.el('p', 'lead', 'Infinite straight currents, B = μ₀I/2πr each, summed. The sheet is the closed-form integral of that over its width.'));
-    box.appendChild(ui.field('Module', ui.select([[2, 'Module 2: up to four line currents'], [1, 'Module 1: line currents vs sheet current']], String(this.module), (v) => {
+    box.appendChild(ui.field('Module', ui.select([[2, 'Up to four line currents'], [1, 'Line currents vs sheet current']], String(this.module), (v) => {
       this.module = parseInt(v, 10);
       this.applyModule();
       this.buildControls();
@@ -138,7 +138,7 @@ export default {
       row.append(mk('I', -5, 5, hidden), mk('x', -W, W, false), mk('y', -W, W, false));
       box.appendChild(row);
     }
-    box.appendChild(ui.el('p', 'hint', 'Wire 1 is top left, numbered counter-clockwise. Positions ±30 mm, current ±5 A; current along +z for I > 0.'));
+    box.appendChild(ui.el('p', 'hint', 'Wire 1 is top left, numbered counter-clockwise. Current flows along +z for I > 0.'));
     if (this.mode === 'random') {
       box.appendChild(ui.button('Randomize currents', () => { this.randomize(); this.revealed = false; this.buildControls(); shell.recompute(); shell.syncUrl(); }, 'btn btn-primary'));
       box.appendChild(ui.el('p', 'hint', 'Use the probe (Bx, By) at several points to infer the sign and magnitude of each current. Write your answer, then reveal.'));

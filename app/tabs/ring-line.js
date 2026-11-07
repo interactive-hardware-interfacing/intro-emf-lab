@@ -15,13 +15,21 @@ const GRID_N = 141;
 const RING_EXTENTS = { xy: [-0.5, 0.5, -0.5, 0.5], xz: [-0.5, 0.5, -0.5, 0.5], yz: [-0.5, 0.5, -0.5, 0.5] };
 const RODS_EXTENT = [-1, 1, -1, 1];
 
-export default {
-  id: 'ring-line',
-  title: 'Ring and line charge',
+/**
+ * Two tabs share this module: 'ring-charge' (N point charges on a ring versus a continuous
+ * line charge, in 3D with cut planes) and 'line-charge' (two oppositely charged infinite
+ * rods in cross-section). makeTab(mode) returns a fresh tab object for each.
+ */
+export function makeTab(mode) {
+  return { ...TAB, mode, id: mode === 'ring' ? 'ring-charge' : 'line-charge', title: mode === 'ring' ? 'Ring charge' : 'Line charge',
+    summary: mode === 'ring' ? 'A ring of N point charges versus the same ring as a continuous line charge, in 3D.' : 'Two oppositely charged infinite rods in cross-section: the field of two line charges.',
+    extent: mode === 'ring' ? RING_EXTENTS.xy : RODS_EXTENT,
+    layers: TAB.layers.map((L) => ({ ...L })) };
+}
+
+const TAB = {
   phase: 1,
   available: true,
-  summary: 'Discrete charges versus a continuous distribution. Lab 1 Module 1; Lab 2 Module 0 reference.',
-  extent: RING_EXTENTS.xy,
   axes: ['x', 'y'],
   layers: [
     { id: 'V', label: 'Potential V', kind: 'scalar', unit: 'V', signed: true, default: true },
@@ -46,7 +54,6 @@ export default {
   init(shell) {
     this.shell = shell;
     const s = shell.state;
-    this.mode = s.mode === 'rods' ? 'rods' : 'ring';
     this.source = s.src === 'continuous' ? 'continuous' : 'discrete';
     this.N = Math.max(1, Math.round(getNum(s, 'N', 12)));
     this.q = getNum(s, 'q', 1);
@@ -76,10 +83,7 @@ export default {
     const shell = this.shell;
     const box = shell.controlsEl;
     box.innerHTML = '';
-    box.appendChild(ui.el('h1', '', 'Ring and line charge'));
-    box.appendChild(ui.field('Geometry', ui.select([['ring', 'Ring: N point charges vs line charge (Lab 1)'], ['rods', 'Two charged rods, cross-section (Lab 2)']], this.mode, (v) => {
-      this.mode = v; this.applyMode(); this.buildControls(); shell.recompute(); shell.syncUrl();
-    })));
+    box.appendChild(ui.el('h1', '', this.title));
     const re = () => { shell.recompute(); shell.syncUrl(); };
     if (this.mode === 'ring') {
       box.appendChild(ui.el('p', 'lead', 'A ring of radius R in the z = 0 plane. Compare N discrete charges of q each with a continuous line density λ. Equal total charge means λ = Nq / 2πR.'));
@@ -100,9 +104,9 @@ export default {
         if (what === 'plane') { this.cut.refreshLabel(); shell.setExtent(this.cut.extent, this.cut.axes); }
         re();
       }));
-      box.appendChild(ui.el('p', 'hint', 'The field is computed in 3D. XY at z = 0 is the plane of the ring; YZ at x = 0 cuts through the axis. Move the offset to leave the plane of the ring.'));
+      box.appendChild(ui.el('p', 'hint', 'The field is computed in 3D. XY at z = 0 is the plane of the ring; YZ at x = 0 cuts through the axis. Move the offset to leave the plane of the ring. The box is 1 m square, so the ring radius is limited to 0.45 m.'));
     } else {
-      box.appendChild(ui.el('p', 'lead', 'Two infinitely long rods of radius a at x = ±d, carrying −λ (left) and +λ (right). Outside the rods the field is that of two line charges; this is the analytic solution for Lab 2 Module 1.'));
+      box.appendChild(ui.el('p', 'lead', 'Two infinitely long rods of radius a at x = ±d, carrying −λ (left) and +λ (right). Outside the rods the field is that of two line charges, which is the analytic solution your own solver should reproduce.'));
       const r1 = ui.el('div', 'row');
       r1.appendChild(ui.field('Half separation d (m)', ui.number(this.d, { min: 0.05, max: 0.9, onChange: (v) => { this.d = v; re(); } })));
       r1.appendChild(ui.field('Rod radius a (m)', ui.number(this.a, { min: 0.01, max: 0.5, onChange: (v) => { this.a = Math.min(v, this.d - 0.01); re(); } })));
@@ -112,7 +116,7 @@ export default {
       const p = ui.el('p', 'hint');
       p.textContent = `Potential of the right rod surface (reference V = 0 at x = 0): ${vRod.toPrecision(4)} V. Capacitance per unit length between the rods: ${(this.lam / (2 * vRod)).toExponential(3)} F/m, i.e. πε₀ / ln((2d − a)/a).`;
       box.appendChild(p);
-      box.appendChild(ui.el('p', 'hint', 'Use this as the cutline comparison for your MATLAB solver: set the rod potentials to ±V shown here and compare V and E along the x-axis.'));
+      box.appendChild(ui.el('p', 'hint', 'Use this as the cutline comparison for your own solver: set the rod potentials to ±V shown here and compare V and E along the x-axis.'));
     }
   },
 
@@ -262,7 +266,7 @@ export default {
   },
 
   getState() {
-    const s = { mode: this.mode };
+    const s = {};
     if (this.mode === 'ring') Object.assign(s, { src: this.source, N: this.N, q: this.q, lam: this.lambda, R: this.R, ...this.cut.state() });
     else Object.assign(s, { d: this.d, a: this.a, laml: this.lam });
     return s;

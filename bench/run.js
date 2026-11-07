@@ -377,6 +377,22 @@ mark('axisym magnetostatics (Phase 4)');
 }
 
 mark('report');
+// ---------------------------------------------------------------- syntax of every browser module
+// The tabs and shell never run under node, so at least parse them: a dropped comma must fail CI.
+{
+  const { readdirSync, statSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const root = join(fileURLToPath(import.meta.url), '..', '..');
+  const files = [];
+  const walk = (d) => { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) walk(p); else if (p.endsWith('.js')) files.push(p); } };
+  walk(join(root, 'app')); walk(join(root, 'core'));
+  const { spawnSync } = await import('node:child_process');
+  let bad = 0;
+  for (const f of files) { const r = spawnSync(process.execPath, ['--check', f]); if (r.status !== 0) { bad++; console.error(r.stderr.toString()); } }
+  check(`syntax: all ${files.length} browser modules parse`, bad, 0, 0);
+}
+
 // ---------------------------------------------------------------- report
 const failed = results.filter((r) => !r.pass);
 for (const r of results) {

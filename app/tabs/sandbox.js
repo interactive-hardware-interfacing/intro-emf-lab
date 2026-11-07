@@ -14,10 +14,10 @@ import { ui, sci } from '../shell.js';
 const L = 1; // box is [-L, L]^2 metres
 const PRESETS = [
   ['empty', 'Empty box'],
-  ['two-rods', 'Two round rods (Lab 2 Module 1)'],
-  ['square-rods', 'Two square rods (Module 2)'],
-  ['parallel-plates', 'Parallel plates (Module 2)'],
-  ['triangles', 'Two triangles (bonus)'],
+  ['two-rods', 'Two round rods'],
+  ['square-rods', 'Two square rods'],
+  ['parallel-plates', 'Parallel plates'],
+  ['triangles', 'Two triangles'],
 ];
 const TOOLS = [
   ['probe', 'Probe (click to read values)'],
@@ -33,7 +33,7 @@ export default {
   title: 'Sandbox',
   phase: 2,
   available: true,
-  summary: 'Draw a problem and watch the neighbour-averaging solver converge. Lab 2, all modules.',
+  summary: 'Draw a problem and watch the neighbour-averaging solver converge.',
   extent: [-L, L, -L, L],
   axes: ['x', 'y'],
   layers: [
@@ -50,6 +50,7 @@ export default {
   poisson: false,
   preset: 'two-rods',
   pp: { d: 0.4, a: 0.12, h: 0.8, t: 0.04, side: 0.4, V0: 1 },
+  ppDefaults: { d: 0.4, a: 0.12, h: 0.8, t: 0.04, side: 0.4, V0: 1 },
   tool: 'probe',
   brush: 3,
   toolV: 1,
@@ -68,6 +69,7 @@ export default {
     this.boundary = s.bnd === 'neumann' ? 'neumann' : 'dirichlet';
     this.poisson = s.poisson === '1';
     this.preset = PRESETS.some(([id]) => id === s.preset) ? s.preset : 'two-rods';
+    this.pp = { ...this.ppDefaults };
     for (const key of Object.keys(this.pp)) this.pp[key] = getNum(s, `p_${key}`, this.pp[key]);
     this.k = Math.max(1, Math.round(getNum(s, 'k', 20)));
     this.tol = getNum(s, 'tol', 1e-5);
@@ -276,7 +278,7 @@ export default {
     box.appendChild(pz);
 
     // Presets
-    box.appendChild(ui.el('h2', '', 'Lab 2 geometry'));
+    box.appendChild(ui.el('h2', '', 'Preset geometry'));
     box.appendChild(ui.field('Preset', ui.select(PRESETS, this.preset, (v) => { this.preset = v; this.buildControls(); this.reload(); })));
     const pr = ui.el('div', 'row');
     const param = (key, label, min, max) => pr.appendChild(ui.field(label, ui.number(this.pp[key], { min, max, onChange: (v) => { this.pp[key] = v; this.reload(); } })));
@@ -303,7 +305,7 @@ export default {
     box.appendChild(clr);
 
     // Gauss
-    box.appendChild(ui.el('h2', '', 'Capacitance (Lab 3 bonus)'));
+    box.appendChild(ui.el('h2', '', 'Capacitance from Gauss\'s law'));
     this.gaussOut = ui.el('pre', 'placeholder');
     this.gaussOut.style.whiteSpace = 'pre-wrap'; this.gaussOut.style.fontSize = '12px'; this.gaussOut.style.margin = '0';
     box.appendChild(this.gaussOut);

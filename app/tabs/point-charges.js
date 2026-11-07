@@ -25,7 +25,7 @@ export default {
   title: 'Point charges',
   phase: 1,
   available: true,
-  summary: 'Coulomb superposition for up to four charges. Lab 1 Module 2 and bonus.',
+  summary: 'Coulomb superposition for up to four charges.',
   extent: EXTENT,
   axes: ['x', 'y'],
   layers: [
@@ -107,7 +107,7 @@ export default {
       row.append(mk('q', -5, 5), mk('x', 0.1, 0.4), mk('y', 0.1, 0.4));
       box.appendChild(row);
     }
-    box.appendChild(ui.el('p', 'hint', 'Positions 0.1 to 0.4 m, charge -5 to +5 C, as in the Lab 1 handout.'));
+    box.appendChild(ui.el('p', 'hint', 'Hover a field to see its allowed range.'));
 
     if (this.mode === 'random') {
       const r = ui.el('div', 'row');
@@ -147,7 +147,7 @@ export default {
       if (what === 'plane') { this.cut.offset = 0; this.applyCut(); this.buildControls(); }
       shell.recompute(); shell.syncUrl();
     }));
-    box.appendChild(ui.el('p', 'hint', 'The field is computed in 3D; the plane is only what is drawn. XY at z = 0 is the plane of the charges (the COMSOL view). Lab 1 asks for XY and YZ cuts.'));
+    box.appendChild(ui.el('p', 'hint', 'The field is computed in 3D; the plane is only what is drawn. XY at z = 0 is the plane of the charges.'));
   },
 
   randomize() {

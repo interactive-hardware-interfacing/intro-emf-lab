@@ -18,6 +18,7 @@
     </div>
     <nav class="tabs" id="tabs" aria-label="Topics"></nav>
     <div class="topbar-actions">
+      <button id="reset-btn" class="btn btn-quiet" title="Return this tab to its default settings">Reset tab</button>
       <button id="share-btn" class="btn" title="Copy a link that reproduces this exact view">Share link</button>
       <a class="btn btn-quiet" href="https://github.com/interactive-hardware-interfacing/intro-EMF-lab" target="_blank" rel="noopener">Source</a>
     </div>
@@ -25,6 +26,7 @@
 
   <main class="workspace">
     <aside class="panel panel-left" id="controls" aria-label="Controls"></aside>
+    <div class="resizer" id="resize-left" title="Drag to resize"></div>
 
     <section class="stage" id="stage">
       <div class="canvas-stack" id="canvas-stack"></div>
@@ -38,6 +40,7 @@
       </div>
     </section>
 
+    <div class="resizer" id="resize-right" title="Drag to resize"></div>
     <aside class="panel panel-right">
       <section class="panel-section">
         <h2>Layers</h2>

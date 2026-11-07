@@ -76,18 +76,21 @@ export class Shell {
     this.canvases.clear();
     this.layerOn.clear();
     this.vectorStyle.clear();
-    this.view = new Viewport(tab.extent ?? [0, 1, 0, 1], CANVAS_PX, CANVAS_PX);
+    const ext0 = tab.extent ?? [0, 1, 0, 1];
+    const [cw, ch] = Shell.canvasSize(ext0);
+    this.view = new Viewport(ext0, cw, ch);
+    this.stackEl.style.aspectRatio = `${cw} / ${ch}`;
     for (const L of tab.layers ?? []) {
       if (L.kind === 'info') continue;
       const c = document.createElement('canvas');
-      c.width = CANVAS_PX; c.height = CANVAS_PX;
+      c.width = cw; c.height = ch;
       c.dataset.layer = L.id;
       this.stackEl.appendChild(c);
       this.canvases.set(L.id, c);
       if (L.kind === 'vector') this.vectorStyle.set(L.id, L.styles?.[0] ?? 'arrows');
     }
     const ov = document.createElement('canvas');
-    ov.width = CANVAS_PX; ov.height = CANVAS_PX; ov.dataset.layer = '_overlay';
+    ov.width = cw; ov.height = ch; ov.dataset.layer = '_overlay';
     this.stackEl.appendChild(ov);
     this.canvases.set('_overlay', ov);
     if (tab.available === false) {
@@ -126,9 +129,24 @@ export class Shell {
     this.syncUrl({ push });
   }
 
+  /** Canvas pixel size for an extent: the longer side is CANVAS_PX, aspect follows the physics. */
+  static canvasSize(extent) {
+    const aspect = (extent[1] - extent[0]) / (extent[3] - extent[2]);
+    return aspect >= 1 ? [CANVAS_PX, Math.round(CANVAS_PX / aspect)] : [Math.round(CANVAS_PX * aspect), CANVAS_PX];
+  }
+
+  /** Resize every canvas in the stack to match the extent's aspect ratio. */
+  fitCanvases(extent) {
+    const [w, h] = Shell.canvasSize(extent);
+    this.stackEl.style.aspectRatio = `${w} / ${h}`;
+    for (const c of this.canvases.values()) { if (c.width !== w || c.height !== h) { c.width = w; c.height = h; } }
+    return [w, h];
+  }
+
   /** A tab may change its physical extent and axis labels at runtime (e.g. a sub-mode switch). */
   setExtent(extent, axes) {
-    this.view = new Viewport(extent, CANVAS_PX, CANVAS_PX);
+    const [w, h] = this.fitCanvases(extent);
+    this.view = new Viewport(extent, w, h);
     if (axes) {
       this.tab.axes = axes;
       this.$('probe-xlabel').firstChild.textContent = `${axes[0]} (m) `;
@@ -368,8 +386,8 @@ export class Shell {
     // dragging a path). If it returns true the event is consumed; otherwise a click sets the probe.
     const toWorld = (e) => {
       const rect = this.stackEl.getBoundingClientRect();
-      const px = ((e.clientX - rect.left) / rect.width) * CANVAS_PX;
-      const py = ((e.clientY - rect.top) / rect.height) * CANVAS_PX;
+      const px = ((e.clientX - rect.left) / rect.width) * this.view.width;
+      const py = ((e.clientY - rect.top) / rect.height) * this.view.height;
       return this.view.toWorld(px, py);
     };
     let dragging = false, consumed = false;
@@ -417,11 +435,45 @@ export class Shell {
       if (text) downloadText(`${this.tab.id}-field.csv`, text);
       else this.flash($('export-csv'), 'Nothing to export');
     });
+    $('reset-btn').addEventListener('click', () => { this.state = { tab: this.tab.id }; this.selectTab(this.tab.id, { push: true }); });
+    this.bindResizers();
     $('share-btn').addEventListener('click', async () => {
       const url = this.syncUrl();
       await copyToClipboard(location.origin + url);
       this.flash($('share-btn'), 'Link copied');
     });
+  }
+
+  /** Drag handles that resize the side panels; widths are remembered per browser. */
+  bindResizers() {
+    const ws = document.querySelector('.workspace');
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('emf-panels') || '{}'); } catch { /* ignore */ }
+    if (saved.left) ws.style.setProperty('--left-w', `${saved.left}px`);
+    if (saved.right) ws.style.setProperty('--right-w', `${saved.right}px`);
+    const bind = (id, side) => {
+      const el = this.$(id);
+      el.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        el.setPointerCapture(e.pointerId);
+        el.classList.add('active');
+        const move = (ev) => {
+          const rect = ws.getBoundingClientRect();
+          const w = side === 'left' ? Math.min(Math.max(ev.clientX - rect.left, 200), rect.width * 0.5) : Math.min(Math.max(rect.right - ev.clientX, 220), rect.width * 0.5);
+          ws.style.setProperty(side === 'left' ? '--left-w' : '--right-w', `${Math.round(w)}px`);
+          saved[side] = Math.round(w);
+        };
+        const up = () => {
+          el.classList.remove('active');
+          el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up);
+          try { localStorage.setItem('emf-panels', JSON.stringify(saved)); } catch { /* ignore */ }
+        };
+        el.addEventListener('pointermove', move);
+        el.addEventListener('pointerup', up);
+      });
+    };
+    bind('resize-left', 'left');
+    bind('resize-right', 'right');
   }
 
   probeRow() {
@@ -439,7 +491,7 @@ export class Shell {
 
   exportPng() {
     const out = document.createElement('canvas');
-    out.width = CANVAS_PX; out.height = CANVAS_PX;
+    out.width = this.view.width; out.height = this.view.height;
     const ctx = out.getContext('2d');
     ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, out.width, out.height);
@@ -479,6 +531,13 @@ export function sci(v, digits = 4) {
   return Number(v.toPrecision(digits)).toString();
 }
 
+function fmtRange(v) {
+  if (!Number.isFinite(v)) return '';
+  const a = Math.abs(v);
+  if (a !== 0 && (a >= 1e5 || a < 1e-3)) return v.toExponential(0);
+  return String(Number(v.toPrecision(4)));
+}
+
 export function renderTeX(el, tex) {
   if (window.katex) {
     try {
@@ -497,6 +556,13 @@ export const ui = {
   field(labelText, input) {
     const l = document.createElement('label');
     l.textContent = labelText;
+    if (input.dataset && input.dataset.min !== undefined && input.dataset.max !== undefined) {
+      const r = document.createElement('span');
+      r.className = 'range-hint';
+      r.textContent = `${fmtRange(+input.dataset.min)} to ${fmtRange(+input.dataset.max)}`;
+      l.appendChild(r);
+      input.title = `Allowed range: ${fmtRange(+input.dataset.min)} to ${fmtRange(+input.dataset.max)}`;
+    }
     l.appendChild(input);
     return l;
   },
