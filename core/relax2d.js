@@ -83,6 +83,7 @@ export class Relax2D {
    */
   sweep() {
     const { nx, ny, V, fixed, eps, rho, delta } = this;
+    const fe = (ka, kb) => faceEps(eps, fixed, ka, kb);
     const h2e0 = (this.h * this.h) / EPS0;
     const neumann = this.boundary === 'neumann';
     let maxd = 0;
@@ -93,17 +94,17 @@ export class Relax2D {
         const ec = eps[k];
         let num = 0, den = 0;
         // east
-        if (i + 1 < nx) { const e = hm(ec, eps[k + 1]); num += e * V[k + 1]; den += e; }
-        else if (neumann && i > 0) { const e = hm(ec, eps[k - 1]); num += e * V[k - 1]; den += e; }
+        if (i + 1 < nx) { const e = fe(k, k + 1); num += e * V[k + 1]; den += e; }
+        else if (neumann && i > 0) { const e = fe(k, k - 1); num += e * V[k - 1]; den += e; }
         // west
-        if (i > 0) { const e = hm(ec, eps[k - 1]); num += e * V[k - 1]; den += e; }
-        else if (neumann && i + 1 < nx) { const e = hm(ec, eps[k + 1]); num += e * V[k + 1]; den += e; }
+        if (i > 0) { const e = fe(k, k - 1); num += e * V[k - 1]; den += e; }
+        else if (neumann && i + 1 < nx) { const e = fe(k, k + 1); num += e * V[k + 1]; den += e; }
         // north
-        if (j + 1 < ny) { const e = hm(ec, eps[k + nx]); num += e * V[k + nx]; den += e; }
-        else if (neumann && j > 0) { const e = hm(ec, eps[k - nx]); num += e * V[k - nx]; den += e; }
+        if (j + 1 < ny) { const e = fe(k, k + nx); num += e * V[k + nx]; den += e; }
+        else if (neumann && j > 0) { const e = fe(k, k - nx); num += e * V[k - nx]; den += e; }
         // south
-        if (j > 0) { const e = hm(ec, eps[k - nx]); num += e * V[k - nx]; den += e; }
-        else if (neumann && j + 1 < ny) { const e = hm(ec, eps[k + nx]); num += e * V[k + nx]; den += e; }
+        if (j > 0) { const e = fe(k, k - nx); num += e * V[k - nx]; den += e; }
+        else if (neumann && j + 1 < ny) { const e = fe(k, k + nx); num += e * V[k + nx]; den += e; }
         if (den === 0) continue;
         const vNew = (num + rho[k] * h2e0) / den;
         const d = Math.abs(vNew - V[k]);
@@ -157,30 +158,40 @@ export class Relax2D {
    *   lambda = eps0 * sum over faces of eps_face * E_n * h
    */
   gaussCharge(i0, j0, i1, j1) {
-    const { nx, ny, V, eps } = this;
+    const { nx, ny, V, eps, fixed } = this;
+    const fe = (a, b) => faceEps(eps, fixed, a, b);
     const ia = Math.max(0, Math.min(i0, i1)), ib = Math.min(nx - 1, Math.max(i0, i1));
     const ja = Math.max(0, Math.min(j0, j1)), jb = Math.min(ny - 1, Math.max(j0, j1));
     i0 = ia; i1 = ib; j0 = ja; j1 = jb;
     let flux = 0; // sum of eps_r * E_n * h  (units V)
     // east face of column i1 (outward normal +x): E_n = -(V[i1+1] - V[i1]) / h
-    if (i1 + 1 < nx) for (let j = j0; j <= j1; j++) { const k = this.idx(i1, j); flux += hm(eps[k], eps[k + 1]) * -(V[k + 1] - V[k]); }
+    if (i1 + 1 < nx) for (let j = j0; j <= j1; j++) { const k = this.idx(i1, j); flux += fe(k, k + 1) * -(V[k + 1] - V[k]); }
     // west face of column i0 (normal -x): E_n = -(V[i0-1] - V[i0]) / h
-    if (i0 - 1 >= 0) for (let j = j0; j <= j1; j++) { const k = this.idx(i0, j); flux += hm(eps[k], eps[k - 1]) * -(V[k - 1] - V[k]); }
+    if (i0 - 1 >= 0) for (let j = j0; j <= j1; j++) { const k = this.idx(i0, j); flux += fe(k, k - 1) * -(V[k - 1] - V[k]); }
     // north face of row j1 (normal +y)
-    if (j1 + 1 < ny) for (let i = i0; i <= i1; i++) { const k = this.idx(i, j1); flux += hm(eps[k], eps[k + nx]) * -(V[k + nx] - V[k]); }
+    if (j1 + 1 < ny) for (let i = i0; i <= i1; i++) { const k = this.idx(i, j1); flux += fe(k, k + nx) * -(V[k + nx] - V[k]); }
     // south face of row j0 (normal -y)
-    if (j0 - 1 >= 0) for (let i = i0; i <= i1; i++) { const k = this.idx(i, j0); flux += hm(eps[k], eps[k - nx]) * -(V[k - nx] - V[k]); }
+    if (j0 - 1 >= 0) for (let i = i0; i <= i1; i++) { const k = this.idx(i, j0); flux += fe(k, k - nx) * -(V[k - nx] - V[k]); }
     // E_n = dV/h and each face has length h, so E_n * h = dV: the h's cancel and the sum of
     // face potential differences times eps0 is the charge per unit length directly.
     return EPS0 * flux;
   }
 
-  /** Electrostatic energy per unit length, W = 1/2 integral eps |E|^2 dA  (J/m). */
+  /**
+   * Electrostatic energy per unit length W = 1/2 int eps |E|^2 dA (J/m), summed over the
+   * faces with the solver's own conductances (faces along the box edge count half), so
+   * that 2 W = lambda V holds exactly for the discrete solution in a mirror-walled box.
+   */
   energy() {
-    const [ex, ey] = this.E();
+    const { nx, ny, V, eps, fixed } = this;
+    const fe = (a, b) => faceEps(eps, fixed, a, b);
     let w = 0;
-    for (let k = 0; k < this.V.length; k++) w += this.eps[k] * (ex.data[k] ** 2 + ey.data[k] ** 2);
-    return 0.5 * EPS0 * w * this.h * this.h;
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const k = this.idx(i, j);
+      if (i + 1 < nx) { const d = V[k + 1] - V[k]; w += (j === 0 || j === ny - 1 ? 0.5 : 1) * fe(k, k + 1) * d * d; }
+      if (j + 1 < ny) { const d = V[k + nx] - V[k]; w += (i === 0 || i === nx - 1 ? 0.5 : 1) * fe(k, k + nx) * d * d; }
+    }
+    return 0.5 * EPS0 * w;
   }
 
   /** Potentials of all fixed cells, as a sorted list of distinct values. */
@@ -192,7 +203,19 @@ export class Relax2D {
 }
 
 /** Harmonic mean of two permittivities (the face value between two cells). */
-function hm(a, b) { return (2 * a * b) / (a + b); }
+function hm(a, b) { const s = a + b; return s === 0 ? 0 : (2 * a * b) / s; }
+
+/**
+ * Permittivity (or conductivity) on the face between cells a and b: the harmonic mean of
+ * the two, except that a conductor cell takes no part, so the face next to a conductor
+ * carries the dielectric's own value. (A conductor's `eps` entry is never used.)
+ */
+function faceEps(eps, fixed, a, b) {
+  if (fixed[a] && fixed[b]) return 0;
+  if (fixed[a]) return eps[b];
+  if (fixed[b]) return eps[a];
+  return hm(eps[a], eps[b]);
+} // 0 for two insulator (sigma = 0) cells
 
 // ---------------------------------------------------------------- Lab 2 presets
 

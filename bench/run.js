@@ -15,6 +15,7 @@ import {
 } from '../core/analytic.js';
 import { Grid2D, magnitude } from '../core/grid.js';
 import { Relax2D, lab2Preset } from '../core/relax2d.js';
+import { Axisym, diskCapacitor, idealLayeredC, kirchhoffC } from '../core/axisym.js';
 
 const results = [];
 function check(name, got, want, relTol) {
@@ -227,6 +228,103 @@ check('mu0 = 4 pi 1e-7 (to 1e-9)', MU0, 4 * PI * 1e-7, 1e-9);
     const c2d = lam / 2; // per unit length, divided by the 2 V potential difference
     const ideal = EPS0 * 0.8 / (2 * 0.05 - 0.025); // gap between plate faces = 2d - t
     check('relax2d Lab 2 plates: C/C_ideal between 1.0 and 1.3 (fringing)', c2d / ideal > 1 && c2d / ideal < 1.3 ? 1 : 0, 1, 0);
+  }
+}
+
+// ---------------------------------------------------------------- axisym (Phase 3)
+{
+  // 1. Spherical capacitor: inner sphere a at 1 V, outer shell b at 0. C = 4 pi eps0 ab/(b-a).
+  {
+    const h = 0.02, a = 0.3, b = 0.9;
+    const s = new Axisym(56, 111, { h, z0: -1.1 });
+    s.fixWhere((r, z) => r * r + z * z <= a * a, 1);
+    s.fixWhere((r, z) => r * r + z * z >= b * b, 0);
+    s.solve(1e-9, 1e6, 100);
+    const cEx = 4 * PI * EPS0 * a * b / (b - a);
+    const i1 = Math.round(0.6 / h), j0 = Math.round((-0.6 + 1.1) / h), j1 = Math.round((0.6 + 1.1) / h);
+    const cG = s.gaussCharge(0, j0, i1, j1);
+    const cE = 2 * s.energy();
+    const rr = 0.55, vEx = (a / rr) * (b - rr) / (b - a);
+    check('axisym sphere: V(r) within 3% (staircase sphere, h = a/15)', s.gridV().sample(rr, 0), vEx, 3e-2);
+    check('axisym sphere: C from Gauss within 5%', cG, cEx, 5e-2);
+    check('axisym sphere: C from energy within 7%', cE, cEx, 7e-2);
+  }
+  // 2. Coax in (r, z) with mirror ends: V = ln(b/r)/ln(b/a), independent of z.
+  {
+    const h = 0.01, a = 0.2, b = 0.9;
+    const s = new Axisym(101, 21, { h, z0: 0, boundary: { zmin: 'neumann', zmax: 'neumann', rmax: 'dirichlet' } });
+    s.fixWhere((r) => r <= a + h / 4, 1);
+    s.fixWhere((r) => r >= b - h / 4, 0);
+    s.solve(1e-11, 1e6, 100);
+    const r = 0.5;
+    check('axisym coax: V(r) = ln(b/r)/ln(b/a) within 0.2%', s.V[s.idx(Math.round(r / h), 10)], Math.log(b / r) / Math.log(b / a), 2e-3);
+    check('axisym coax: no z variation', s.V[s.idx(50, 3)] - s.V[s.idx(50, 17)], 0, 1e-9);
+  }
+  // 3. Thin-gap disk capacitor in air: Kirchhoff's edge-corrected formula within 4%.
+  {
+    const s = diskCapacitor({ V: 1, g: 1e-3, R: 10e-3, t: 0.25e-3, epsR: 1, epsR2: 1, cellsPerLayer: 2, boxFactor: 2 });
+    s.solve(1e-9, 1e6, 100);
+    const cE = 2 * s.energy() / 1;
+    const { g, R, t, h } = s.meta;
+    const ck = kirchhoffC({ g, R, epsEff: 1, t });
+    const ideal = EPS0 * PI * R * R / g;
+    const jTop = Math.round((g / 2 - s.z0) / h), jTopEnd = Math.round((g / 2 + t - s.z0) / h);
+    const cG = s.gaussCharge(0, jTop - 1, Math.round((R + 3 * h) / h), jTopEnd + 1) / 1;
+    check('axisym disk (g = R/10): C/C_ideal between 1.05 and 1.5', cE / ideal > 1.05 && cE / ideal < 1.5 ? 1 : 0, 1, 0);
+    check('axisym disk (g = R/10): C within 4% of Kirchhoff', cG, ck, 4e-2);
+    check('axisym disk: C from Gauss = C from energy (discrete identity)', cG, cE, 1e-5);
+  }
+  // 4. Lab 3 default (5 V, 4 mm, 6 mm, 5, 5): D continuous across the layers on the axis,
+  //    E steps by the permittivity ratio, and C sits above the ideal series value.
+  {
+    const s = diskCapacitor({ V: 5, g: 4e-3, R: 6e-3, epsR: 2, epsR2: 8, cellsPerLayer: 6, boxFactor: 3 });
+    s.solve(1e-9, 1e6, 100);
+    const [, ez] = s.E();
+    const { h } = s.meta;
+    const jC = Math.round(-s.z0 / h);                 // z = 0 (centre layer)
+    const jO = Math.round((1.0e-3 - s.z0) / h);       // z = 1.0 mm (outer layer, |z| > g/6 = 0.67 mm)
+    const dC = 2 * ez.get(0, jC), dO = 8 * ez.get(0, jO); // eps_r * E_z (D / eps0)
+    check('axisym layered: D_z continuous across layers on axis (1%)', dC, dO, 1e-2);
+    check('axisym layered: E_z steps by eps ratio', ez.get(0, jC) / ez.get(0, jO), 4, 1e-2);
+    const cE = 2 * s.energy() / 25;
+    const ideal = idealLayeredC({ g: 4e-3, R: 6e-3, epsR: 2, epsR2: 8 });
+    check('axisym layered: C/C_ideal between 1 and 1.6 (fringing, g/R = 2/3)', cE / ideal > 1 && cE / ideal < 1.6 ? 1 : 0, 1, 0);
+  }
+  // 4b. Lab 3 run 1 (5 V, 4 mm, 6 mm, 5, 5) at coarse resolution: C must exceed the ideal value
+  //     (fringing adds capacitance). A conductor-dielectric face treated as a harmonic mean with
+  //     the conductor's eps = 1 would push C below ideal; this guards that.
+  {
+    const s = diskCapacitor({ V: 5, g: 4e-3, R: 6e-3, epsR: 5, epsR2: 5, cellsPerLayer: 2, boxFactor: 2.5 });
+    s.solve(1e-6, 1e6, 100);
+    const c = 2 * s.energy() / 25, ideal = idealLayeredC({ g: 4e-3, R: 6e-3, epsR: 5, epsR2: 5 });
+    check('axisym Lab 3 run 1: C/C_ideal in (1.05, 1.4)', c / ideal > 1.05 && c / ideal < 1.4 ? 1 : 0, 1, 0);
+    check('axisym Lab 3 run 1: ideal C = 1.2517e-12 F (handout formula)', ideal, 1.2517e-12, 1e-4);
+  }
+  // 5. Conduction: uniform cylinder of radius a, length l, conductivity sigma between
+  //    end electrodes. R = l / (sigma pi a^2); current equal through any two cuts.
+  {
+    const h = 0.01, a = 0.2, l = 1, sigma = 3;
+    const s = new Axisym(21, 101, { h, z0: 0, boundary: { rmax: 'neumann', zmin: 'dirichlet', zmax: 'dirichlet' } });
+    for (let i = 0; i < s.nr; i++) { s.setFixed(i, 0, 0); s.setFixed(i, s.nz - 1, 1); }
+    s.eps.fill(sigma);
+    s.solve(1e-11, 1e6, 100);
+    const I1 = Math.abs(s.currentThroughZ(20)), I2 = Math.abs(s.currentThroughZ(70));
+    const Rex = l / (sigma * PI * a * a);
+    check('axisym conduction: I equal on two cuts', I2, I1, 1e-6);
+    check('axisym conduction: R = l/(sigma pi a^2)', 1 / I1, Rex, 1e-6);
+  }
+  // 6. relax2d conduction: insulator cells (sigma = 0) are inert and current is conserved.
+  {
+    const n = 41;
+    const s = new Relax2D(n, n, [0, 1, 0, 1], { boundary: 'neumann' });
+    for (let j = 0; j < n; j++) { s.setFixed(0, j, 0); s.setFixed(n - 1, j, 1); }
+    s.eps.fill(2);
+    s.epsWhere((x, y) => Math.abs(x - 0.5) < 0.1 && y > 0.5, 0); // a notch of insulator
+    s.solve(1e-11, 1e6, 100);
+    // Current per unit depth through the face between columns i and i+1; rows 0 and n-1 are half cells.
+    const cut = (i) => { let I = 0; for (let j = 0; j < n; j++) { const k = s.idx(i, j); const sg = (2 * s.eps[k] * s.eps[k + 1]) / ((s.eps[k] + s.eps[k + 1]) || 1); I += (j === 0 || j === n - 1 ? 0.5 : 1) * sg * -(s.V[k + 1] - s.V[k]); } return I; };
+    check('relax2d conduction: I equal on cuts either side of a notch', cut(10), cut(30), 1e-6);
+    check('relax2d conduction: insulator cells finite', Number.isFinite(s.V[s.idx(20, 30)]) ? 1 : 0, 1, 0);
   }
 }
 

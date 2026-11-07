@@ -1,6 +1,7 @@
 // Web Worker wrapper around core/relax2d.js so the page stays responsive while the
 // neighbour-averaging solver runs. Protocol (postMessage):
 //   { cmd: 'init', nx, ny, extent, boundary, V, fixed, eps, rho }   arrays are copied in
+//   { cmd: 'init', kind: 'axisym', nr, nz, h, z0, boundary: {rmax, zmin, zmax}, V, fixed, eps, rho }
 //   { cmd: 'run', k, tol, maxSweeps }      run until converged, posting a frame every k sweeps
 //   { cmd: 'step', k }                      run exactly k sweeps, post one frame, stop
 //   { cmd: 'pause' }
@@ -9,6 +10,7 @@
 // Done:   { type: 'done', sweeps, residual, converged, hitMax }
 
 import { Relax2D } from '../../core/relax2d.js';
+import { Axisym } from '../../core/axisym.js';
 
 let solver = null;
 let running = false;
@@ -45,7 +47,9 @@ self.onmessage = (ev) => {
     case 'init': {
       running = false;
       clearTimeout(timer);
-      solver = new Relax2D(m.nx, m.ny, m.extent, { boundary: m.boundary, boxV: m.boxV ?? 0 });
+      solver = m.kind === 'axisym'
+        ? new Axisym(m.nr, m.nz, { h: m.h, z0: m.z0, boundary: m.boundary, boxV: m.boxV ?? 0 })
+        : new Relax2D(m.nx, m.ny, m.extent, { boundary: m.boundary, boxV: m.boxV ?? 0 });
       solver.V.set(m.V);
       solver.fixed.set(m.fixed);
       solver.eps.set(m.eps);

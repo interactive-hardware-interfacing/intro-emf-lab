@@ -35,38 +35,6 @@ export const ringLine = placeholderTab({
   ],
 });
 
-export const capacitors = placeholderTab({
-  id: 'capacitors',
-  title: 'Capacitors',
-  phase: 3,
-  summary: 'Disk capacitor with a three-layer dielectric, solved in (r, z) with the plain neighbour-averaging solver. Capacitance from stored energy and from Gauss\'s law.',
-  serves: 'Lab 3 Modules 0, 1 and bonus; Lab 2 Module 2 (2D plate).',
-  plan: 'axisym.js electrostatic flavour. Controls: applied V, gap, plate radius, εr (centre), εr2 (outer). Outputs: C, ideal C, % difference, D vs ε₀E vs P cutline along the axis, parameter sweeps in a Web Worker.',
-  axes: ['r', 'z'],
-  layers: [
-    { id: 'V', label: 'Potential V', kind: 'scalar', unit: 'V' },
-    { id: 'E', label: 'E field', kind: 'vector', styles: ['arrows', 'lines'] },
-    { id: 'D', label: 'D field', kind: 'vector', styles: ['arrows'] },
-    { id: 'P', label: 'P field', kind: 'vector', styles: ['arrows'] },
-    { id: 'w', label: 'Energy density', kind: 'scalar', unit: 'J/m³' },
-  ],
-});
-
-export const conduction = placeholderTab({
-  id: 'conduction',
-  title: 'Conduction (J)',
-  phase: 3,
-  summary: 'Steady current in a resistive region between two electrodes: the same solver as the capacitor with σ in place of ε. J = σE, total current through a cut, resistance.',
-  serves: 'Lecture demo of Ohm\'s law at the field level; candidate new lab.',
-  plan: 'relax2d.js or axisym.js with σ. Preset shapes (bar, constriction, L-bend) and painted regions. Current cut with I readout; R = V/I compared with ℓ/σA.',
-  layers: [
-    { id: 'V', label: 'Potential V', kind: 'scalar', unit: 'V' },
-    { id: 'E', label: 'E field', kind: 'vector', styles: ['arrows', 'lines'] },
-    { id: 'J', label: 'J field', kind: 'vector', styles: ['arrows', 'lines'] },
-    { id: 'Jmag', label: '|J|', kind: 'scalar', unit: 'A/m²' },
-  ],
-});
-
 export const magneticFields = placeholderTab({
   id: 'magnetic-fields',
   title: 'Magnetic fields',

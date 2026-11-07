@@ -6,7 +6,9 @@ import pointCharges from './tabs/point-charges.js';
 import ringLine from './tabs/ring-line.js';
 import magneticFields from './tabs/magnetic-fields.js';
 import sandbox from './tabs/sandbox.js';
-import { capacitors, conduction, inductors } from './tabs/placeholder.js';
+import capacitors from './tabs/capacitors.js';
+import conduction from './tabs/conduction.js';
+import { inductors } from './tabs/placeholder.js';
 
 export const TABS = [
   pointCharges,
