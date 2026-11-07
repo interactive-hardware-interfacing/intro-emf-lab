@@ -1,0 +1,12 @@
+{
+  "name": "intro-emf-lab",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Browser field simulators for EGRE 309 Intro to Electromagnetism",
+  "type": "module",
+  "scripts": {
+    "test": "node bench/run.js",
+    "serve": "python3 -m http.server 8000"
+  },
+  "license": "MIT"
+}
