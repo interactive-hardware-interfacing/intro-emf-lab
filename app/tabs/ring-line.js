@@ -65,7 +65,7 @@ const TAB = {
     this.removed = getList(s, 'rm', []).map((v) => parseInt(v, 10)).filter((k) => Number.isInteger(k) && k >= 0 && k < this.N);
     this.d = getNum(s, 'd', 0.4);
     this.lam = getNum(s, 'laml', 1e-9);
-    this.a = getNum(s, 'a', 0.1);
+    this.a = Math.min(getNum(s, 'a', 0.1), this.d - 0.01);
     this.cut = new CutPlane({ plane: s.plane ?? 'xy', offset: getNum(s, 'off', 0), range: [-0.5, 0.5], extents: RING_EXTENTS });
     this.applyMode();
     this.buildControls();
@@ -125,7 +125,7 @@ const TAB = {
     } else {
       box.appendChild(ui.lead(shell, 'Two conducting rods in cross-section: the exact two-line-charge field.'));
       const r1 = ui.el('div', 'row');
-      r1.appendChild(ui.field('Half separation d (m)', ui.number(this.d, { min: 0.05, max: 0.9, onChange: (v) => { this.d = v; re(); } })));
+      r1.appendChild(ui.field('Half separation d (m)', ui.number(this.d, { min: 0.05, max: 0.9, onChange: (v) => { this.d = v; this.a = Math.min(this.a, this.d - 0.01); re(); this.buildControls(); } })));
       r1.appendChild(ui.field('Rod radius a (m)', ui.number(this.a, { min: 0.01, max: 0.5, onChange: (v) => { this.a = Math.min(v, this.d - 0.01); re(); } })));
       box.appendChild(r1);
       box.appendChild(ui.field('Line charge λ (C/m)', ui.number(this.lam, { onChange: (v) => { this.lam = v; re(); } })));

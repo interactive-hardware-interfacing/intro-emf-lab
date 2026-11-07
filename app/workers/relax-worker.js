@@ -53,7 +53,7 @@ function fdtdLoop(k) {
 function fdtdInit(m) {
   solver = new FDTD2D(m.nx, m.ny, { h: m.h, epsR: m.epsR, pec: m.pec, sigma: m.sigma, yWall: m.yWall });
   for (const src of m.sources ?? []) solver.addSource(src);
-  if (m.trace) solver.setTrace(m.trace.i, m.trace.j);
+  if (m.trace) { solver.setTrace(m.trace.i, m.trace.j); if (m.trace.t?.length) { solver.trace.t = Array.from(m.trace.t); solver.trace.v = Array.from(m.trace.v); } } // a warm init keeps the record
   if (m.Ez) { solver.Ez.set(m.Ez); solver.Hx.set(m.Hx); solver.Hy.set(m.Hy); solver.t = m.t ?? 0; solver.step_ = m.step ?? 0; }
   self.postMessage({ type: 'ready' });
 }

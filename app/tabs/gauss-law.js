@@ -162,9 +162,10 @@ export default {
     const log = id === 'Emag';
     let lo = parseFloat(shell.$('cmin').value), hi = parseFloat(shell.$('cmax').value);
     const auto = log ? this.emRange : this.enRange;
-    if (!Number.isFinite(lo)) lo = auto[0];
-    if (!Number.isFinite(hi)) hi = auto[1];
+    if (!Number.isFinite(lo) || (log && !(lo > 0))) lo = auto[0];
+    if (!Number.isFinite(hi) || (log && !(hi > 0))) hi = auto[1];
     if (log) { lo = Math.log10(Math.max(lo, 1e-300)); hi = Math.log10(Math.max(hi, 1e-300)); }
+    if (!(hi > lo)) hi = lo + 1;
     const scalar = shell.tab.layers.find((L) => L.id === id);
     if (id && scalar) shell.drawColorbar({ min: lo, max: hi, layer: scalar }, map); else shell.drawColorbar(null);
     const color = (p) => {

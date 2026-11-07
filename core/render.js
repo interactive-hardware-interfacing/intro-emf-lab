@@ -68,13 +68,35 @@ export function colormap(name = 'viridis') {
  * canvas shows (default: the grid's own extent); the grid is sampled there, so a zoomed
  * view paints only the zoomed region.
  */
+/**
+ * Colour bounds for a scalar layer: the caller's min/max when finite (and, on a log scale,
+ * positive), else the grid's own range; on a log scale an all-zero or empty grid falls back
+ * to a decade around 1 rather than 1e-300, and max is kept above min.
+ */
+export function scalarBounds(grid, opts = {}) {
+  const ok = (v) => v !== undefined && v !== null && Number.isFinite(+v) && (!opts.log || +v > 0);
+  let lo, hi;
+  if (opts.log) {
+    let plo = Infinity, phi = -Infinity;
+    for (const v of grid.data) { const a = Math.abs(v); if (Number.isFinite(a) && a > 0) { if (a < plo) plo = a; if (a > phi) phi = a; } }
+    if (!(plo < Infinity)) { plo = 0.1; phi = 10; }
+    lo = ok(opts.min) ? +opts.min : plo;
+    hi = ok(opts.max) ? +opts.max : phi;
+    lo = Math.log10(lo); hi = Math.log10(hi);
+  } else {
+    [lo, hi] = grid.range();
+    if (ok(opts.min)) lo = +opts.min;
+    if (ok(opts.max)) hi = +opts.max;
+    if (!Number.isFinite(lo) || !Number.isFinite(hi)) { lo = 0; hi = 1; }
+  }
+  if (!(hi > lo)) hi = lo + (opts.log ? 1 : Math.abs(lo) || 1);
+  return [lo, hi];
+}
+
 export function drawScalarField(ctx, grid, opts = {}) {
   const { width, height } = ctx.canvas;
   const cmap = colormap(opts.map);
-  let [lo, hi] = grid.range();
-  if (opts.min !== undefined && opts.min !== null && Number.isFinite(+opts.min)) lo = +opts.min;
-  if (opts.max !== undefined && opts.max !== null && Number.isFinite(+opts.max)) hi = +opts.max;
-  if (opts.log) { lo = Math.log10(Math.max(lo, 1e-300)); hi = Math.log10(Math.max(hi, 1e-300)); }
+  const [lo, hi] = scalarBounds(grid, opts);
   const span = hi - lo || 1;
 
   const img = ctx.createImageData(width, height);

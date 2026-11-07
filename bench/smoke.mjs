@@ -41,6 +41,50 @@ for (const id of tabs) {
   visited++;
   console.log(`ok  ${id} (${views.length || 1} view${views.length > 1 ? 's' : ''})`);
 }
+
+// ---- URL round trip with one control perturbed per tab: the share link must reproduce it
+const perturb = {
+  'point-charges': 'n=3&q1=2.5&x1=0.1', 'point-charges-3d': 'n=2&cz=0.1&az=1.2', 'ring-charge': 'N=7&rm=1,4&plane=xz&off=0.1',
+  'line-charge': 'd=0.5&a=0.2', 'capacitors': 'half=1', 'conduction': '', 'magnetic-fields': 'm=1&nl=7&K=50',
+  'inductors': 'mode=ring&sat=1&bsat=1.2&obj=0', 'sandbox': '', 'gauss-law': 'sk=box&sa=0.12&n=3&res=48',
+  'interface': 'mode=magnetic&e2=300&th=-25&rs=3', 'transmission-lines': 'geom=twin&a=1&d=6&er=3', 'fdtd': 'preset=guide&side=mirror&src=cw&f=2000000000',
+};
+const waitIdle = async () => { for (let t = 0; t < 120; t++) { await page.waitForTimeout(300); if (!/solving|running/.test((await page.textContent('#status')) ?? '')) break; } };
+const query = (u) => Object.fromEntries(new URL(u).searchParams);
+for (const id of tabs) {
+  if (perturb[id] === undefined) continue;
+  await page.goto(`${base}?tab=${id}&${perturb[id]}`, { waitUntil: 'networkidle' }); await waitIdle();
+  await page.evaluate(() => window.emf.syncUrl());
+  const u1 = page.url(), q1 = query(u1);
+  const lost = Object.entries(query(`${base}?${perturb[id]}`)).filter(([k, v]) => q1[k] !== v).map(([k]) => k);
+  await page.goto(u1, { waitUntil: 'networkidle' }); await waitIdle();
+  await page.evaluate(() => window.emf.syncUrl());
+  const q2 = query(page.url());
+  const unstable = [...new Set([...Object.keys(q1), ...Object.keys(q2)])].filter((k) => q1[k] !== q2[k]);
+  if (lost.length || unstable.length) errors.push(`round-trip ${id}: lost ${JSON.stringify(lost)} unstable ${JSON.stringify(unstable)}`);
+}
+console.log('ok  URL round trips');
+
+// ---- Randomize mode must not fall back to the defaults when the hidden values are absent from the URL
+for (const [id, read, defaults] of [
+  ['point-charges', () => window.emf.tab.charges.slice(0, 4).map((c) => [c.q, c.x, c.y]).flat(), [2, 0.2, 0.3, -2, 0.3, 0.2, 1, 0.15, 0.15, -1, 0.35, 0.35]],
+  ['magnetic-fields', () => window.emf.tab.wires.map((w) => w.I), [2, -2, 1, -1]],
+]) {
+  await page.goto(`${base}?tab=${id}&mode=random`, { waitUntil: 'networkidle' });
+  const got = await page.evaluate(read);
+  if (JSON.stringify(got) === JSON.stringify(defaults)) errors.push(`${id}: mode=random without values shows the default answer`);
+}
+console.log('ok  randomize on load');
+
+// ---- Narrow layout: nothing should overflow horizontally at 900 px
+await page.setViewportSize({ width: 900, height: 800 });
+for (const id of ['capacitors', 'fdtd', 'gauss-law', 'about']) {
+  await page.goto(`${base}?tab=${id}`, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);
+  const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  if (over > 0) errors.push(`${id}: horizontal overflow of ${over}px at 900px`);
+}
+console.log('ok  900px layout');
+
 await browser.close();
 server.close();
 if (errors.length) { console.error(errors.join('\n')); console.error(`\nsmoke: ${errors.length} error(s) across ${visited} tabs`); process.exit(1); }

@@ -181,7 +181,7 @@ export default {
 
   sendInit(warm) {
     const msg = { cmd: 'init', kind: 'fdtd', nx: this.n, ny: this.n, h: this.h, epsR: this.epsR, pec: this.pec, yWall: this.yWall, sources: this.sources, trace: this.traceCell() };
-    if (warm) Object.assign(msg, { Ez: this.Ez, Hx: this.Hx, Hy: this.Hy, t: this.t, step: this.stepCount });
+    if (warm) { Object.assign(msg, { Ez: this.Ez, Hx: this.Hx, Hy: this.Hy, t: this.t, step: this.stepCount }); if (this.trace?.t?.length) msg.trace = { ...msg.trace, t: this.trace.t, v: this.trace.v }; }
     this.send(msg);
   },
 

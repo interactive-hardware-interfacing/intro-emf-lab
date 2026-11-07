@@ -421,7 +421,7 @@ mark('fdtd');
 
 mark('app layer');
 await (await import('./app.js')).run(check);
-(await import('./tline.js')).tlineChecks(check); // transmission lines: closed forms and the Gauss-Seidel cross-section
+await (await import('./tline.js')).tlineChecks(check); // transmission lines: closed forms and the Gauss-Seidel cross-section
 
 // ---------------------------------------------------------------- report
 const failed = results.filter((r) => !r.pass);

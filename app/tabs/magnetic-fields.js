@@ -66,6 +66,7 @@ export default {
       this.wires[k].x = getNum(s, `x${k + 1}`, DEFAULT_WIRES[k].x);
       this.wires[k].y = getNum(s, `y${k + 1}`, DEFAULT_WIRES[k].y);
     }
+    if (this.mode === 'random' && s.i1 === undefined) this.randomize(); // hidden values are kept out of the URL: draw fresh ones
     this.nLines = Math.max(1, Math.round(getNum(s, 'nl', 5)));
     this.iLine = getNum(s, 'il', 1);
     this.K = getNum(s, 'K', 100);

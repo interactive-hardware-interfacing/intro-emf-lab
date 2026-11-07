@@ -50,12 +50,16 @@ export default {
     this.n = Math.min(4, Math.max(1, Math.round(getNum(s, 'n', 4))));
     this.mode = s.mode === 'random' ? 'random' : 'set';
     this.revealed = false;
+    // A shared or reloaded puzzle keeps its values out of the URL on purpose, so draw a fresh one
+    // rather than quietly using the defaults as the 'hidden' answer.
+    const fresh = this.mode === 'random' && s.q1 === undefined;
     for (let k = 0; k < 4; k++) {
       const c = this.charges[k];
       c.q = getNum(s, `q${k + 1}`, DEFAULTS[k].q);
       c.x = getNum(s, `x${k + 1}`, DEFAULTS[k].x);
       c.y = getNum(s, `y${k + 1}`, DEFAULTS[k].y);
     }
+    if (fresh) this.randomize();
     this.cut = new CutPlane({ plane: s.plane ?? 'xy', offset: getNum(s, 'off', 0), range: [-0.25, 0.25], extents: EXTENTS });
     this.applyCut();
     this.buildControls();

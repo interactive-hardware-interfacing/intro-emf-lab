@@ -70,3 +70,21 @@ frame and keeps the probe trace Ez(t). Presets: free-space pulse, dielectric sla
 in a conducting wall, dielectric cylinder lens, parallel-plate waveguide; paint tools for
 PEC and dielectric. Bench: pulse speed c (0.1%), Mur energy bounded, Gamma = -1/3 at a
 dielectric step (0.5%), tau = 2/3, PEC Gamma = -1, Courant number.
+
+## Audit fixes (patch 6g)
+Second independent audit after the four new tabs. Fixed: the Capacitors energy-based C
+was rebuilt from node eps without the explicit layer faces (layered stacks read 5-12%
+high; now identical to the solver's own energy and within 1e-6 of the Gauss value); the
+magnetic Interface case had H2t = H1t - K and (M1 - M2)xn with the wrong sign (n x (H2 - H1)
+= K with n from 1 to 2 gives H2t = H1t + K); Randomize puzzles loaded from a link showed the
+default charges as the hidden answer (fresh draw when the values are absent); the probe log
+is per tab and its CSV writes a header before every run of rows with a new shape; PNG
+snapshot exports the active plot/3D view, not the hidden field canvases; the FDTD Mur walls
+use the local wave speed c/sqrt(eps_r) of the adjacent cell (a slab painted up to the wall
+reflected 33%, now < 2%); log colour scales ignore non-positive bounds and never collapse to
+1e-300; the Ez(t) trace survives a paint stroke and is capped. Drift: README check count,
+Transmission lines phase tag, Line charge re-clamps a when d is lowered.
+Tests: 17 new bench checks (174) and three smoke passes (URL round trip with one control
+perturbed per tab, randomize-on-load, 900 px layout without horizontal overflow).
+Deferred to the polish batch: Interface units in magnetic mode, Gauss's-law default probe
+on a charge, accessibility labels on the charge-table inputs and 3D sliders.

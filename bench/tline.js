@@ -6,7 +6,7 @@ import { EPS0, MU0 } from '../core/constants.js';
 import { Relax2D } from '../core/relax2d.js';
 import { lineParams, twinThinWireC } from '../app/tabs/transmission-lines.js';
 
-export function tlineChecks(check) {
+export async function tlineChecks(check) {
   const c0 = 1 / Math.sqrt(MU0 * EPS0);
 
   // Coax with b/a = e in vacuum: Z0 = 60 ln(b/a) = 60 ohm exactly (with mu0 = 4 pi e-7).
@@ -57,5 +57,24 @@ export function tlineChecks(check) {
     const exact = lineParams({ geom: 'coax', a, b, epsR }).C;
     check('tline coax Gauss-Seidel 161^2: C\' within 2.5% of 2 pi eps / ln(b/a) (staircased circles)', C, exact, 2.5e-2);
     check('tline coax Gauss-Seidel: C\' from energy agrees with Gauss box (2%)', 2 * s.energy(), C, 2e-2);
+  }
+
+  // Twin-lead and parallel plates through the tab's own buildSolver (a stub shell carries the
+  // extent), so the bench exercises exactly what "Run numeric check" runs.
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'transmission-lines');
+    const shell = { view: { extent: null }, setExtent(e) { this.view.extent = e; } };
+    tab.shell = shell; tab.n = 161; tab.epsR = 2.25;
+    tab.geom = 'twin'; tab.a = 1e-3; tab.d = 6e-3; tab.validate(); tab.applyExtent();
+    let s = tab.buildSolver(); s.solve(1e-8, 400000, 100);
+    let C = s.gaussCharge(...tab.gaussBox);
+    check('tline twin-lead Gauss-Seidel 161^2: C\' within 3% of the image solution', C, lineParams(tab.params()).C, 3e-2);
+    tab.geom = 'plates'; tab.w = 20e-3; tab.d = 2e-3; tab.validate(); tab.applyExtent();
+    s = tab.buildSolver(); s.solve(1e-8, 400000, 100);
+    C = s.gaussCharge(...tab.gaussBox);
+    const ideal = lineParams(tab.params()).C;
+    check('tline plates Gauss-Seidel 161^2: C\' above the ideal (fringing) by less than 8%', C / ideal > 1 && C / ideal < 1.08 ? 1 : 0, 1, 0);
+    tab.shell = null;
   }
 }

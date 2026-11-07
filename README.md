@@ -48,7 +48,7 @@ python3 -m http.server 8000
 npm test
 ```
 
-`bench/run.js` (112 checks) covers every closed form against textbook results, both solvers
+`bench/run.js` (the count is printed at the end of a run) covers every closed form against textbook results, both solvers
 against problems with known answers, discrete identities, the worker protocol, URL state,
 the Sandbox geometry encoding, mirroring, tab/equation/DOM contracts, a parse of every
 module, and **golden files**: `bench/golden.json` freezes the numbers quoted in the

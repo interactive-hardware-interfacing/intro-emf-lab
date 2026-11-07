@@ -146,6 +146,9 @@ export default {
   solverWithV() {
     const s = new Axisym(this.solver.nr, this.solver.nz, { h: this.solver.h, z0: this.solver.z0, boundary: this.solver.boundary });
     s.V.set(this.V); s.fixed.set(this.solver.fixed); s.eps.set(this.solver.eps);
+    // The solver may carry explicit face permittivities (exact layer interfaces); the energy
+    // integral must use the same faces, or layered stacks read several % high.
+    if (this.solver.faceR) { this.solver.prepare?.(); s.faceR.set(this.solver.faceR); s.faceZ.set(this.solver.faceZ); s.facesExplicit = this.solver.facesExplicit; s.facesDirty = false; }
     return s;
   },
 

@@ -65,6 +65,7 @@ export class Shell {
   selectTab(id, { push = false } = {}) {
     const tab = this.tabs.find((t) => t.id === id) ?? this.tabs[0];
     if (this.tab?.destroy) this.tab.destroy();
+    if (this.tab && this.tab !== tab) this.probeLog = []; // a log belongs to one tab (its CSV is named after it)
     this.tab = tab;
     for (const b of this.$('tabs').children) b.setAttribute('aria-selected', String(b.dataset.id === tab.id));
     document.title = `${tab.title} · Intro EMF Lab`;
@@ -472,9 +473,7 @@ export class Shell {
     });
     $('probe-csv').addEventListener('click', () => {
       if (!this.probeLog.length) { this.flash($('probe-csv'), 'Log is empty'); return; }
-      const header = this.probeLog[0].header.join(',');
-      const lines = this.probeLog.map((r) => r.values.join(','));
-      downloadText(`${this.tab.id}-probe-log.csv`, [header, ...lines].join('\n'));
+      downloadText(`${this.tab.id}-probe-log.csv`, Shell.probeLogCsv(this.probeLog));
     });
     $('export-png').addEventListener('click', () => this.exportPng());
     $('export-csv').addEventListener('click', () => {
@@ -536,13 +535,37 @@ export class Shell {
     setTimeout(() => { btn.textContent = old; }, 1200);
   }
 
+  /**
+   * Probe log -> CSV. Rows are logged on whatever tab was active, and a tab's probe rows can
+   * change shape (an extra row appears, a label changes), so a header line is written before
+   * every run of rows that share one header.
+   */
+  static probeLogCsv(log) {
+    const lines = [];
+    let last = null;
+    for (const r of log) {
+      const h = r.header.join(',');
+      if (h !== last) { lines.push(h); last = h; }
+      lines.push(r.values.join(','));
+    }
+    return lines.join('\n');
+  }
+
   exportPng() {
     const out = document.createElement('canvas');
-    out.width = this.view.width; out.height = this.view.height;
     const ctx = out.getContext('2d');
-    ctx.fillStyle = '#111';
-    ctx.fillRect(0, 0, out.width, out.height);
-    for (const c of this.stackEl.querySelectorAll('canvas')) if (!c.classList.contains('hidden')) ctx.drawImage(c, 0, 0);
+    const el = this.stageView && this.stageView !== 'field' ? this.$('stage-view').querySelector(`.view-root[data-view="${this.stageView}"]`) : null;
+    const viewCanvas = el ? [...el.querySelectorAll('canvas')].find((c) => c.width > 0 && c.offsetParent !== null) : null;
+    if (viewCanvas) {
+      // A plot or 3D view: export that view's own canvas
+      out.width = viewCanvas.width; out.height = viewCanvas.height;
+      ctx.drawImage(viewCanvas, 0, 0);
+    } else {
+      out.width = this.view.width; out.height = this.view.height;
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, out.width, out.height);
+      for (const c of this.stackEl.querySelectorAll('canvas')) if (!c.classList.contains('hidden')) ctx.drawImage(c, 0, 0);
+    }
     const a = document.createElement('a');
     a.href = out.toDataURL('image/png');
     a.download = `${this.tab.id}.png`;

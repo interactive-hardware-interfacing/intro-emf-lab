@@ -59,7 +59,7 @@ const GEOMS = {
 export default {
   id: 'transmission-lines',
   title: 'Transmission lines',
-  phase: 5,
+  phase: 6,
   available: true,
   summary: 'Per-unit-length C′, L′, Z₀ and v of coax, twin-lead and parallel-plate lines from their cross-section field.',
   extent: [-2e-3, 2e-3, -2e-3, 2e-3],

@@ -69,14 +69,16 @@ export default {
       rs = this.rs * 1e-9;
       F2t = F1t; F2n = (k1 * F1n + rs) / k2;
     } else {
-      // B_n continuous; H2t = H1t - K  (sheet current K along z, n from 1 to 2)
+      // B_n continuous; n x (H2 - H1) = K with n = +x (from 1 to 2), t = +y, K along +z:
+      // x × y = z, so H2t = H1t + K.
       rs = this.rs;
-      F2n = F1n; F2t = k2 * (F1t / k1 - rs);
+      F2n = F1n; F2t = k2 * (F1t / k1 + rs);
     }
     const th2 = Math.atan2(F2t, F2n);
     this.sol = { mag, cond, th1, th2, F1n, F1t, F2n, F2t, k1, k2, rs,
-      // bound surface charge (P1 - P2)·n, or magnetisation surface current (M1 - M2)×n -> z component
-      bound: mag ? ((k1 / MU0 - 1) * F1t / k1 - (k2 / MU0 - 1) * F2t / k2) : ((k1 - EPS0) * F1n - (k2 - EPS0) * F2n),
+      // bound surface charge (P1 - P2)·n, or magnetisation surface current K_m = (M1 - M2)×n:
+      // (M1t - M2t) y × x = (M2t - M1t) z, so the z component is M2t - M1t
+      bound: mag ? ((k2 / MU0 - 1) * F2t / k2 - (k1 / MU0 - 1) * F1t / k1) : ((k1 - EPS0) * F1n - (k2 - EPS0) * F2n),
       D1n: k1 * F1n, D2n: k2 * F2n };
     return this.sol;
   },
@@ -222,8 +224,8 @@ export default {
     row(s.mag ? '|B1|, |B2|' : '|E1|, |E2|', `${sci(Math.hypot(s.F1n, s.F1t))}, ${sci(Math.hypot(s.F2n, s.F2t))} ${u}`);
     if (s.mag) {
       row('B_n (continuous)', `${sci(s.F1n)} → ${sci(s.F2n)} T`);
-      row('H_t', `${sci(s.F1t / s.k1)} → ${sci(s.F2t / s.k2)} A/m${this.rs ? ' (jump = K)' : ' (continuous)'}`);
-      row('magnetisation current (M1−M2)×n', `${sci(s.bound)} A/m`);
+      row('H_t', `${sci(s.F1t / s.k1)} → ${sci(s.F2t / s.k2)} A/m${this.rs ? ' (H2t − H1t = K)' : ' (continuous)'}`);
+      row('magnetisation current (M1−M2)×n, z', `${sci(s.bound)} A/m`);
     } else {
       row('E_t (continuous)', `${sci(s.F1t)} → ${sci(s.F2t)} V/m`);
       row('D_n', `${sci(s.D1n)} → ${sci(s.D2n)} C/m²${s.cond || this.rs ? ' (jump = ρs)' : ' (continuous)'}`);
@@ -253,7 +255,7 @@ export default {
     else {
       box.appendChild(ui.field(mag ? 'Sheet current K on the interface (A/m, along z)' : 'Free surface charge ρs on the interface (nC/m²)', ui.number(this.rs, { onChange: (v) => { this.rs = v; re(); } })));
       box.appendChild(ui.el('p', 'hint', mag
-        ? 'B_n is continuous; H_t jumps by K. With K = 0 the lines refract by tan θ2 / tan θ1 = μ2/μ1: a high-μ medium pulls B nearly parallel to its surface.'
+        ? 'B_n is continuous; H_t jumps by K (n̂ × (H₂ − H₁) = K ẑ, with n̂ from medium 1 to 2, so H₂t = H₁t + K). With K = 0 the lines refract by tan θ2 / tan θ1 = μ2/μ1: a high-μ medium pulls B nearly parallel to its surface.'
         : 'E_t is continuous; D_n jumps by ρs. With ρs = 0 the lines refract by tan θ2 / tan θ1 = ε2/ε1, and the bound charge (P1 − P2)·n is what bends them.'));
     }
     box.appendChild(ui.el('h2', '', 'Boundary conditions'));

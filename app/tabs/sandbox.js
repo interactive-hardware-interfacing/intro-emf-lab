@@ -392,7 +392,7 @@ export default {
     switch (layer) {
       case 'V': return drawScalarField(ctx, this.gridV, { map: opts.map, extent: opts.extent, min: opts.min ?? this.vRange[0], max: opts.max ?? this.vRange[1] });
       case 'Emag': return drawScalarField(ctx, this.gridEmag, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.eRange[0], max: opts.max ?? this.eRange[1] });
-      case 'res': return drawScalarField(ctx, this.gridRes, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.tol * 0.01, max: opts.max ?? Math.max(this.residual, this.tol) });
+      case 'res': return drawScalarField(ctx, this.gridRes, { map: opts.map, extent: opts.extent, log: true, min: opts.min ?? this.tol * 0.01, max: opts.max ?? (Number.isFinite(this.residual) && this.residual > 0 ? Math.max(this.residual, this.tol) : this.tol) });
       case 'E':
         if (opts.style === 'lines') {
           const seeds = [];

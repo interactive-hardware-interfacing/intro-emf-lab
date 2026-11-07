@@ -23,6 +23,9 @@ import { EPS0, MU0 } from './constants.js';
 
 export const C0 = 1 / Math.sqrt(EPS0 * MU0);
 
+/** Longest Ez(t) record kept at the probe (steps). */
+export const TRACE_MAX = 6000;
+
 export class FDTD2D {
   /**
    * @param {number} nx  Ez samples along x
@@ -63,9 +66,11 @@ export class FDTD2D {
       this.cb[k] = (dt / (eps * h)) / (1 + loss);
     }
     this.ch = dt / (MU0 * h);
-    // Mur coefficient (free-space wave speed at the walls)
+    // Mur coefficient for free space; a wall cell next to a dielectric uses murAt() instead,
+    // with the local wave speed c / sqrt(eps_r), otherwise a slab painted up to the wall reflects.
     const cdt = C0 * dt;
     this.mur = (cdt - h) / (cdt + h);
+    this.cdt = cdt;
     // previous-step Ez along each wall and one cell in, for the Mur update
     this.prevL = new Float64Array(2 * this.ny); this.prevR = new Float64Array(2 * this.ny);
     this.prevB = new Float64Array(2 * this.nx); this.prevT = new Float64Array(2 * this.nx);
@@ -138,10 +143,12 @@ export class FDTD2D {
       else { const k = this.idx(s.i, s.j); if (!pec[k]) Ez[k] += v; }
     }
     // ---- Mur first-order absorbing walls: E_wall^{n+1} = E_in^n + mur (E_in^{n+1} - E_wall^n)
+    const { cdt, epsR, h } = this;
     const m = this.mur;
+    const murAt = (k) => { const e = epsR[k]; if (e === 1) return m; const c = cdt / Math.sqrt(e); return (c - h) / (c + h); };
     for (let j = 1; j < ny - 1; j++) {
-      Ez[j * nx] = this.prevL[2 * j + 1] + m * (Ez[j * nx + 1] - this.prevL[2 * j]);
-      Ez[j * nx + nx - 1] = this.prevR[2 * j + 1] + m * (Ez[j * nx + nx - 2] - this.prevR[2 * j]);
+      Ez[j * nx] = this.prevL[2 * j + 1] + murAt(j * nx + 1) * (Ez[j * nx + 1] - this.prevL[2 * j]);
+      Ez[j * nx + nx - 1] = this.prevR[2 * j + 1] + murAt(j * nx + nx - 2) * (Ez[j * nx + nx - 2] - this.prevR[2 * j]);
     }
     if (this.yWall === 'mirror') {
       for (let i = 1; i < nx - 1; i++) { Ez[i] = Ez[nx + i]; Ez[(ny - 1) * nx + i] = Ez[(ny - 2) * nx + i]; }
@@ -149,15 +156,19 @@ export class FDTD2D {
       for (let i = 1; i < nx - 1; i++) { Ez[i] = 0; Ez[(ny - 1) * nx + i] = 0; }
     } else {
       for (let i = 1; i < nx - 1; i++) {
-        Ez[i] = this.prevB[2 * i + 1] + m * (Ez[nx + i] - this.prevB[2 * i]);
-        Ez[(ny - 1) * nx + i] = this.prevT[2 * i + 1] + m * (Ez[(ny - 2) * nx + i] - this.prevT[2 * i]);
+        Ez[i] = this.prevB[2 * i + 1] + murAt(nx + i) * (Ez[nx + i] - this.prevB[2 * i]);
+        Ez[(ny - 1) * nx + i] = this.prevT[2 * i + 1] + murAt((ny - 2) * nx + i) * (Ez[(ny - 2) * nx + i] - this.prevT[2 * i]);
       }
     }
     // corners: average of the two neighbours
     Ez[0] = 0.5 * (Ez[1] + Ez[nx]); Ez[nx - 1] = 0.5 * (Ez[nx - 2] + Ez[2 * nx - 1]);
     Ez[(ny - 1) * nx] = 0.5 * (Ez[(ny - 1) * nx + 1] + Ez[(ny - 2) * nx]);
     Ez[ny * nx - 1] = 0.5 * (Ez[ny * nx - 2] + Ez[(ny - 1) * nx - 1]);
-    if (this.trace) { this.trace.t.push(this.t); this.trace.v.push(Ez[this.idx(this.trace.i, this.trace.j)]); }
+    if (this.trace) {
+      const tr = this.trace;
+      tr.t.push(this.t); tr.v.push(Ez[this.idx(tr.i, tr.j)]);
+      if (tr.t.length > TRACE_MAX + 1000) { tr.t.splice(0, tr.t.length - TRACE_MAX); tr.v.splice(0, tr.v.length - TRACE_MAX); } // keep the record bounded
+    }
   }
 
   /** Total electromagnetic energy in the box, J per metre of z. */

@@ -214,6 +214,101 @@ export async function run(check) {
     check('equations: every TeX string renders in KaTeX', bad, 0, 0);
   }
 
+  // ------------------------------------------------------------ 5d. audit regressions (phase 6g)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const { Shell } = await import('../app/shell.js');
+    const { scalarBounds } = await import('../core/render.js');
+    const { AxisymMag } = await import('../core/axisym.js');
+    const MU0 = 4e-7 * Math.PI;
+
+    // Capacitors: the energy-based C must use the solver's explicit layer faces
+    const cap = TABS.find((t) => t.id === 'capacitors');
+    const sol = diskCapacitor({ V: 5, R: 4e-3, g: 6e-3, epsR: 2, epsR2: 8, cellsPerLayer: 6 });
+    sol.solve(1e-9, 2e5, 50);
+    cap.solver = sol; cap.V = new Float64Array(sol.V); cap.meta = sol.meta;
+    const cEnergy = 2 * cap.solverWithV().energy() / 25;
+    check('capacitors tab: C(energy) from solverWithV equals the solver with explicit faces (1e-9)', cEnergy, 2 * sol.energy() / 25, 1e-9);
+    {
+      // Gauss C from the box around the top plate, exactly as finish() does
+      const { g, R, t, h } = sol.meta;
+      const jTop = Math.round((g / 2 - sol.z0) / h), jTopEnd = Math.round((g / 2 + t - sol.z0) / h);
+      const q = sol.gaussCharge(0, jTop - 1, Math.min(sol.nr - 2, Math.round((R + 3 * h) / h)), Math.min(sol.nz - 2, jTopEnd + 1));
+      check('capacitors tab: C(energy) vs C(Gauss) within 0.5% for a layered stack', cEnergy, q / 5, 5e-3);
+    }
+    cap.solver = null; cap.V = null; cap.meta = null;
+
+    // Interface, magnetic: n x (H2 - H1) = K with n from 1 to 2 gives H2t = H1t + K
+    const iface = TABS.find((t) => t.id === 'interface');
+    iface.mode = 'magnetic'; iface.e1 = 1; iface.e2 = 1; iface.F1 = 100; iface.th1 = 0; iface.rs = 10;
+    let m = iface.solve();
+    check('interface magnetic: H2t - H1t = +K', m.F2t / m.k2 - m.F1t / m.k1, 10, 1e-9);
+    iface.e2 = 50; iface.th1 = 20; m = iface.solve();
+    check('interface magnetic: K_m,z = (M1-M2)xn = (B2t-B1t)/mu0 - K', m.bound, (m.F2t - m.F1t) / MU0 - 10, 1e-6);
+    iface.mode = 'electric'; iface.rs = 0; iface.e2 = 4; iface.th1 = 40;
+
+    // Probe log CSV: a header precedes every run of rows with a new shape
+    const csv = Shell.probeLogCsv([{ header: ['a', 'b'], values: [1, 2] }, { header: ['a', 'b'], values: [3, 4] }, { header: ['a', 'b', 'c'], values: [5, 6, 7] }]);
+    const lines = csv.split('\n');
+    const okRows = lines.every((l, i) => { if (!/^[a-z]/.test(l)) { let h = i; while (h >= 0 && !/^[a-z]/.test(lines[h])) h--; return lines[h].split(',').length === l.split(',').length; } return true; });
+    check('probe log csv: every value row matches the header above it', okRows ? 1 : 0, 1, 0);
+    check('probe log csv: header repeated when the row shape changes', lines.filter((l) => /^[a-z]/.test(l)).length, 2, 0);
+
+    // Log colour scales: non-positive or absent bounds never collapse to 1e-300
+    const zeros = new Grid2D(5, 5, [0, 1, 0, 1]);
+    let [lo, hi] = scalarBounds(zeros, { log: true, min: 0 });
+    check('render scalarBounds: log scale with min 0 on an all-zero grid gives finite ordered bounds', Number.isFinite(lo) && Number.isFinite(hi) && hi > lo && lo > -10 ? 1 : 0, 1, 0);
+    const g = new Grid2D(5, 5, [0, 1, 0, 1]); g.data.fill(3); g.data[0] = 0; g.data[1] = -7;
+    [lo, hi] = scalarBounds(g, { log: true, min: -1, max: 0 });
+    check('render scalarBounds: ignores non-positive manual bounds on a log scale (uses |data| > 0)', Math.pow(10, lo), 3, 1e-9);
+    check('render scalarBounds: max stays above min', hi > lo ? 1 : 0, 1, 0);
+
+    // Gauss's law: patch areas tile the surface exactly
+    const gauss = TABS.find((t) => t.id === 'gauss-law');
+    gauss.n = 1; gauss.charges[0] = { q: 1, x: 0.1, y: 0.1, z: 0 };
+    gauss.surf = { kind: 'sphere', cx: 0.25, cy: 0.25, cz: 0, R: 0.07, a: 0.05 }; gauss.res = 24; gauss.compute();
+    check('gauss-law: sphere patches sum to 4 pi R^2', gauss.results.area, 4 * Math.PI * 0.07 * 0.07, 1e-12);
+    gauss.surf.kind = 'box'; gauss.compute();
+    check('gauss-law: cube patches sum to 24 a^2', gauss.results.area, 24 * 0.05 * 0.05, 1e-12);
+
+    // mu(B): the converged material satisfies the B-H curve in every masked cell, not just on average
+    {
+      const h = 0.005, Rc = 0.5, a = 0.2, muI = 50, K = 2e5, Bsat = 1.0;
+      const s = new AxisymMag(201, 7, { h, z0: 0, boundary: { zmin: 'neumann', zmax: 'neumann' } });
+      s.jWhere((r) => Math.abs(r - Rc) < h / 4, K / h);
+      s.muWhere((r) => r <= a + h / 4, muI);
+      const mask = new Uint8Array(s.eps.length); for (let k = 0; k < mask.length; k++) if (s.eps[k] === muI) mask[k] = 1;
+      s.setSaturation({ mask, muI, Bsat });
+      s.solve(1e-12, 1e6, 100);
+      const [br, bz] = s.B();
+      let worst = 0;
+      for (let k = 0; k < mask.length; k++) if (mask[k]) { const B = Math.hypot(br.data[k], bz.data[k]), H = B / (MU0 * s.eps[k]); worst = Math.max(worst, Math.abs(s.eps[k] - AxisymMag.Bcurve(H, muI, Bsat) / (MU0 * H)) / s.eps[k]); }
+      check('axisym-mag saturating: every masked cell sits on the B-H curve (1e-3)', worst < 1e-3 ? 1 : 0, 1, 0);
+    }
+
+    // FDTD worker: a warm init carries the probe trace along, and the trace stays bounded
+    {
+      const { FDTD2D, TRACE_MAX } = await import('../core/fdtd2d.js');
+      const s = new FDTD2D(41, 41, { h: 0.01 }); s.setTrace(20, 20); s.addSource({ i: 10, j: 20, f: 1e9 });
+      s.step(TRACE_MAX + 2500);
+      check('fdtd: probe trace is capped', s.trace.t.length <= TRACE_MAX + 1000 ? 1 : 0, 1, 0);
+      const msgs = [];
+      const self_ = { postMessage: (m) => msgs.push(m), onmessage: null };
+      globalThis.self = self_;
+      await import('../app/workers/relax-worker.js?audit');
+      const send = (m) => self_.onmessage({ data: m });
+      const base = { cmd: 'init', kind: 'fdtd', nx: 41, ny: 41, h: 0.01, epsR: new Float64Array(41 * 41).fill(1), pec: new Uint8Array(41 * 41), sources: [{ i: 10, j: 20, f: 1e9 }] };
+      send({ ...base, trace: { i: 20, j: 20 } });
+      send({ cmd: 'step', k: 50 });
+      const f1 = msgs.at(-1);
+      send({ ...base, trace: { i: 20, j: 20, t: f1.trace.t, v: f1.trace.v }, Ez: f1.Ez, Hx: f1.Hx, Hy: f1.Hy, t: f1.t, step: f1.step });
+      send({ cmd: 'step', k: 10 });
+      const f2 = msgs.at(-1);
+      check('worker fdtd: warm init keeps the Ez(t) trace (50 + 10 samples)', f2.trace.t.length, 60, 0);
+      delete globalThis.self;
+    }
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

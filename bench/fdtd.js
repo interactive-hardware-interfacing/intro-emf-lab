@@ -56,6 +56,18 @@ export function fdtdChecks(check) {
     check('fdtd: reflection off n = 2 half-space is (1-n)/(1+n) (3%)', second[1] / first[1], (1 - n_) / (1 + n_), 3e-2);
     check('fdtd: transmission into n = 2 half-space is 2/(1+n) (3%)', tpk[1] / first[1], 2 / (1 + n_), 3e-2);
   }
+  // 3b. The same slab runs up to the right wall: the Mur wall must absorb with the local wave
+  //     speed c/n, or the transmitted pulse comes back. Probe at 4.5 m sees the transmitted
+  //     pulse (~19 ns) and, if the wall reflects, an echo after another 3 m at c/2 (~39 ns).
+  {
+    const n_ = 2, s = planeWaveBox({ nx: 601 });
+    fillRect(s, 3.5, 6.0, 0, 0.4, { epsR: n_ * n_ });
+    const tr = [];
+    for (let n = 0; n < 2600; n++) { s.step(1); tr.push([s.t, s.ez(450, 20)]); }
+    const tSplit = 3.3 / C0 + 1.0 / (C0 / n_) + 1.5e-9 + 4e-9;
+    const tpk = peakOf(tr.filter((p) => p[0] < tSplit)), echo = peakOf(tr.filter((p) => p[0] > tSplit));
+    check('fdtd: Mur wall inside a dielectric (n = 2) reflects < 2% of the transmitted pulse', Math.abs(echo[1] / tpk[1]) < 0.02 ? 1 : 0, 1, 0);
+  }
   // 4. PEC wall at x = 3.0 m, probe at 2.0 m: reflection -1.
   {
     const s = planeWaveBox({ nx: 401 });
