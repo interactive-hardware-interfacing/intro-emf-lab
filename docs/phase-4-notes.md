@@ -57,3 +57,17 @@ empty coil 204 uH (Nagaoka 204 uH), object centred 276 uH.
 - Side panels are resizable by dragging the divider; widths persist in localStorage.
 - Bench parses every browser module with `node --check` (76 checks): a dropped comma
   in a tab file now fails CI instead of blanking the page.
+
+## Stage views (centre-window tabs)
+A tab may offer views of the centre window: `tab.views = [{ id, label, footer?, mount(el, shell) }]`,
+shown as a tab row above the plot; "Field" (the layered canvases) is always first and the
+choice is kept in the URL (`sv=`). `app/views.js` provides `plotView(id, label, draw)` for
+full-size plots and `iso3dView(id, label, source, shell)`: an isometric rendering of an
+axisymmetric solution built from the vertical cut through the axis and a horizontal cut at an
+adjustable height, both painted with the current colour layer, with the device drawn as
+cylinders. Pure canvas 2D (an isometric projection is affine, so the field images are drawn
+with setTransform and clipped to the cut shapes); no 3D library.
+- Capacitors: Field, 3D, Axis plots (D, eps0 E, P with axes, ticks, plate bands), Sweep.
+- Inductors: Field, 3D, Axis plots (B, H, M), Sweep (L vs position).
+- Sandbox: Field, Convergence (residual vs sweep, log scale, tolerance line).
+Also: the cut-plane slider and text box are now two-way synced (Ring charge, Point charges).

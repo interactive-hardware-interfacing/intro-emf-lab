@@ -9,6 +9,7 @@ import { Axisym, diskCapacitor, idealLayeredC, kirchhoffC } from '../../core/axi
 import { drawScalarField, drawQuiver, drawStreamlines, drawContours, levelsBetween } from '../../core/render.js';
 import { SolverClient } from '../solverclient.js';
 import { mirrorGrid } from '../mirror.js';
+import { plotView, iso3dView } from '../views.js';
 import { getNum, downloadText } from '../state.js';
 import { ui, sci } from '../shell.js';
 
@@ -50,11 +51,38 @@ export default {
     this.sweep = { param: s.sw ?? 'g', from: getNum(s, 'sw0', 1), to: getNum(s, 'sw1', 4), n: Math.round(getNum(s, 'swn', 4)), rows: [], running: false };
     this.client = new SolverClient({ onFrame: (m) => this.onFrame(m) });
     this.build();
+    this.views = [
+      iso3dView('3d', '3D', this.isoSource(), shell),
+      plotView('axis', 'Axis plots', (ctx, w, h) => this.drawCutline(ctx, w, h)),
+      plotView('sweep', 'Sweep', (ctx, w, h) => this.drawSweep(ctx, w, h)),
+    ];
     this.buildControls();
     this.solve();
   },
 
   destroy() { this.client?.terminate(); this.client = null; this.shell.solverRunning = false; },
+
+  /** What the 3D view needs: the current colour-layer grid (mirrored), a sampler, and the geometry. */
+  isoSource() {
+    const tab = this;
+    const gridFor = () => {
+      const id = this.shell.colorLayer;
+      const g = id === 'Emag' ? this.gridEmag : id === 'w' ? this.gridW : this.gridV;
+      if (!g) return null;
+      return this.mirror ? g : mirrorGrid(g);
+    };
+    return {
+      grid: gridFor,
+      scalarAt: (r, z) => gridFor()?.sample(r, z) ?? NaN,
+      get log() { return !!tab.layers.find((L) => L.id === tab.shell.colorLayer)?.log; },
+      zRange: () => [this.solver.extent[2], this.solver.extent[3]],
+      cylinders: () => { const { g, R, t } = this.meta; return [
+        { r0: 0, r1: R, z0: -g / 2, z1: g / 2, color: 'rgba(80,220,220,0.8)', label: 'dielectric' },
+        { r0: 0, r1: R, z0: g / 2, z1: g / 2 + t, color: '#fff', fill: 'rgba(229,72,77,0.55)', label: `+${this.meta.V} V` },
+        { r0: 0, r1: R, z0: -g / 2 - t, z1: -g / 2, color: '#fff', fill: 'rgba(59,130,246,0.55)', label: '0 V' },
+      ]; },
+    };
+  },
 
   // ------------------------------------------------------------ model
 
@@ -111,7 +139,6 @@ export default {
     const cKirch = kirchhoffC({ g, R, epsEff, t });
     this.results = { W, Q, cEnergy, cGauss, cIdeal, cKirch, epsEff };
     this.renderResults();
-    this.drawCutline();
     this.shell.recompute();
   },
 
@@ -245,13 +272,10 @@ export default {
     box.appendChild(ui.el('p', 'hint', 'Energy: C = 2W/V². Gauss: C = Q/V with Q the flux of D out of a box around the top plate. Ideal: the handout\'s three-capacitors-in-series formula (no fringing). Kirchhoff: the classical edge correction, which assumes the dielectric fills all space, so it overshoots when the dielectric stops at the plate edge.'));
 
     box.appendChild(ui.el('h2', '', 'D, ε₀E and P along the axis'));
-    this.cutCanvas = document.createElement('canvas'); this.cutCanvas.width = 480; this.cutCanvas.height = 200;
-    this.cutCanvas.style.width = '100%'; this.cutCanvas.style.border = '1px solid var(--line)'; this.cutCanvas.style.borderRadius = '6px'; this.cutCanvas.style.background = '#fff';
-    box.appendChild(this.cutCanvas);
     const cr = ui.el('div', 'row');
-    cr.appendChild(ui.button('Download cutline CSV', () => { const t = this.cutlineCSV(); if (t) downloadText('capacitor-axis-cutline.csv', t); }, 'btn btn-small'));
+    cr.append(ui.button('Show axis plots', () => { shell.setStageView('axis'); shell.syncUrl(); }, 'btn btn-small'), ui.button('Download cutline CSV', () => { const t = this.cutlineCSV(); if (t) downloadText('capacitor-axis-cutline.csv', t); }, 'btn btn-small'));
     box.appendChild(cr);
-    box.appendChild(ui.el('p', 'hint', 'Along r = 0 from below the bottom plate to above the top plate. D is continuous across the layers; E and P step.'));
+    box.appendChild(ui.el('p', 'hint', 'Along r = 0 from below the bottom plate to above the top plate. D is continuous across the layers; E and P step. The plot is in the "Axis plots" view above the simulation.'));
 
     box.appendChild(ui.el('h2', '', 'Parameter sweep'));
     const sr = ui.el('div', 'row');
@@ -266,10 +290,9 @@ export default {
     box.appendChild(sr3);
     this.sweepEl = ui.el('table', 'probe-table'); this.sweepEl.appendChild(document.createElement('tbody'));
     box.appendChild(this.sweepEl);
-    box.appendChild(ui.el('p', 'hint', 'Each point is a full solve at the current resolution; coarse resolution is fine for a sweep. Other parameters stay at the values above.'));
+    box.appendChild(ui.el('p', 'hint', 'Each point is a full solve at the current resolution; coarse resolution is fine for a sweep. Other parameters stay at the values above. The curve is in the "Sweep" view.'));
     this.renderResults();
     this.renderSweep();
-    this.drawCutline();
   },
 
   renderResults() {
@@ -302,31 +325,40 @@ export default {
     return out;
   },
 
-  drawCutline() {
-    const c = this.cutCanvas; if (!c || !this.gridV) return;
-    const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
+  drawCutline(ctx, W, H) {
+    if (!this.gridV) return;
+    const c = { width: W, height: H };
     const rows = this.cutline().filter((r) => !r.conductor);
     if (!rows.length) return;
+    ctx.font = '12px system-ui';
     const zs = rows.map((r) => r.z), z0 = Math.min(...zs), z1 = Math.max(...zs);
     const vals = rows.flatMap((r) => [r.D, r.e0E, r.P]).filter(Number.isFinite);
     const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
-    const px = (z) => 40 + ((z - z0) / (z1 - z0 || 1)) * (c.width - 50);
-    const py = (v) => 10 + (1 - (v - lo) / (hi - lo || 1)) * (c.height - 32);
-    ctx.strokeStyle = '#ddd'; ctx.beginPath(); ctx.moveTo(40, py(0)); ctx.lineTo(c.width - 10, py(0)); ctx.stroke();
-    // layer boundaries
-    const { g } = this.meta;
-    ctx.strokeStyle = '#eee'; for (const zb of [-g / 2, -g / 6, g / 6, g / 2]) { ctx.beginPath(); ctx.moveTo(px(zb), 10); ctx.lineTo(px(zb), c.height - 22); ctx.stroke(); }
-    const series = [['D', '#1f5fbf'], ['e0E', '#e5484d'], ['P', '#2a9d4b']];
+    const L = 80, T = 30, B = 50, Rm = 20;
+    const px = (z) => L + ((z - z0) / (z1 - z0 || 1)) * (c.width - L - Rm);
+    const py = (v) => T + (1 - (v - lo) / (hi - lo || 1)) * (c.height - T - B);
+    // axes and ticks
+    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, c.height - B); ctx.lineTo(c.width - Rm, c.height - B); ctx.stroke();
+    ctx.fillStyle = '#5a5955';
+    for (let k = 0; k <= 4; k++) { const v = lo + (k / 4) * (hi - lo); ctx.fillText(sci(v, 3), 4, py(v) + 4); ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(L, py(v)); ctx.lineTo(c.width - Rm, py(v)); ctx.stroke(); }
+    for (let k = 0; k <= 6; k++) { const z = z0 + (k / 6) * (z1 - z0); ctx.fillText(`${(z * 1e3).toFixed(2)}`, px(z) - 12, c.height - B + 16); }
+    ctx.fillText('z along the axis (mm)', c.width / 2 - 60, c.height - 8);
+    ctx.save(); ctx.translate(14, c.height / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('C/m²', -14, 0); ctx.restore();
+    ctx.strokeStyle = '#bbb'; ctx.beginPath(); ctx.moveTo(L, py(0)); ctx.lineTo(c.width - Rm, py(0)); ctx.stroke();
+    // layer boundaries and plates
+    const { g, t } = this.meta;
+    ctx.strokeStyle = '#ddd'; ctx.setLineDash([4, 4]); for (const zb of [-g / 2, -g / 6, g / 6, g / 2]) { ctx.beginPath(); ctx.moveTo(px(zb), T); ctx.lineTo(px(zb), c.height - B); ctx.stroke(); } ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(229,72,77,0.15)'; ctx.fillRect(px(g / 2), T, px(Math.min(g / 2 + t, z1)) - px(g / 2), c.height - T - B);
+    ctx.fillStyle = 'rgba(59,130,246,0.15)'; ctx.fillRect(px(Math.max(-g / 2 - t, z0)), T, px(-g / 2) - px(Math.max(-g / 2 - t, z0)), c.height - T - B);
+    const series = [['D', '#1f5fbf', 'D'], ['e0E', '#e5484d', 'ε₀E'], ['P', '#2a9d4b', 'P']];
     for (const [key, color] of series) {
-      ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.beginPath();
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
       rows.forEach((r, k) => { const X = px(r.z), Y = py(r[key]); if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); });
       ctx.stroke();
     }
-    ctx.fillStyle = '#5a5955'; ctx.font = '11px system-ui';
-    ctx.fillText(`${sci(hi, 2)} C/m²`, 2, 14); ctx.fillText(`${sci(lo, 2)}`, 2, c.height - 24);
-    ctx.fillText('z (bottom plate → top plate)', 40, c.height - 6);
-    let lx = c.width - 150;
-    for (const [key, color] of [['D', '#1f5fbf'], ['ε₀E', '#e5484d'], ['P', '#2a9d4b']]) { ctx.fillStyle = color; ctx.fillRect(lx, c.height - 16, 10, 10); ctx.fillStyle = '#5a5955'; ctx.fillText(key, lx + 14, c.height - 7); lx += 46; }
+    let lx = c.width - 200;
+    for (const [, color, name] of series) { ctx.fillStyle = color; ctx.fillRect(lx, T - 18, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText(name, lx + 16, T - 8); lx += 60; }
+    ctx.fillStyle = '#5a5955'; ctx.fillText('D (normal) is continuous across the layers; E and P step by the permittivity ratio. Shaded bands: the plates.', L, T - 8);
   },
 
   cutlineCSV() {
@@ -367,9 +399,31 @@ export default {
   renderSweep() {
     if (!this.sweepEl) return;
     const tb = this.sweepEl.tBodies[0]; tb.innerHTML = '';
+    this.shell.updateStageView();
     if (!this.sweep.rows.length) return;
     const head = document.createElement('tr'); head.innerHTML = `<td>${this.sweep.param}</td><td>C (F) · ideal (F) · ratio</td>`; tb.appendChild(head);
     for (const r of this.sweep.rows) { const tr = document.createElement('tr'); tr.innerHTML = `<td>${sci(r.value, 4)}</td><td>${sci(r.cEnergy, 4)} · ${sci(r.cIdeal, 4)} · ${(r.cEnergy / r.cIdeal).toFixed(3)}</td>`; tb.appendChild(tr); }
+  },
+
+  drawSweep(ctx, W, H) {
+    const rows = this.sweep.rows;
+    ctx.font = '12px system-ui'; ctx.fillStyle = '#5a5955';
+    if (!rows.length) { ctx.fillText('Run a parameter sweep from the side panel to plot C against the chosen parameter here.', 20, 30); return; }
+    const name = SWEEPABLE.find(([k]) => k === this.sweep.param)?.[1] ?? this.sweep.param;
+    const xs = rows.map((r) => r.value), ys = rows.map((r) => r.cEnergy), yi = rows.map((r) => r.cIdeal);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = 0, y1 = Math.max(...ys, ...yi) * 1.05;
+    const L = 80, T = 30, B = 50, Rm = 20;
+    const px = (x) => L + ((x - x0) / (x1 - x0 || 1)) * (W - L - Rm), py = (y) => T + (1 - (y - y0) / (y1 - y0 || 1)) * (H - T - B);
+    ctx.strokeStyle = '#ccc'; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - Rm, H - B); ctx.stroke();
+    for (let k = 0; k <= 4; k++) { const v = y0 + (k / 4) * (y1 - y0); ctx.fillText(sci(v, 3), 4, py(v) + 4); ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(L, py(v)); ctx.lineTo(W - Rm, py(v)); ctx.stroke(); }
+    for (let k = 0; k <= 5; k++) { const v = x0 + (k / 5) * (x1 - x0); ctx.fillText(sci(v, 3), px(v) - 12, H - B + 16); }
+    ctx.fillText(name, W / 2 - 60, H - 8);
+    ctx.save(); ctx.translate(14, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('C (F)', -16, 0); ctx.restore();
+    const line = (vals, color, dash) => { ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.setLineDash(dash); ctx.beginPath(); rows.forEach((r, k) => { const X = px(r.value), Y = py(vals[k]); if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); }); ctx.stroke(); ctx.setLineDash([]); };
+    line(yi, '#999', [5, 4]); line(ys, '#1f5fbf', []);
+    ctx.fillStyle = '#1f5fbf'; for (const r of rows) { ctx.beginPath(); ctx.arc(px(r.value), py(r.cEnergy), 3.5, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.fillStyle = '#1f5fbf'; ctx.fillRect(W - 230, T - 18, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText('simulated C', W - 214, T - 8);
+    ctx.fillStyle = '#999'; ctx.fillRect(W - 120, T - 18, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText('ideal (no fringing)', W - 104, T - 8);
   },
 
   sweepCSV() {

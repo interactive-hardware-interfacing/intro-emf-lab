@@ -125,8 +125,66 @@ export class Shell {
     this.buildLayerPanel();
     this.controlsEl.innerHTML = '';
     tab.init?.(this);
+    this.buildStageViews();
     this.recompute();
     this.syncUrl({ push });
+  }
+
+  // ---------------------------------------------------------------- stage views
+
+  /**
+   * A tab may offer extra views of the centre window: tab.views = [{ id, label, footer?,
+   * mount(container, shell) -> { update() } }]. 'field' (the layered canvases) is always first.
+   */
+  buildStageViews() {
+    const nav = this.$('stage-tabs');
+    nav.innerHTML = '';
+    this.stageInstances = new Map();
+    this.$('stage-view').innerHTML = '';
+    const views = [{ id: 'field', label: 'Field' }, ...(this.tab.views ?? [])];
+    this.stageViews = views;
+    if (views.length > 1) {
+      for (const v of views) {
+        const b = document.createElement('button');
+        b.className = 'stab'; b.dataset.id = v.id; b.textContent = v.label;
+        b.addEventListener('click', () => { this.setStageView(v.id); this.syncUrl(); });
+        nav.appendChild(b);
+      }
+    }
+    const wanted = this.state.sv && views.some((v) => v.id === this.state.sv) ? this.state.sv : 'field';
+    this.setStageView(wanted, { silent: true });
+  }
+
+  setStageView(id, { silent = false } = {}) {
+    const views = this.stageViews ?? [{ id: 'field' }];
+    const v = views.find((x) => x.id === id) ?? views[0];
+    this.stageView = v.id;
+    for (const b of this.$('stage-tabs').children) b.setAttribute('aria-selected', String(b.dataset.id === v.id));
+    const isField = v.id === 'field';
+    this.stackEl.hidden = !isField;
+    const host = this.$('stage-view');
+    host.hidden = isField;
+    document.querySelector('.stage-footer').style.visibility = isField || v.footer ? 'visible' : 'hidden';
+    if (!isField) {
+      let inst = this.stageInstances.get(v.id);
+      if (!inst) {
+        const el = document.createElement('div');
+        el.className = 'view-root'; el.style.cssText = 'display:flex;flex-direction:column;height:100%;';
+        el.dataset.view = v.id;
+        host.appendChild(el);
+        inst = v.mount(el, this) ?? {};
+        this.stageInstances.set(v.id, inst);
+      }
+      for (const el of host.children) el.style.display = el.dataset.view === v.id ? 'flex' : 'none';
+      inst.update?.();
+    }
+    if (!silent) this.redraw();
+  }
+
+  /** Called after every redraw so a custom view stays in sync with the solution. */
+  updateStageView() {
+    if (!this.stageView || this.stageView === 'field') return;
+    this.stageInstances?.get(this.stageView)?.update?.();
   }
 
   /** Canvas pixel size for an extent: the longer side is CANVAS_PX, aspect follows the physics. */
@@ -276,9 +334,12 @@ export class Shell {
       if (L.kind === 'scalar' && r) range = { ...r, layer: L };
     }
     this.redrawOverlay();
+    this.lastRange = range;
+    this.lastOpts = opts;
     this.drawColorbar(range, opts.map);
     this.renderEquations();
     this.refreshStatus();
+    this.updateStageView();
   }
 
   /** Only the overlay (sources, geometry, probe marker): cheap, for pointer feedback. */
@@ -514,6 +575,7 @@ export class Shell {
       cmax: this.$('cmax').value,
       px: this.probePt[0],
       py: this.probePt[1],
+      sv: this.stageView && this.stageView !== 'field' ? this.stageView : '',
       ...(this.tab.getState?.() ?? {}),
     };
     for (const [id, st] of this.vectorStyle) s[`st_${id}`] = st;

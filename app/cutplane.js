@@ -36,7 +36,7 @@ export class CutPlane {
     const box = ui.el('div', 'row');
     const sel = ui.select([['xy', 'XY plane'], ['xz', 'XZ plane'], ['yz', 'YZ plane']], this.plane, (v) => { this.plane = v; onChange('plane'); });
     box.appendChild(ui.field('Cut plane', sel));
-    const off = ui.number(this.offset, { min: this.range[0], max: this.range[1], onChange: (v) => { this.offset = v; onChange('offset'); } });
+    const off = ui.number(this.offset, { min: this.range[0], max: this.range[1], onChange: (v) => { this.offset = v; if (this.slider) this.slider.value = String(v); onChange('offset'); } });
     this.offsetInput = off;
     this.offsetLabel = ui.field(`${this.def.normal} offset (m)`, off);
     box.appendChild(this.offsetLabel);

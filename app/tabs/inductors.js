@@ -12,6 +12,7 @@ import { AxisymMag, solenoidWithObject } from '../../core/axisym.js';
 import { drawScalarField, drawQuiver, drawStreamlines, drawContours, levelsBetween } from '../../core/render.js';
 import { SolverClient } from '../solverclient.js';
 import { mirrorGrid } from '../mirror.js';
+import { plotView, iso3dView } from '../views.js';
 import { getNum, downloadText } from '../state.js';
 import { ui, sci } from '../shell.js';
 
@@ -61,11 +62,38 @@ export default {
     this.sweep = { from: getNum(s, 'sw0', sw[0]), to: getNum(s, 'sw1', sw[1]), n: Math.round(getNum(s, 'swn', sw[2])), rows: [], running: false };
     this.client = new SolverClient({ onFrame: (m) => this.onFrame(m) });
     this.build();
+    this.views = [
+      iso3dView('3d', '3D', this.isoSource(), shell),
+      plotView('axis', 'Axis plots', (ctx, w, h) => this.drawCutline(ctx, w, h)),
+      plotView('sweep', 'Sweep', (ctx, w, h) => this.drawSweep(ctx, w, h)),
+    ];
     this.buildControls();
     this.solve();
   },
 
   destroy() { this.client?.terminate(); this.client = null; this.shell.solverRunning = false; },
+
+  isoSource() {
+    const tab = this;
+    const gridFor = () => {
+      const id = tab.shell.colorLayer;
+      const g = { Bmag: tab.gridBmag, Bz: tab.gridBz, Hmag: tab.gridHmag, Mmag: tab.gridMmag, Jphi: tab.gridJ }[id] ?? tab.gridBmag;
+      if (!g) return null;
+      const m = tab.mirror ? g : mirrorGrid(g);
+      // crop to the current view window so the 3D picture matches the zoom
+      const Z = tab.shell.view.extent[3];
+      return Grid2D.fromFunction(161, 161, [-Z, Z, -Z, Z], (x, z) => m.sample(x, z));
+    };
+    return {
+      grid: gridFor,
+      scalarAt: (r, z) => gridFor()?.sample(r, z) ?? NaN,
+      get log() { return !!tab.layers.find((L) => L.id === tab.shell.colorLayer)?.log; },
+      zRange: () => { const Z = tab.shell.view.extent[3]; return [-Z, Z]; },
+      cylinders: () => { const { Rc, l, tw, a, Lo, zPos, muR } = tab.meta; const out = [
+        { r0: Rc - tw / 2, r1: Rc + tw / 2, z0: -l / 2, z1: l / 2, color: 'rgba(245,166,35,0.95)', fill: 'rgba(245,166,35,0.35)', label: 'coil' },
+      ]; if (tab.objectIn && a > 0) out.push({ r0: 0, r1: a, z0: zPos, z1: zPos + Lo, color: '#ddd', fill: 'rgba(120,120,140,0.5)', label: `μr = ${muR}` }); return out; },
+    };
+  },
 
   // ------------------------------------------------------------ model
 
@@ -122,7 +150,6 @@ export default {
     const Lnag = nagaoka(2 * Rc, l) * Llong;
     this.results = { Lflux, Lenergy, Llong, Lnag, Wja };
     this.renderResults();
-    this.drawCutline();
     this.shell.recompute();
   },
 
@@ -257,10 +284,7 @@ export default {
     box.appendChild(ui.el('p', 'hint', 'Flux linkage: L = (1/I²)∫J·A dv = NΦ/I. Energy: L = 2W/I² with W = ½∫B·H dv, evaluated from the field on the nodes, which under-counts near the thin winding; the flux-linkage value is the one to quote. Long-solenoid and Nagaoka values are for the empty coil.'));
 
     box.appendChild(ui.el('h2', '', 'B, H, M along the axis'));
-    this.cutCanvas = document.createElement('canvas'); this.cutCanvas.width = 480; this.cutCanvas.height = 200;
-    this.cutCanvas.style.width = '100%'; this.cutCanvas.style.border = '1px solid var(--line)'; this.cutCanvas.style.borderRadius = '6px'; this.cutCanvas.style.background = '#fff';
-    box.appendChild(this.cutCanvas);
-    const cr = ui.el('div', 'row'); cr.appendChild(ui.button('Download cutline CSV', () => { const t = this.cutlineCSV(); if (t) downloadText('inductor-axis-cutline.csv', t); }, 'btn btn-small')); box.appendChild(cr);
+    const cr = ui.el('div', 'row'); cr.append(ui.button('Show axis plots', () => { shell.setStageView('axis'); shell.syncUrl(); }, 'btn btn-small'), ui.button('Download cutline CSV', () => { const t = this.cutlineCSV(); if (t) downloadText('inductor-axis-cutline.csv', t); }, 'btn btn-small')); box.appendChild(cr);
 
     box.appendChild(ui.el('h2', '', 'Position sweep'));
     const sr = ui.el('div', 'row');
@@ -270,12 +294,9 @@ export default {
     this.btnSweep = ui.button('Run sweep', () => (this.sweep.running ? this.stopSweep() : this.runSweep()), 'btn');
     sr2.append(this.btnSweep, ui.button('Download sweep CSV', () => { if (this.sweep.rows.length) downloadText('inductance-vs-position.csv', this.sweepCSV()); }, 'btn btn-small'));
     box.appendChild(sr2);
-    this.sweepCanvas = document.createElement('canvas'); this.sweepCanvas.width = 480; this.sweepCanvas.height = 180;
-    this.sweepCanvas.style.width = '100%'; this.sweepCanvas.style.border = '1px solid var(--line)'; this.sweepCanvas.style.borderRadius = '6px'; this.sweepCanvas.style.background = '#fff';
-    box.appendChild(this.sweepCanvas);
     this.sweepEl = ui.el('table', 'probe-table'); this.sweepEl.appendChild(document.createElement('tbody')); box.appendChild(this.sweepEl);
     box.appendChild(ui.el('p', 'hint', 'Each point is a full solve, warm-started from the previous position.'));
-    this.renderResults(); this.renderSweep(); this.drawCutline();
+    this.renderResults(); this.renderSweep();
   },
 
   renderResults() {
@@ -302,28 +323,34 @@ export default {
     return out;
   },
 
-  drawCutline() {
-    const c = this.cutCanvas; if (!c || !this.gridBz) return;
-    const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
+  drawCutline(ctx, W, H) {
+    if (!this.gridBz) return;
     const rows = this.cutline();
-    const z0 = rows[0].z, z1 = rows[rows.length - 1].z;
-    const px = (z) => 40 + ((z - z0) / (z1 - z0 || 1)) * (c.width - 50);
+    const Z = this.shell.view.extent[3];
+    const vis = rows.filter((r) => Math.abs(r.z) <= Z);
+    const z0 = vis[0].z, z1 = vis[vis.length - 1].z;
+    const L = 80, T = 30, B = 50, Rm = 20;
+    const px = (z) => L + ((z - z0) / (z1 - z0 || 1)) * (W - L - Rm);
+    ctx.font = '12px system-ui'; ctx.fillStyle = '#5a5955';
+    ctx.strokeStyle = '#ccc'; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - Rm, H - B); ctx.stroke();
+    for (let k = 0; k <= 6; k++) { const z = z0 + (k / 6) * (z1 - z0); ctx.fillText(`${(z * 1e3).toFixed(1)}`, px(z) - 12, H - B + 16); }
+    ctx.fillText('z along the axis (mm)', W / 2 - 60, H - 8);
     const series = [['Bz', '#1f5fbf', 'B_z (T)'], ['Hz', '#e5484d', 'H_z (A/m)'], ['Mz', '#2a9d4b', 'M_z (A/m)']];
-    // each series on its own scale, normalised to its max
-    let lx = c.width - 230;
-    for (const [key, color, label] of series) {
-      const vals = rows.map((r) => r[key]);
-      const m = Math.max(...vals.map(Math.abs)) || 1;
-      ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.beginPath();
-      rows.forEach((r, k) => { const X = px(r.z), Y = 10 + (1 - (r[key] / m + 1) / 2) * (c.height - 32); if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); });
-      ctx.stroke();
-      ctx.fillStyle = color; ctx.fillRect(lx, c.height - 16, 10, 10); ctx.fillStyle = '#5a5955'; ctx.font = '11px system-ui'; ctx.fillText(`${label} max ${sci(m, 2)}`, lx + 14, c.height - 7); lx += 80;
-    }
-    ctx.strokeStyle = '#ddd'; ctx.beginPath(); ctx.moveTo(40, 10 + 0.5 * (c.height - 32)); ctx.lineTo(c.width - 10, 10 + 0.5 * (c.height - 32)); ctx.stroke();
+    const mid = T + 0.5 * (H - T - B);
+    ctx.strokeStyle = '#bbb'; ctx.beginPath(); ctx.moveTo(L, mid); ctx.lineTo(W - Rm, mid); ctx.stroke();
     const { l, zPos, Lo } = this.meta;
-    ctx.strokeStyle = '#f5a623'; for (const zb of [-l / 2, l / 2]) { ctx.beginPath(); ctx.moveTo(px(zb), 10); ctx.lineTo(px(zb), c.height - 22); ctx.stroke(); }
-    if (this.objectIn) { ctx.strokeStyle = '#888'; for (const zb of [zPos, zPos + Lo]) { ctx.beginPath(); ctx.moveTo(px(zb), 10); ctx.lineTo(px(zb), c.height - 22); ctx.stroke(); } }
-    ctx.fillStyle = '#5a5955'; ctx.fillText('z along the axis (each curve scaled to its own max; orange = coil ends, grey = object ends)', 40, c.height - 6);
+    ctx.fillStyle = 'rgba(245,166,35,0.15)'; ctx.fillRect(px(-l / 2), T, px(l / 2) - px(-l / 2), H - T - B);
+    if (this.objectIn) { ctx.fillStyle = 'rgba(120,120,140,0.18)'; ctx.fillRect(px(Math.max(zPos, z0)), T, px(Math.min(zPos + Lo, z1)) - px(Math.max(zPos, z0)), H - T - B); }
+    let lx = L;
+    for (const [key, color, label] of series) {
+      const vals = vis.map((r) => r[key]);
+      const m = Math.max(...vals.map(Math.abs)) || 1;
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+      vis.forEach((r, k) => { const X = px(r.z), Y = T + (1 - (r[key] / m + 1) / 2) * (H - T - B); if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); });
+      ctx.stroke();
+      ctx.fillStyle = color; ctx.fillRect(lx, T - 18, 12, 12); ctx.fillStyle = '#5a5955'; ctx.fillText(`${label}, scaled to its max ${sci(m, 3)}`, lx + 16, T - 8); lx += 230;
+    }
+    ctx.fillStyle = '#5a5955'; ctx.fillText('Each curve is normalised to its own peak (centre line = 0). Orange band: coil; grey band: object.', L, H - 26);
   },
 
   cutlineCSV() { return ['z_m,mu_r,Bz_T,Hz_Apm,Mz_Apm', ...this.cutline().map((r) => `${r.z},${r.mu},${r.Bz},${r.Hz},${r.Mz}`)].join('\n'); },
@@ -360,19 +387,30 @@ export default {
   renderSweep() {
     if (!this.sweepEl) return;
     const tb = this.sweepEl.tBodies[0]; tb.innerHTML = '';
+    this.shell.updateStageView();
+    for (const r of this.sweep.rows) { const tr = document.createElement('tr'); tr.innerHTML = `<td>${r.zPos.toFixed(1)} mm</td><td>${(r.Lflux * 1e6).toPrecision(5)} µH</td>`; tb.appendChild(tr); }
+  },
+
+  drawSweep(ctx, W, H) {
     const rows = this.sweep.rows;
-    const c = this.sweepCanvas, ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height);
-    if (!rows.length) return;
-    for (const r of rows) { const tr = document.createElement('tr'); tr.innerHTML = `<td>${r.zPos.toFixed(1)} mm</td><td>${(r.Lflux * 1e6).toPrecision(5)} µH</td>`; tb.appendChild(tr); }
+    ctx.font = '12px system-ui'; ctx.fillStyle = '#5a5955';
+    if (!rows.length) { ctx.fillText('Run a position sweep from the side panel to plot L against the object position here.', 20, 30); return; }
     const xs = rows.map((r) => r.zPos), ys = rows.map((r) => r.Lflux * 1e6);
-    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-    const px = (x) => 44 + ((x - x0) / (x1 - x0 || 1)) * (c.width - 54), py = (y) => 10 + (1 - (y - y0) / (y1 - y0 || 1)) * (c.height - 34);
-    ctx.strokeStyle = '#1f5fbf'; ctx.lineWidth = 1.6; ctx.beginPath();
-    rows.forEach((r, k) => { if (k === 0) ctx.moveTo(px(r.zPos), py(r.Lflux * 1e6)); else ctx.lineTo(px(r.zPos), py(r.Lflux * 1e6)); });
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys) * 0.98, y1 = Math.max(...ys) * 1.02;
+    const L = 80, T = 30, B = 50, Rm = 20;
+    const px = (x) => L + ((x - x0) / (x1 - x0 || 1)) * (W - L - Rm), py = (y) => T + (1 - (y - y0) / (y1 - y0 || 1)) * (H - T - B);
+    ctx.strokeStyle = '#ccc'; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - Rm, H - B); ctx.stroke();
+    for (let k = 0; k <= 4; k++) { const v = y0 + (k / 4) * (y1 - y0); ctx.fillText(v.toPrecision(4), 10, py(v) + 4); ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(L, py(v)); ctx.lineTo(W - Rm, py(v)); ctx.stroke(); }
+    for (let k = 0; k <= 6; k++) { const v = x0 + (k / 6) * (x1 - x0); ctx.fillText(v.toFixed(1), px(v) - 10, H - B + 16); }
+    ctx.fillText('position of the object\'s bottom end relative to the sensor centre (mm)', W / 2 - 180, H - 8);
+    ctx.save(); ctx.translate(14, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('L (µH)', -16, 0); ctx.restore();
+    const { l, Lo } = this.meta;
+    ctx.fillStyle = 'rgba(245,166,35,0.15)'; ctx.fillRect(px(Math.max(-l / 2 - Lo, x0)), T, px(Math.min(l / 2, x1)) - px(Math.max(-l / 2 - Lo, x0)), H - T - B);
+    ctx.strokeStyle = '#1f5fbf'; ctx.lineWidth = 2; ctx.beginPath();
+    rows.forEach((r, k) => { const X = px(r.zPos), Y = py(r.Lflux * 1e6); if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); });
     ctx.stroke();
-    ctx.fillStyle = '#1f5fbf'; for (const r of rows) { ctx.beginPath(); ctx.arc(px(r.zPos), py(r.Lflux * 1e6), 3, 0, 2 * Math.PI); ctx.fill(); }
-    ctx.fillStyle = '#5a5955'; ctx.font = '11px system-ui';
-    ctx.fillText(`${y1.toPrecision(4)} µH`, 2, 14); ctx.fillText(`${y0.toPrecision(4)} µH`, 2, c.height - 26); ctx.fillText('object position (mm)', c.width / 2 - 50, c.height - 6);
+    ctx.fillStyle = '#1f5fbf'; for (const r of rows) { ctx.beginPath(); ctx.arc(px(r.zPos), py(r.Lflux * 1e6), 3.5, 0, 2 * Math.PI); ctx.fill(); }
+    ctx.fillStyle = '#5a5955'; ctx.fillText('Orange band: positions where the object overlaps the coil.', L, T - 8);
   },
 
   sweepCSV() { return ['zPos_mm,L_flux_H,L_energy_H', ...this.sweep.rows.map((r) => `${r.zPos},${r.Lflux},${r.Lenergy}`)].join('\n'); },

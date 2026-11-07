@@ -10,6 +10,7 @@ import { Relax2D, lab2Preset } from '../../core/relax2d.js';
 import { drawScalarField, drawQuiver, drawStreamlines, drawContours, levelsBetween } from '../../core/render.js';
 import { getNum } from '../state.js';
 import { ui, sci } from '../shell.js';
+import { plotView } from '../views.js';
 
 const L = 1; // box is [-L, L]^2 metres
 const PRESETS = [
@@ -86,6 +87,7 @@ export default {
     if (s.geo) this.loadGeometryString(s.geo); else this.loadPreset();
     if (s.g) { const g = s.g.split(',').map(Number); if (g.length === 4 && g.every(Number.isFinite)) this.gauss = g; }
     this.startWorker();
+    this.views = [plotView('conv', 'Convergence', (ctx, w, h) => this.drawHistoryBig(ctx, w, h))];
     this.buildControls();
   },
 
@@ -328,7 +330,29 @@ export default {
     this.shell.syncUrl();
   },
 
+  drawHistoryBig(ctx, W, H) {
+    const Hh = this.history;
+    ctx.font = '12px system-ui'; ctx.fillStyle = '#5a5955';
+    if (Hh.length < 2) { ctx.fillText('Press Play: the largest change per sweep is plotted here against the sweep count.', 20, 30); return; }
+    const xs = Hh.map((p) => p[0]), ys = Hh.map((p) => Math.log10(p[1]));
+    const x0 = 0, x1 = Math.max(...xs), y0 = Math.min(...ys, Math.log10(this.tol)), y1 = Math.max(...ys);
+    const L = 70, T = 30, B = 50, Rm = 20;
+    const px = (x) => L + ((x - x0) / (x1 - x0 || 1)) * (W - L - Rm), py = (y) => T + (1 - (y - y0) / (y1 - y0 || 1)) * (H - T - B);
+    ctx.strokeStyle = '#ccc'; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - Rm, H - B); ctx.stroke();
+    for (let e = Math.ceil(y0); e <= Math.floor(y1); e++) { ctx.fillText(`1e${e}`, 20, py(e) + 4); ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(L, py(e)); ctx.lineTo(W - Rm, py(e)); ctx.stroke(); }
+    for (let k = 0; k <= 6; k++) { const v = Math.round(x0 + (k / 6) * (x1 - x0)); ctx.fillText(String(v), px(v) - 10, H - B + 16); }
+    ctx.fillText('sweeps', W / 2 - 20, H - 8);
+    ctx.save(); ctx.translate(14, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('max |ΔV| per sweep (V)', -70, 0); ctx.restore();
+    ctx.strokeStyle = '#e5484d'; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.moveTo(L, py(Math.log10(this.tol))); ctx.lineTo(W - Rm, py(Math.log10(this.tol))); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#e5484d'; ctx.fillText(`stop tolerance ${this.tol}`, W - 180, py(Math.log10(this.tol)) - 6);
+    ctx.strokeStyle = '#1f5fbf'; ctx.lineWidth = 2; ctx.beginPath();
+    Hh.forEach((p, k) => { const X = px(p[0]), Y = py(Math.log10(p[1])); if (k === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); });
+    ctx.stroke();
+    ctx.fillStyle = '#5a5955'; ctx.fillText(`${this.n}² grid · ${this.sweeps} sweeps · ${this.converged ? 'converged' : this.running ? 'running' : 'paused'}`, L, T - 8);
+  },
+
   drawHistory() {
+    this.shell.updateStageView();
     const c = this.histCanvas; if (!c) return;
     const ctx = c.getContext('2d');
     ctx.clearRect(0, 0, c.width, c.height);
