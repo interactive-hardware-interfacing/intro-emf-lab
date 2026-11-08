@@ -37,7 +37,8 @@ for (const id of tabs) {
     if (!/solving|running/.test(st)) break;
   }
   const views = await page.$$eval('#stage-tabs .stab', (els) => els.map((e) => e.dataset.id));
-  for (const v of views) { await page.click(`#stage-tabs .stab[data-id="${v}"]`); await page.waitForTimeout(400); }
+  // dispatch the click directly: a long solver chunk on the main thread can stall Playwright's actionability wait
+  for (const v of views) { await page.$eval(`#stage-tabs .stab[data-id="${v}"]`, (b) => b.click()); await page.waitForTimeout(400); }
   visited++;
   console.log(`ok  ${id} (${views.length || 1} view${views.length > 1 ? 's' : ''})`);
 }

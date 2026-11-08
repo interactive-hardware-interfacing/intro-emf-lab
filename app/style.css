@@ -61,6 +61,15 @@ input[type=range] { width: 100%; }
 .tab[aria-selected=true] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 .tab .phase { font-size: 10px; color: var(--ink-2); margin-left: 4px; }
 .topbar-actions { display: flex; gap: 8px; }
+.assign-banner { display: flex; gap: 12px; align-items: center; padding: 6px 16px; background: var(--accent); color: #fff; font-size: 13px; }
+.assign-banner .assign-tag { font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; font-size: 11px; }
+.assign-banner a { color: #fff; margin-left: auto; opacity: 0.85; }
+.assign-box { margin-top: 8px; font-size: 12.5px; }
+.foot-version { margin-left: auto; color: var(--ink-2); font-family: ui-monospace, monospace; }
+.assign-box summary { cursor: pointer; color: var(--ink-2); }
+.assign-box input[type=text] { width: 100%; box-sizing: border-box; }
+body.locked .topbar .tabs, body.locked #controls, body.locked #resize-left, body.locked #reset-btn { display: none; }
+body.locked .workspace { grid-template-columns: 1fr 6px var(--right-w); }
 
 /* workspace */
 .workspace {

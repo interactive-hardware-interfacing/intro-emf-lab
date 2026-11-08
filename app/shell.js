@@ -16,6 +16,7 @@
 //     csv()             -> text for "Field CSV"
 //   }
 
+import { SEMESTER } from './version.js';
 import { Viewport, drawColorbar, drawProbeMarker } from '../core/render.js';
 import { readState, writeState, getNum, getList, copyToClipboard, downloadText, num } from './state.js';
 
@@ -41,9 +42,11 @@ export class Shell {
 
     this.buildTabBar();
     this.bindShared();
+    this.applyLock();
+    this.$('foot-version').textContent = SEMESTER;
     const start = this.state.tab && tabs.find((t) => t.id === this.state.tab) ? this.state.tab : tabs[0].id;
     this.selectTab(start);
-    window.addEventListener('popstate', () => { this.state = readState(); this.selectTab(this.state.tab ?? tabs[0].id); });
+    window.addEventListener('popstate', () => { this.state = readState(); this.applyLock(); this.selectTab(this.state.tab ?? tabs[0].id); });
   }
 
   // ---------------------------------------------------------------- tabs
@@ -60,6 +63,30 @@ export class Shell {
       b.addEventListener('click', () => { this.state = { tab: t.id }; this.selectTab(t.id, { push: true }); });
       nav.appendChild(b);
     }
+  }
+
+  /**
+   * Assignment mode: `lock=1` in the URL hides the tab bar and the control panel so a student
+   * sees the problem exactly as the instructor set it; `note=` is shown in a banner. The
+   * layers, probe and export stay available. "open full controls" drops the lock.
+   */
+  applyLock() {
+    this.locked = this.state.lock === '1';
+    this.assignNote = this.state.note ?? '';
+    document.body.classList.toggle('locked', this.locked);
+    const banner = this.$('assign-banner');
+    banner.hidden = !this.locked;
+    this.$('assign-note').textContent = this.assignNote;
+    this.$('assign-box').hidden = this.locked;
+  }
+
+  /** The current view as an assignment link (lock=1, optional note). */
+  assignmentUrl(note) {
+    const path = this.syncUrl();
+    const u = new URL(location.origin + path);
+    u.searchParams.set('lock', '1');
+    if (note) u.searchParams.set('note', note); else u.searchParams.delete('note');
+    return u.toString();
   }
 
   selectTab(id, { push = false } = {}) {
@@ -483,6 +510,17 @@ export class Shell {
     });
     $('reset-btn').addEventListener('click', () => { this.state = { tab: this.tab.id }; this.selectTab(this.tab.id, { push: true }); });
     this.bindResizers();
+    $('assign-copy').addEventListener('click', async () => {
+      await copyToClipboard(this.assignmentUrl($('assign-note-input').value.trim()));
+      this.flash($('assign-copy'), 'Assignment link copied');
+    });
+    $('assign-open').addEventListener('click', (e) => {
+      e.preventDefault();
+      this.state = { ...readState(), lock: undefined, note: undefined };
+      delete this.state.lock; delete this.state.note;
+      this.applyLock();
+      this.syncUrl({ push: true });
+    });
     $('share-btn').addEventListener('click', async () => {
       const url = this.syncUrl();
       await copyToClipboard(location.origin + url);
@@ -585,6 +623,8 @@ export class Shell {
       px: this.probePt[0],
       py: this.probePt[1],
       sv: this.stageView && this.stageView !== 'field' ? this.stageView : '',
+      lock: this.locked ? '1' : '',
+      note: this.locked && this.assignNote ? this.assignNote : '',
       ...(this.tab.getState?.() ?? {}),
     };
     for (const [id, st] of this.vectorStyle) s[`st_${id}`] = st;

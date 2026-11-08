@@ -96,3 +96,18 @@ probe/surface centre. Every input and slider has an accessible name (aria-label 
 charge-table inputs, orbit/tilt/density, cut-plane and surface sliders) and the smoke test
 now fails on any control without one. README no longer lists build phases; the footer
 phase label is gone.
+
+## Instructor tools and PML (patch 6i)
+- Assignment links: `lock=1` hides the tab bar, the control panel and Reset; `note=` shows
+  a banner. Layers, probe, views and export stay. "Open full controls" lifts the lock.
+  Instructors make one from the Export section (note field + copy button).
+- Semester tag: `app/version.js` SEMESTER, shown in the footer and on About, in every
+  exported file name, and recorded in bench/golden.json by `npm run freeze`. README has the
+  per-term steps and the git tag command.
+- FDTD open walls: CPML (10 cells, m = 3, sigma_max = 0.8(m+1)/(eta0 h), alpha = 0) is the
+  default, Mur the alternative, as a toggle so the two can be compared. The Mur wall stays
+  behind the PML so the curl-free DC remainder of a soft Gaussian source drains out instead
+  of ringing (a PML cannot absorb a static field). A CPML alpha of 0.05 S/m, a textbook
+  value for mm cells at tens of GHz, reflected 12% at 1 GHz because alpha/eps0 was not small
+  against omega; it is zero here. Bench: normal incidence Mur 5.7e-4 / PML 5.4e-5; grazing
+  2-D case Mur 52% / PML 2% of the direct peak; PML in a dielectric < 2%.

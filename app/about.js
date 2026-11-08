@@ -4,8 +4,11 @@
 
 import { EQUATIONS, ALIASES } from './equations.js';
 
+import { SEMESTER } from './version.js';
+
 export const SITE = {
   title: 'Intro EMF Lab',
+  semester: SEMESTER,
   intro: [
     'Browser-based field simulators for an introductory electromagnetics course. Every tab is a small experiment: set the geometry and sources on the left, read fields and derived quantities on the right, and look at the pictures in the middle.',
     'Nothing here is a black box. The closed-form tabs sum textbook formulas. The solver tabs use the plainest possible numerical method, the Gauss–Seidel neighbour average: replace each grid point by the average of its neighbours, sweep the grid, and repeat until nothing changes. That is the same loop you write yourself in the numerical-methods lab, and the Sandbox tab lets you watch it converge.',
@@ -88,9 +91,9 @@ export const TAB_INFO = {
     lookFor: ['RG-58 defaults (a = 0.45 mm, b = 1.475 mm, εr = 2.25) give about 50 Ω; doubling b/a adds the same Z₀ increment each time, because Z₀ ∝ ln(b/a).', 'The dielectric raises C′ and lowers Z₀ and v by √εr, but leaves L′ alone: the magnetic field does not see εr.', 'For the plates the numeric C′ sits above εw/d by the fringing field, by more as the plates get narrower; for the coax and twin-lead the numeric value lands within a percent or two of the exact one, closer on a finer grid.'],
   },
   fdtd: {
-    what: 'The one tab where ∂D/∂t is not zero. Faraday and Ampère are stepped in time on a 2 m × 2 m Yee grid (FDTD, TMz polarisation: E along z, H in the plane) in a Web Worker, with absorbing walls so the box looks open. A Gaussian pulse or a continuous wave is launched from a point or as a plane wave from a line.',
+    what: 'The one tab where ∂D/∂t is not zero. Faraday and Ampère are stepped in time on a 2 m × 2 m Yee grid (FDTD, TMz polarisation: E along z, H in the plane) in a Web Worker, with absorbing walls so the box looks open (a perfectly matched layer by default, the one-cell Mur condition as an alternative). A Gaussian pulse or a continuous wave is launched from a point or as a plane wave from a line.',
     shows: ['E_z (signed), |H| and the Poynting magnitude |S| as colour maps; H arrows; materials and the source as an overlay.', 'Presets: a pulse in free space, a dielectric slab, a slit in a conducting wall, a dielectric lens, a parallel-plate waveguide; paint conductors and dielectrics on any of them.', 'E_z(t) recorded at the probe point (the "Ez at the probe" view); the stored energy versus time; the time step and Courant number in the status line.'],
-    lookFor: ['The pulse travels at c: read two arrival times off the probe trace and divide the distance by their difference.', 'At the slab, the reflected pulse is inverted and one third the height (Γ = (1−n)/(1+n) with n = 2); inside, it moves at c/2 and its wavelength halves.', 'Behind the slit the wave spreads: diffraction grows as the slit shrinks relative to λ. In the waveguide, lower the frequency below cut-off and the wave stops propagating.', 'Energy rises while the source is on and leaks out through the open walls; a conductor stores none, a dielectric holds more E energy for the same field.'],
+    lookFor: ['The pulse travels at c: read two arrival times off the probe trace and divide the distance by their difference.', 'At the slab, the reflected pulse is inverted and one third the height (Γ = (1−n)/(1+n) with n = 2); inside, it moves at c/2 and its wavelength halves.', 'Behind the slit the wave spreads: diffraction grows as the slit shrinks relative to λ. In the waveguide, lower the frequency below cut-off and the wave stops propagating.', 'Energy rises while the source is on and leaks out through the open walls; a conductor stores none, a dielectric holds more E energy for the same field.', 'Switch the open walls from PML to Mur and run the free-space pulse: the Mur walls send back a visible ghost, worst where the pulse meets a wall at a grazing angle; the matched layer swallows it.'],
   },
 };
 

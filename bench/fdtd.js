@@ -4,8 +4,8 @@
 
 import { FDTD2D, C0, fillRect } from '../core/fdtd2d.js';
 
-function planeWaveBox({ nx = 401, ny = 41, h = 0.01, f = 1e9 } = {}) {
-  const s = new FDTD2D(nx, ny, { h, yWall: 'mirror' });
+function planeWaveBox({ nx = 401, ny = 41, h = 0.01, f = 1e9, abc = 'pml' } = {}) {
+  const s = new FDTD2D(nx, ny, { h, yWall: 'mirror', abc });
   s.addSource({ kind: 'line', i: 20, wave: 'pulse', f });
   return s;
 }
@@ -45,7 +45,7 @@ export function fdtdChecks(check) {
   //    Source at x = 0.2 m, interface at x = 3.5 m, probes at 2.5 m (incident, then reflected)
   //    and 4.5 m (transmitted). The pulse (tau = 0.5 ns, centred at t0 = 1.5 ns) is 1.5 ns wide.
   {
-    const n_ = 2, s = planeWaveBox({ nx: 601 });
+    const n_ = 2, s = planeWaveBox({ nx: 601, abc: 'mur' });
     fillRect(s, 3.5, 6.0, 0, 0.4, { epsR: n_ * n_ });
     const inc = [], tr = [];
     for (let n = 0; n < 1500; n++) { s.step(1); inc.push([s.t, s.ez(250, 20)]); tr.push([s.t, s.ez(450, 20)]); }
@@ -67,6 +67,45 @@ export function fdtdChecks(check) {
     const tSplit = 3.3 / C0 + 1.0 / (C0 / n_) + 1.5e-9 + 4e-9;
     const tpk = peakOf(tr.filter((p) => p[0] < tSplit)), echo = peakOf(tr.filter((p) => p[0] > tSplit));
     check('fdtd: Mur wall inside a dielectric (n = 2) reflects < 2% of the transmitted pulse', Math.abs(echo[1] / tpk[1]) < 0.02 ? 1 : 0, 1, 0);
+  }
+  // 3b'. Same, with the PML: matched in any material by construction.
+  {
+    const n_ = 2, s = planeWaveBox({ nx: 601 });
+    fillRect(s, 3.5, 6.0, 0, 0.4, { epsR: n_ * n_ });
+    const tr = [];
+    for (let n = 0; n < 2600; n++) { s.step(1); tr.push([s.t, s.ez(450, 20)]); }
+    const tSplit = 3.3 / C0 + 1.0 / (C0 / n_) + 1.5e-9 + 4e-9;
+    const tpk = peakOf(tr.filter((p) => p[0] < tSplit)), echo = peakOf(tr.filter((p) => p[0] > tSplit));
+    check('fdtd: PML inside a dielectric (n = 2) reflects < 2% of the transmitted pulse', Math.abs(echo[1] / tpk[1]) < 0.02 ? 1 : 0, 1, 0);
+  }
+  // 3c. Open-wall reflection, normal incidence: Mur ~6e-4 here, the PML an order better.
+  //     And a grazing case in 2-D: a point source 15 cm from the top wall, probe 1.2 m along
+  //     it, against a reference box whose top wall is far away. Mur leaves tens of percent
+  //     of the direct peak there; the PML a couple of percent.
+  {
+    const wallRefl = (abc) => {
+      // line source mid-box (x = 3 m), probe at 4.5 m: direct pulse ~5-7 ns, right-wall echo ~15 ns
+      const s = new FDTD2D(601, 11, { h: 0.01, yWall: 'mirror', abc }); s.addSource({ kind: 'line', i: 300, f: 1e9 }); s.setTrace(450, 5);
+      for (let n = 0; n < 1000; n++) s.step(1);
+      let dir = 0, ref = 0;
+      for (let k = 0; k < s.trace.v.length; k++) { const v = Math.abs(s.trace.v[k]); if (s.trace.t[k] < 11e-9) dir = Math.max(dir, v); else ref = Math.max(ref, v); }
+      return ref / dir;
+    };
+    const rMur = wallRefl('mur'), rPml = wallRefl('pml');
+    check('fdtd: Mur wall reflection at normal incidence < 1e-3', rMur < 1e-3 ? 1 : 0, 1, 0);
+    check('fdtd: PML wall reflection at normal incidence < 1e-4', rPml < 1e-4 ? 1 : 0, 1, 0);
+    const grazing = (abc) => {
+      const n = 201, h = 0.01;
+      const g = new FDTD2D(n, n, { h, abc }); g.addSource({ i: 40, j: 185, f: 1e9 }); g.setTrace(160, 185);
+      const r = new FDTD2D(n, 401, { h, abc }); r.addSource({ i: 40, j: 185, f: 1e9 }); r.setTrace(160, 185);
+      for (let k = 0; k < 900; k++) { g.step(1); r.step(1); }
+      let err = 0, pk = 0;
+      for (let k = 0; k < g.trace.v.length; k++) { err = Math.max(err, Math.abs(g.trace.v[k] - r.trace.v[k])); pk = Math.max(pk, Math.abs(r.trace.v[k])); }
+      return err / pk;
+    };
+    const gMur = grazing('mur'), gPml = grazing('pml');
+    check('fdtd: PML error at grazing incidence < 5% of the direct peak', gPml < 0.05 ? 1 : 0, 1, 0);
+    check('fdtd: PML beats Mur at grazing incidence by 10x or more', gMur / gPml > 10 ? 1 : 0, 1, 0);
   }
   // 4. PEC wall at x = 3.0 m, probe at 2.0 m: reflection -1.
   {

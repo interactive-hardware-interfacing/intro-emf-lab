@@ -65,4 +65,24 @@ The GitHub Action runs both and refuses to deploy if either fails.
 - The solver is the plain Gauss-Seidel neighbor average on purpose. Its iterations are
   shown on screen. No over-relaxation or multigrid in the default path.
 - Every number a student can read must be reproducible from the URL.
-- Tag a release per semester (`fall-2026`) so graded cohorts keep their numbers.
+- One release per semester (see below) so graded cohorts keep their numbers.
+
+## Semester releases
+
+`app/version.js` holds the semester tag (`fall-2026`). It is shown in the page footer and
+on the About page, and every exported file carries it in its name
+(`capacitors-field.fall-2026.csv`). At the start of a term:
+
+1. Set `SEMESTER` in `app/version.js`.
+2. Re-freeze the handout numbers: `npm run freeze` (writes `bench/golden.json` with the tag).
+3. Commit, then tag and push: `git tag -a fall-2026 -m "Fall 2026" && git push --tags`.
+
+A student's number can then be reproduced by checking out the tag named in their file.
+
+## Assignment links
+
+In the Export section of any tab, **Assignment link (instructors)** copies a link to the
+current view with `lock=1`: the tab bar and the control panel are hidden, so the student
+sees the problem exactly as set and can only probe, switch layers and export. An optional
+note (`note=`) is shown in a banner at the top. "Open full controls" in the banner lifts
+the lock.

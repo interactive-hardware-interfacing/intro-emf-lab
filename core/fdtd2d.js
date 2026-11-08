@@ -12,9 +12,17 @@
 // neighbours, and time is leap-frogged: H advances half a step, then E, then H again. This
 // is explicit, needs no matrix, and is stable while  c dt <= h / sqrt(2)  (Courant).
 //
-// Boundaries: Ez = 0 on the box walls would make a perfect mirror. The first-order Mur
-// condition instead extrapolates the outgoing wave, so the box looks (nearly) open; the
-// leftover reflection is a few percent at grazing angles. PEC cells (pec = 1) hold Ez = 0.
+// Boundaries: Ez = 0 on the box walls would make a perfect mirror. Two open-boundary
+// treatments are available (abc option):
+//   'mur'  first-order Mur: extrapolate the outgoing wave at the wall from the cell inside.
+//          One line of algebra, ~3e-4 reflection at normal incidence, a few percent at
+//          grazing angles, and it assumes one wave speed (we use the wall cell's).
+//   'pml'  convolutional perfectly matched layer (CPML, Roden & Gedney 2000): the outer
+//          NPML cells are a lossy medium whose conductivity is graded from 0 to sigma_max
+//          and whose impedance matches the interior at every angle, so waves enter it and
+//          die out before the (Mur) wall behind it. Reflection ~1e-4 or better at any angle,
+//          in any material, at the cost of a few auxiliary arrays and a thicker border.
+// PEC cells (pec = 1) hold Ez = 0.
 //
 // Sources are "soft": the source value is added to Ez at a point (or along a line, which
 // radiates a plane wave) rather than overwriting it, so waves pass through the source.
@@ -32,9 +40,11 @@ export class FDTD2D {
    * @param {number} ny  Ez samples along y
    * @param {object} o   { h, epsR?, pec?, sigma?, courant? }
    */
-  constructor(nx, ny, { h = 0.01, epsR, pec, sigma, courant = 0.99, yWall = 'mur' } = {}) {
+  constructor(nx, ny, { h = 0.01, epsR, pec, sigma, courant = 0.99, yWall = 'mur', abc = 'pml', npml = 10 } = {}) {
     this.nx = nx; this.ny = ny; this.h = h;
-    this.yWall = yWall; // 'mur' (open) | 'mirror' (dEz/dy = 0: an infinitely wide plane wave) | 'pec'
+    this.yWall = yWall; // 'mur' (open: whichever abc is chosen) | 'mirror' (dEz/dy = 0: an infinitely wide plane wave) | 'pec'
+    this.abc = abc;     // 'mur' | 'pml' for the open walls
+    this.npml = npml;
     this.extent = [0, (nx - 1) * h, 0, (ny - 1) * h];
     const n = nx * ny;
     this.Ez = new Float64Array(n);
@@ -74,7 +84,54 @@ export class FDTD2D {
     // previous-step Ez along each wall and one cell in, for the Mur update
     this.prevL = new Float64Array(2 * this.ny); this.prevR = new Float64Array(2 * this.ny);
     this.prevB = new Float64Array(2 * this.nx); this.prevT = new Float64Array(2 * this.nx);
+    this.preparePml();
   }
+
+  /**
+   * CPML coefficients. In the border the x (or y) coordinate is stretched by
+   * s = 1 + sigma/(j w eps0) (kappa = 1), which in the time domain becomes a convolution of
+   * each spatial derivative with an exponential; the recursive form keeps one auxiliary
+   * value psi per derivative per cell:  psi <- b psi + c (dF/dx),  derivative <- dF/dx + psi.
+   * sigma is graded as sigma_max (d/L)^m from the inner edge of the layer (d = 0) to the wall
+   * (d = L); sigma_max = 0.8 (m+1) / (eta0 h) is the usual optimum for m = 3. The CPML
+   * "alpha" (complex-frequency shift) is left at zero: it only helps for evanescent waves,
+   * and a value that is not tiny compared with eps0*omega (0.05 S/m at 1 GHz, say) makes
+   * the layer reflect propagating waves. The slow, curl-free remainder that a PML cannot
+   * absorb drains out through the Mur wall behind the layer instead.
+   * Coefficients are tabulated along x at Ez positions (bx, cx: for dHy/dx) and at half-cell
+   * positions (bxh, cxh: for dEz/dx in the Hy update); likewise along y.
+   */
+  preparePml() {
+    const { nx, ny, h, dt, npml } = this;
+    const m = 3, eta0 = Math.sqrt(MU0 / EPS0);
+    const sigMax = 0.8 * (m + 1) / (eta0 * h), alphaMax = 0;
+    const L = npml * h;
+    const coef = (d) => {               // d: depth into the layer, metres (<= 0 means interior)
+      if (!(d > 0)) return [1, 0];
+      const u = Math.min(1, d / L), sig = sigMax * u ** m, alpha = alphaMax * (1 - u);
+      const b = Math.exp(-(sig + alpha) * dt / EPS0);
+      return [b, sig > 0 ? (sig / (sig + alpha)) * (b - 1) : 0];
+    };
+    const table = (n, half) => {
+      const b = new Float64Array(n).fill(1), c = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        const x = (i + (half ? 0.5 : 0)) * h;                 // position of the derivative
+        const d = Math.max(npml * h - x, x - (n - 1 - npml) * h); // depth into the nearer layer
+        [b[i], c[i]] = coef(d);
+      }
+      return [b, c];
+    };
+    [this.bx, this.cx] = table(nx, false); [this.bxh, this.cxh] = table(nx, true);
+    [this.by, this.cy] = table(ny, false); [this.byh, this.cyh] = table(ny, true);
+    const n = nx * ny;
+    this.psiHyx = new Float64Array(n); this.psiHxy = new Float64Array(n);  // for the H updates
+    this.psiEzx = new Float64Array(n); this.psiEzy = new Float64Array(n);  // for the E update
+    this.pmlOn = this.abc === 'pml';
+    this.pmlY = this.pmlOn && this.yWall === 'mur';                     // top/bottom only when they are open walls
+  }
+
+  /** The thickness of the absorbing border in metres (0 for Mur), for drawing. */
+  get borderWidth() { return this.pmlOn ? this.npml * this.h : 0; }
 
   addSource(src) {
     const s = { kind: 'point', wave: 'pulse', amp: 1, ...src };
@@ -97,6 +154,7 @@ export class FDTD2D {
     this.Ez.fill(0); this.Hx.fill(0); this.Hy.fill(0);
     this.t = 0; this.step_ = 0;
     this.prevL.fill(0); this.prevR.fill(0); this.prevB.fill(0); this.prevT.fill(0);
+    this.psiHyx.fill(0); this.psiHxy.fill(0); this.psiEzx.fill(0); this.psiEzy.fill(0);
     if (this.trace) { this.trace.t = []; this.trace.v = []; }
   }
 
@@ -107,15 +165,24 @@ export class FDTD2D {
   }
 
   stepOnce() {
-    const { nx, ny, Ez, Hx, Hy, ca, cb, ch, pec } = this;
-    // ---- H half step: curl of E
+    const { nx, ny, Ez, Hx, Hy, ca, cb, ch, pec, pmlOn, pmlY } = this;
+    // ---- H half step: curl of E (with the CPML convolution terms inside the border)
     for (let j = 0; j < ny - 1; j++) {
       const row = j * nx, up = row + nx;
-      for (let i = 0; i < nx; i++) Hx[row + i] -= ch * (Ez[up + i] - Ez[row + i]);
+      if (pmlY && this.cyh[j] !== 0) {
+        const b = this.byh[j], c = this.cyh[j], psi = this.psiHxy;
+        for (let i = 0; i < nx; i++) { const k = row + i, d = Ez[up + i] - Ez[k]; psi[k] = b * psi[k] + c * d; Hx[k] -= ch * (d + psi[k]); }
+      } else for (let i = 0; i < nx; i++) Hx[row + i] -= ch * (Ez[up + i] - Ez[row + i]);
     }
     for (let j = 0; j < ny; j++) {
       const row = j * nx;
-      for (let i = 0; i < nx - 1; i++) Hy[row + i] += ch * (Ez[row + i + 1] - Ez[row + i]);
+      if (pmlOn) {
+        const psi = this.psiHyx, bxh = this.bxh, cxh = this.cxh;
+        for (let i = 0; i < nx - 1; i++) {
+          const k = row + i, d = Ez[k + 1] - Ez[k];
+          if (cxh[i] !== 0) { psi[k] = bxh[i] * psi[k] + cxh[i] * d; Hy[k] += ch * (d + psi[k]); } else Hy[k] += ch * d;
+        }
+      } else for (let i = 0; i < nx - 1; i++) Hy[row + i] += ch * (Ez[row + i + 1] - Ez[row + i]);
     }
     // ---- remember the wall values before the E update (Mur needs E^n at the wall and one cell in)
     for (let j = 0; j < ny; j++) {
@@ -129,10 +196,14 @@ export class FDTD2D {
     // ---- E full step: curl of H, interior points
     for (let j = 1; j < ny - 1; j++) {
       const row = j * nx, dn = row - nx;
+      const yIn = pmlY && this.cy[j] !== 0, by = this.by[j], cy = this.cy[j];
       for (let i = 1; i < nx - 1; i++) {
         const k = row + i;
         if (pec[k]) { Ez[k] = 0; continue; }
-        Ez[k] = ca[k] * Ez[k] + cb[k] * ((Hy[k] - Hy[k - 1]) - (Hx[k] - Hx[dn + i]));
+        let dHy = Hy[k] - Hy[k - 1], dHx = Hx[k] - Hx[dn + i];
+        if (pmlOn && this.cx[i] !== 0) { const p = this.psiEzx; p[k] = this.bx[i] * p[k] + this.cx[i] * dHy; dHy += p[k]; }
+        if (yIn) { const p = this.psiEzy; p[k] = by * p[k] + cy * dHx; dHx += p[k]; }
+        Ez[k] = ca[k] * Ez[k] + cb[k] * (dHy - dHx);
       }
     }
     // ---- sources (soft)
@@ -146,6 +217,10 @@ export class FDTD2D {
     const { cdt, epsR, h } = this;
     const m = this.mur;
     const murAt = (k) => { const e = epsR[k]; if (e === 1) return m; const c = cdt / Math.sqrt(e); return (c - h) / (c + h); };
+    // With the PML on, the Mur wall still sits behind the layer: the layer absorbs the
+    // propagating waves, and the Mur extrapolation lets the slow, curl-free remainder (the
+    // DC content a soft Gaussian source leaves behind, which a PML cannot touch) drain out
+    // instead of ringing in a closed box.
     for (let j = 1; j < ny - 1; j++) {
       Ez[j * nx] = this.prevL[2 * j + 1] + murAt(j * nx + 1) * (Ez[j * nx + 1] - this.prevL[2 * j]);
       Ez[j * nx + nx - 1] = this.prevR[2 * j + 1] + murAt(j * nx + nx - 2) * (Ez[j * nx + nx - 2] - this.prevR[2 * j]);

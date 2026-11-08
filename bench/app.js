@@ -324,7 +324,8 @@ export async function run(check) {
     cases['lab4 probe |B| (2A@-15,15mm; -2A@-15,-15mm) at (0,0)'] = Math.hypot(...wiresField([{ I: 2, pos: [-0.015, 0.015] }, { I: -2, pos: [-0.015, -0.015] }], [0, 0]).B);
     const path = join(ROOT, 'bench', 'golden.json');
     if (process.argv.includes('--freeze')) {
-      writeFileSync(path, JSON.stringify({ frozen: new Date().toISOString().slice(0, 10), cases }, null, 2) + '\n');
+      const { SEMESTER } = await import('../app/version.js');
+      writeFileSync(path, JSON.stringify({ frozen: new Date().toISOString().slice(0, 10), semester: SEMESTER, cases }, null, 2) + '\n');
       console.log(`golden.json re-frozen with ${Object.keys(cases).length} cases`);
     }
     let golden = null;
@@ -332,7 +333,7 @@ export async function run(check) {
     if (!golden) check('golden: bench/golden.json exists (run with --freeze to create it)', 0, 1, 0);
     else for (const [name, value] of Object.entries(cases)) {
       if (golden.cases[name] === undefined) { check(`golden: ${name} (new case, freeze it)`, 0, 1, 0); continue; }
-      check(`golden (${golden.frozen}): ${name}`, value, golden.cases[name], 5e-3);
+      check(`golden (${golden.semester ?? golden.frozen}): ${name}`, value, golden.cases[name], 5e-3);
     }
   }
 }

@@ -44,6 +44,7 @@ export default {
     const ul = (items) => { const u = document.createElement('ul'); for (const t of items) u.appendChild(ui.el('li', '', t)); page.appendChild(u); };
 
     h('h1', SITE.title, 'about-intro');
+    p(`Build: ${SITE.semester}. Numbers quoted in a report should name this tag; every exported file carries it in its name.`);
     for (const t of SITE.intro) p(t);
     h('h2', 'How to use it', 'about-howto'); dl(SITE.howTo);
     h('h2', 'About the numbers', 'about-numerics'); dl(SITE.numerics);

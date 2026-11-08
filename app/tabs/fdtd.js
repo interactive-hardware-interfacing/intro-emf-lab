@@ -51,6 +51,7 @@ export default {
   f: 1e9,             // Hz
   k: 4,               // time steps per frame
   yWall: 'mur',       // 'mur' | 'mirror'
+  abc: 'pml',         // open-wall treatment: 'pml' (CPML, 10 cells) | 'mur' (first-order Mur)
   tool: 'probe',
   brush: 3,
   toolEps: 4,
@@ -66,6 +67,7 @@ export default {
     this.f = Math.min(5e9, Math.max(1e8, getNum(s, 'f', 1e9)));
     this.k = Math.max(1, Math.round(getNum(s, 'speed', 4)));
     this.yWall = s.side === 'mirror' ? 'mirror' : 'mur';
+    this.abc = s.abc === 'mur' ? 'mur' : 'pml';
     this.toolEps = getNum(s, 'te', 4);
     this.brush = Math.max(1, Math.round(getNum(s, 'br', 3)));
     this.tool = 'probe';
@@ -93,7 +95,7 @@ export default {
   /** Build the material arrays and sources for the preset (in metres, so any grid works). */
   loadPreset() {
     const n = this.n, h = this.h;
-    const s = new FDTD2D(n, n, { h, yWall: this.yWall });
+    const s = new FDTD2D(n, n, { h, yWall: this.yWall, abc: this.abc });
     const src = { wave: this.wave, f: this.f, amp: 1 };
     switch (this.preset) {
       case 'slab':
@@ -180,7 +182,7 @@ export default {
   },
 
   sendInit(warm) {
-    const msg = { cmd: 'init', kind: 'fdtd', nx: this.n, ny: this.n, h: this.h, epsR: this.epsR, pec: this.pec, yWall: this.yWall, sources: this.sources, trace: this.traceCell() };
+    const msg = { cmd: 'init', kind: 'fdtd', nx: this.n, ny: this.n, h: this.h, epsR: this.epsR, pec: this.pec, yWall: this.yWall, abc: this.abc, sources: this.sources, trace: this.traceCell() };
     if (warm) { Object.assign(msg, { Ez: this.Ez, Hx: this.Hx, Hy: this.Hy, t: this.t, step: this.stepCount }); if (this.trace?.t?.length) msg.trace = { ...msg.trace, t: this.trace.t, v: this.trace.v }; }
     this.send(msg);
   },
@@ -239,6 +241,12 @@ export default {
     r1.appendChild(ui.field('Frequency (GHz)', ui.number(this.f / 1e9, { min: 0.1, max: 5, onChange: (v) => { this.f = v * 1e9; this.reload(); } })));
     r1.appendChild(ui.field('Top/bottom walls', ui.select([['mur', 'Open'], ['mirror', 'Mirror']], this.yWall, (v) => { this.yWall = v; this.reload(); })));
     box.appendChild(r1);
+    const r1b = ui.el('div', 'row');
+    r1b.appendChild(ui.field('Open walls absorb by', ui.select([['pml', 'PML (10-cell matched layer)'], ['mur', 'Mur (first-order, 1 cell)']], this.abc, (v) => { this.abc = v; this.reload(); })));
+    box.appendChild(r1b);
+    box.appendChild(ui.el('p', 'hint', this.abc === 'pml'
+      ? 'The shaded border is a perfectly matched layer: a graded lossy medium whose impedance matches the interior at every angle, so waves enter it and die out. Switch to Mur and run the free-space pulse to see what a one-line absorbing condition leaves behind, especially at grazing angles along the walls.'
+      : 'Mur extrapolates the outgoing wave at each wall cell: cheap, good at normal incidence (~3·10⁻⁴), but a few percent to tens of percent come back at grazing angles. Compare with the PML.'));
     const lam = C0 / this.f;
     box.appendChild(ui.el('p', 'hint', `λ₀ = ${(lam * 100).toFixed(1)} cm = ${(lam / this.h).toFixed(1)} cells. Keep at least 10 cells per wavelength in the densest material (λ = λ₀/√εr). ${this.wave === 'pulse' ? 'The pulse has width τ = 1/(2f).' : 'The CW source ramps up over one period.'} Left and right walls are always absorbing; the source is "soft" (added to E_z), so waves pass through it.`));
     const presetHints = {
@@ -325,6 +333,17 @@ export default {
     }
     mctx.putImageData(img, 0, 0);
     ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(this.matCanvas, 0, 0, view.width, view.height); ctx.restore();
+    // the absorbing layer, as a shaded border (left/right always; top/bottom only when open)
+    if (this.abc === 'pml') {
+      const w = (10 * this.h) / view.scale;
+      ctx.save(); ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      ctx.fillRect(0, 0, w, view.height); ctx.fillRect(view.width - w, 0, w, view.height);
+      if (this.yWall === 'mur') { ctx.fillRect(0, 0, view.width, w); ctx.fillRect(0, view.height - w, view.width, w); }
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+      ctx.strokeRect(w, this.yWall === 'mur' ? w : 0, view.width - 2 * w, view.height - (this.yWall === 'mur' ? 2 * w : 0));
+      ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = '10px system-ui'; ctx.fillText('PML', w + 4, (this.yWall === 'mur' ? w : 0) + 12);
+      ctx.restore();
+    }
     // sources
     for (const s of this.sources) {
       if (s.kind === 'line') {
@@ -384,7 +403,7 @@ export default {
   },
 
   getState() {
-    return { n: this.n, preset: this.preset, src: this.wave, f: this.f, speed: this.k, side: this.yWall, te: this.toolEps, br: this.brush };
+    return { n: this.n, preset: this.preset, src: this.wave, f: this.f, speed: this.k, side: this.yWall, abc: this.abc, te: this.toolEps, br: this.brush };
   },
 
   csv() {

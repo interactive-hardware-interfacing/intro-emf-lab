@@ -3,7 +3,7 @@
 //   { cmd: 'init', nx, ny, extent, boundary, V, fixed, eps, rho }   arrays are copied in
 //   { cmd: 'init', kind: 'axisym', nr, nz, h, z0, boundary: {rmax, zmin, zmax}, V, fixed, eps, rho }
 //   { cmd: 'init', kind: 'axisym-mag', ... }  same shape; V holds psi = r A_phi, eps holds mu_r, rho holds J_phi
-//   { cmd: 'init', kind: 'fdtd', nx, ny, h, epsR, pec, sigma, yWall, sources: [...], trace: {i, j},
+//   { cmd: 'init', kind: 'fdtd', nx, ny, h, epsR, pec, sigma, yWall, abc, sources: [...], trace: {i, j},
 //                  Ez?, Hx?, Hy?, t?, step? }   time-domain solver (core/fdtd2d.js); warm fields optional
 //     run: { cmd: 'run', k }  k time steps per frame, until 'pause';  step: { cmd: 'step', k };  reset
 //     frames: { type: 'frame', step, t, Ez, Hx, Hy, energy, trace: { t, v } }
@@ -51,7 +51,7 @@ function fdtdLoop(k) {
 }
 
 function fdtdInit(m) {
-  solver = new FDTD2D(m.nx, m.ny, { h: m.h, epsR: m.epsR, pec: m.pec, sigma: m.sigma, yWall: m.yWall });
+  solver = new FDTD2D(m.nx, m.ny, { h: m.h, epsR: m.epsR, pec: m.pec, sigma: m.sigma, yWall: m.yWall, abc: m.abc ?? 'pml' });
   for (const src of m.sources ?? []) solver.addSource(src);
   if (m.trace) { solver.setTrace(m.trace.i, m.trace.j); if (m.trace.t?.length) { solver.trace.t = Array.from(m.trace.t); solver.trace.v = Array.from(m.trace.v); } } // a warm init keeps the record
   if (m.Ez) { solver.Ez.set(m.Ez); solver.Hx.set(m.Hx); solver.Hy.set(m.Hy); solver.t = m.t ?? 0; solver.step_ = m.step ?? 0; }

@@ -182,7 +182,7 @@ export const EQUATIONS = {
       H: { tex: String.raw`{H_x}^{\,n+\frac12}_{i,j+\frac12} = {H_x}^{\,n-\frac12}_{i,j+\frac12} - \frac{\Delta t}{\mu_0 h}\left({E_z}^{\,n}_{i,j+1} - {E_z}^{\,n}_{i,j}\right), \qquad {H_y}^{\,n+\frac12}_{i+\frac12,j} = {H_y}^{\,n-\frac12}_{i+\frac12,j} + \frac{\Delta t}{\mu_0 h}\left({E_z}^{\,n}_{i+1,j} - {E_z}^{\,n}_{i,j}\right)`, note: 'H sits half a cell and half a time step away from E: leap-frog.' },
       S: { tex: String.raw`\mathbf{S} = \mathbf{E}\times\mathbf{H}, \qquad |\mathbf{S}| = |E_z|\,|\mathbf{H}| \quad (\mathbf{E} \perp \mathbf{H})`, note: 'Instantaneous power flow per unit area.' },
     },
-    solver: { tex: String.raw`\text{absorbing wall (Mur): } E^{\,n+1}_{0} = E^{\,n}_{1} + \frac{c\Delta t - h}{c\Delta t + h}\left(E^{\,n+1}_{1} - E^{\,n}_{0}\right)` },
+    solver: { tex: String.raw`\text{Mur: } E^{\,n+1}_{0} = E^{\,n}_{1} + \frac{c\Delta t - h}{c\Delta t + h}\left(E^{\,n+1}_{1} - E^{\,n}_{0}\right); \qquad \text{PML: } \frac{\partial}{\partial x} \to \frac{1}{1 + \sigma_x(x)/(j\omega\varepsilon_0)}\frac{\partial}{\partial x}, \quad \sigma_x = \sigma_{\max}\left(\tfrac{d}{L}\right)^3`, note: 'Open walls: either the one-cell Mur extrapolation or a 10-cell perfectly matched layer, a graded lossy medium whose impedance matches the interior at every angle of incidence.' },
   },
 };
 

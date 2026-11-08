@@ -11,6 +11,11 @@
   <link rel="stylesheet" href="app/style.css">
 </head>
 <body>
+  <div class="assign-banner" id="assign-banner" hidden>
+    <span class="assign-tag">Assignment</span>
+    <span id="assign-note"></span>
+    <a href="#" id="assign-open" title="Show the tab bar and the controls">open full controls</a>
+  </div>
   <header class="topbar">
     <div class="brand">
       <span class="brand-title">Intro EMF Lab</span>
@@ -81,6 +86,12 @@
           <button id="export-png" class="btn btn-small">PNG snapshot</button>
           <button id="export-csv" class="btn btn-small">Field CSV</button>
         </div>
+        <details class="assign-box" id="assign-box">
+          <summary>Assignment link (instructors)</summary>
+          <p class="hint">Copies a link to this exact view with the tab bar and the controls hidden: the student sees the problem as set, and can probe, change layers and export. Any note you type is shown at the top of their page.</p>
+          <label>Note for the student <input id="assign-note-input" type="text" placeholder="e.g. Report C for gaps of 2, 4 and 6 mm" aria-label="Note for the student"></label>
+          <div class="row"><button id="assign-copy" class="btn btn-small">Copy assignment link</button></div>
+        </details>
       </section>
     </aside>
   </main>
@@ -88,6 +99,7 @@
   <footer class="foot">
     <span id="foot-phase"></span>
     <span>Plain ES modules, no build step. Every view is reproducible from its URL.</span>
+    <span id="foot-version" class="foot-version"></span>
   </footer>
 
   <script type="module" src="app/main.js"></script>
