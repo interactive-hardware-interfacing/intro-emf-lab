@@ -32,7 +32,7 @@ index.html ─ app/main.js ─ Shell (app/shell.js) ─┬─ tab modules (app/t
 
 ```js
 export default {
-  id, title, summary,                 // id is the URL `tab=`; summary appears on the About page
+  id, title, summary,                 // id is the URL `tab=`; summary is the About-page fallback when TAB_INFO has no entry
   extent: [xmin, xmax, ymin, ymax],   // metres; the canvas aspect follows it
   axes: ['x', 'y'],                   // probe labels, e.g. ['r', 'z']
   hideField: false,                   // true for tabs that only have stage views (3D tabs)
@@ -76,7 +76,8 @@ accessible name: a `ui.field` label does it; bare inputs in a grid row need `ari
    `app/equations.js`. Every scalar/vector/contour layer with an `eq` key must resolve to an
    entry there; `bench/app.js` lints this and renders every TeX string in KaTeX.
 4. Put the physics checks in `bench/` (a new file exporting `xChecks(check)` called from
-   `run.js`, or a block in `app.js`), and add any new `core/` module to the parse list.
+   `run.js`, or a block in `app.js`). New modules under `app/` and `core/` are parsed
+   automatically.
 5. `npm test` and `npm run smoke` must pass. The smoke test also round-trips the tab's URL
    state and checks every control for an accessible name.
 
@@ -104,8 +105,10 @@ control that changes the picture must be in `getState()`, so the share link repr
 
 ## Tests
 
-`bench/run.js` is a plain node script with one `check(name, got, want, tol)` helper; it
+`bench/run.js` is a plain node script with one `check(name, got, want, tol)` helper (`tol`
+is relative, absolute when `want` is 0); it
 exits non-zero on any failure and `--freeze` rewrites `golden.json`. `bench/smoke.mjs`
 serves the repo on 127.0.0.1 and drives headless Chromium through every tab, view, a
-perturbed URL round trip, randomize-on-load, accessible names and a 900 px layout pass.
+perturbed URL round trip, randomize-on-load, accessible names, the assignment lock, the
+semester tag on downloads and a 900 px layout pass.
 Both run in `.github/workflows/deploy.yml` before the Pages deploy.

@@ -97,19 +97,22 @@ export default {
     const n = this.n, h = this.h;
     const s = new FDTD2D(n, n, { h, yWall: this.yWall, abc: this.abc });
     const src = { wave: this.wave, f: this.f, amp: 1 };
+    // A line source must sit outside the absorbing layer: a soft source inside the lossy PML
+    // leaves a permanent uniform Ez. 0.15 m is 15 cells at 1 cm but only 8 at 2 cm.
+    const lineI = Math.max(Math.round(0.15 / h), s.npml + 3);
     switch (this.preset) {
       case 'slab':
         fillRect(s, 1.2, 1.5, 0, L, { epsR: 4 });
-        s.addSource({ ...src, kind: 'line', i: Math.round(0.15 / h) });
+        s.addSource({ ...src, kind: 'line', i: lineI });
         break;
       case 'slit':
         fillRect(s, 1.0, 1.0 + 2 * h, 0, 0.85, { pec: 1 });
         fillRect(s, 1.0, 1.0 + 2 * h, 1.15, L, { pec: 1 });
-        s.addSource({ ...src, kind: 'line', i: Math.round(0.15 / h) });
+        s.addSource({ ...src, kind: 'line', i: lineI });
         break;
       case 'lens':
         fillCircle(s, 1.0, 1.0, 0.45, { epsR: 2.5 });
-        s.addSource({ ...src, kind: 'line', i: Math.round(0.15 / h) });
+        s.addSource({ ...src, kind: 'line', i: lineI });
         break;
       case 'guide':
         fillRect(s, 0, L, 0.68, 0.68 + 2 * h, { pec: 1 });
@@ -154,10 +157,9 @@ export default {
     return true;
   },
 
-  /** After a paint stroke: resend materials, keeping the fields and the clock. */
+  /** After a paint stroke: update the materials in place; fields, clock, trace and PML memory continue. */
   commitGeometry() {
-    this.sendInit(true);
-    if (this.running) this.play();
+    this.worker?.postMessage({ cmd: 'materials', epsR: this.epsR, pec: this.pec });
     this.shell.redraw();
     this.shell.syncUrl();
   },
@@ -183,7 +185,7 @@ export default {
 
   sendInit(warm) {
     const msg = { cmd: 'init', kind: 'fdtd', nx: this.n, ny: this.n, h: this.h, epsR: this.epsR, pec: this.pec, yWall: this.yWall, abc: this.abc, sources: this.sources, trace: this.traceCell() };
-    if (warm) { Object.assign(msg, { Ez: this.Ez, Hx: this.Hx, Hy: this.Hy, t: this.t, step: this.stepCount }); if (this.trace?.t?.length) msg.trace = { ...msg.trace, t: this.trace.t, v: this.trace.v }; }
+    if (warm) { Object.assign(msg, { Ez: this.Ez, Hx: this.Hx, Hy: this.Hy, t: this.t, step: this.stepCount }); if (msg.trace && this.trace?.t?.length) msg.trace = { ...msg.trace, t: this.trace.t, v: this.trace.v }; }
     this.send(msg);
   },
 

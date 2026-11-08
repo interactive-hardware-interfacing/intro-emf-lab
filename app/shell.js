@@ -18,7 +18,7 @@
 
 import { SEMESTER } from './version.js';
 import { Viewport, drawColorbar, drawProbeMarker } from '../core/render.js';
-import { readState, writeState, getNum, getList, copyToClipboard, downloadText, num } from './state.js';
+import { readState, writeState, getNum, getList, copyToClipboard, downloadText, taggedName, num } from './state.js';
 
 const CANVAS_PX = 640;
 
@@ -606,7 +606,7 @@ export class Shell {
     }
     const a = document.createElement('a');
     a.href = out.toDataURL('image/png');
-    a.download = `${this.tab.id}.png`;
+    a.download = taggedName(`${this.tab.id}.png`);
     a.click();
   }
 

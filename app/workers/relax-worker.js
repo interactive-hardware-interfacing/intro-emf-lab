@@ -3,6 +3,7 @@
 //   { cmd: 'init', nx, ny, extent, boundary, V, fixed, eps, rho }   arrays are copied in
 //   { cmd: 'init', kind: 'axisym', nr, nz, h, z0, boundary: {rmax, zmin, zmax}, V, fixed, eps, rho }
 //   { cmd: 'init', kind: 'axisym-mag', ... }  same shape; V holds psi = r A_phi, eps holds mu_r, rho holds J_phi
+//   { cmd: 'materials', epsR, pec }                 fdtd: paint while keeping fields and PML memory
 //   { cmd: 'init', kind: 'fdtd', nx, ny, h, epsR, pec, sigma, yWall, abc, sources: [...], trace: {i, j},
 //                  Ez?, Hx?, Hy?, t?, step? }   time-domain solver (core/fdtd2d.js); warm fields optional
 //     run: { cmd: 'run', k }  k time steps per frame, until 'pause';  step: { cmd: 'step', k };  reset
@@ -110,6 +111,11 @@ self.onmessage = (ev) => {
       break;
     case 'probe':
       if (solver instanceof FDTD2D) { solver.setTrace(m.i, m.j); if (!running) postFdtd('frame'); }
+      break;
+    case 'materials':
+      // Paint stroke: change eps_r / PEC in place. Fields, clock, trace and the PML's memory
+      // arrays all continue, so a wave inside the layer is not disturbed.
+      if (solver instanceof FDTD2D) { solver.epsR.set(m.epsR); solver.pec.set(m.pec); solver.prepare(); if (!running) postFdtd('frame'); }
       break;
     case 'step': {
       if (!solver) return;

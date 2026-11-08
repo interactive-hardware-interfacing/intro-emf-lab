@@ -373,13 +373,22 @@ mark('axisym magnetostatics (Phase 4)');
     check('axisym-mag muOfB: large-B limit -> 1', AxisymMag.muOfB(50, muI, Bsat), 1, 3e-2);
   }
   // 2. Finite single-layer coil, l = d (Nagaoka K_N = 0.6884): L from B.H energy and from J.A.
+  //    Nagaoka is for an infinitely thin current sheet; the grid smears the 0.5 mm winding
+  //    over about two cells, so L comes out low by an amount that must shrink with h. The
+  //    winding is deposited cloud-in-cell, so its current-weighted mean radius is exactly Rc
+  //    on every grid (snapping whole cells made L jump by 3% with the wire thickness).
   {
-    const s = solenoidWithObject({ N: 50, I: 1, Rc: 0.02, l: 0.04, tw: 0.0005, a: 0, Lo: 0, muR: 1, nr: 81, box: 8 });
-    s.solve(1e-11, 1e6, 100);
+    const build = (nr) => { const s = solenoidWithObject({ N: 50, I: 1, Rc: 0.02, l: 0.04, tw: 0.0005, a: 0, Lo: 0, muR: 1, nr, box: 8 }); s.solve(1e-7 * MU0 * 50 * 0.02, 2e6, 50); return s; };
+    const s = build(81), fine = build(161);
     const { N, I, Rc, l } = s.meta;
     const Lnag = nagaoka(2 * Rc, l) * MU0 * N * N * PI * Rc * Rc / l;
-    const Lb = 2 * s.energy() / (I * I), Lja = 2 * s.energyJA() / (I * I);
-    check('axisym-mag coil l = d: L (J.A) within 3% of Nagaoka', Lja, Lnag, 3e-2);
+    const Lb = 2 * s.energy() / (I * I), Lja = 2 * s.energyJA() / (I * I), LjaFine = 2 * fine.energyJA() / (I * I);
+    const meanR = (g) => { let sr = 0, sw = 0; for (let j = 0; j < g.nz; j++) for (let i = 0; i < g.nr; i++) { const w = g.rho[g.idx(i, j)]; if (w) { sr += w * g.r(i); sw += w; } } return sr / sw; };
+    check('axisym-mag coil: current-weighted mean winding radius = Rc on the coarse grid', meanR(s), Rc, 1e-9);
+    check('axisym-mag coil: mean winding radius = Rc on the fine grid too', meanR(fine), Rc, 1e-9);
+    check('axisym-mag coil l = d: L (J.A) within 10% of Nagaoka at nr = 81', Lja, Lnag, 1e-1);
+    check('axisym-mag coil l = d: L (J.A) within 5% of Nagaoka at nr = 161', LjaFine, Lnag, 5e-2);
+    check('axisym-mag coil: the Nagaoka error shrinks with resolution', Math.abs(LjaFine / Lnag - 1) < 0.7 * Math.abs(Lja / Lnag - 1) ? 1 : 0, 1, 0);
     check('axisym-mag coil: L from node-based B.H within 10% of J.A (coarse winding)', Lb, Lja, 1e-1);
     // On-axis field at the centre vs the finite-solenoid formula B = mu0 N I/(2l) [cos a1 - cos a2]
     const [, bz] = s.B();
@@ -417,7 +426,7 @@ mark('report');
 
 // ---------------------------------------------------------------- app layer (worker, state, contracts, golden files)
 mark('fdtd');
-(await import('./fdtd.js')).fdtdChecks(check);
+await (await import('./fdtd.js')).fdtdChecks(check);
 
 mark('app layer');
 await (await import('./app.js')).run(check);

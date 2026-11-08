@@ -1,11 +1,11 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, fourteen tabs organized by physics process, plus an About page that explains each tab
+page, thirteen tabs organized by physics process, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
-Live site: https://interactive-hardware-interfacing.github.io/intro-EMF-lab/
+Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 
 ## Tabs
 
@@ -85,16 +85,17 @@ npm run smoke     # headless Chromium; needs: npm install --no-save playwright &
 ```
 
 The bench covers every closed form against textbook results, each solver against problems
-with known answers (including the exact layered capacitor, the saturating rod, FDTD
-reflection coefficients and wall absorption), discrete identities, the worker protocol, URL
+with known answers (including the exact layered capacitor, the saturating rod, Nagaoka at two
+resolutions, FDTD reflection coefficients and wall absorption), discrete identities, the worker protocol, URL
 state, the Sandbox geometry encoding, mirroring, CSV alignment, tab/equation/DOM contracts,
 a KaTeX render of every equation, a parse of every module, and golden files:
 `bench/golden.json` freezes the numbers quoted in the handouts to 0.5%. If a solver change
 is meant to move one of them, run `npm run freeze` and say so in the commit.
 
 The smoke test opens every tab and view, round-trips a perturbed URL on every tab, checks
-randomize-on-load, requires an accessible name on every control, and checks the 900 px
-layout for overflow; it fails on any console error. The GitHub Action runs both and refuses
+randomize-on-load, requires an accessible name on every control, checks the assignment lock
+and the semester tag on every download, and checks the 900 px layout for overflow; it fails
+on any console error. The GitHub Action runs both and refuses
 to deploy if either fails.
 
 ## Conventions

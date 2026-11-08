@@ -492,12 +492,27 @@ export function solenoidWithObject({ N = 100, I = 1, Rc = 15e-3, l = 30e-3, tw =
   const z0 = -(nz - 1) / 2 * h;
   const s = new AxisymMag(nr, nz, { h, z0 });
   const twC = Math.max(tw, h);
-  const J = (N * I) / (l * twC);
-  s.jWhere((r, z) => Math.abs(r - Rc) <= twC / 2 + h / 4 && Math.abs(z) <= l / 2 + h / 4, J);
-  // normalise J so the total current is exactly N I on the grid
-  let cells = 0; for (let k = 0; k < s.rho.length; k++) if (s.rho[k] !== 0) cells++;
-  const Jexact = (N * I) / (cells * h * h);
-  for (let k = 0; k < s.rho.length; k++) if (s.rho[k] !== 0) s.rho[k] = Jexact;
+  // The winding is the band |r - Rc| <= tw/2, |z| <= l/2. It is deposited onto the grid by
+  // sampling the band finely and sharing each sample between the two neighbouring rings and
+  // planes with linear weights (cloud-in-cell). That keeps the total current and, unlike
+  // snapping whole cells, the current-weighted mean radius and length exactly Rc and l on
+  // any grid: with cell snapping a 0.5 mm change in wire thickness moved L by 3%.
+  const SUB = 8;                                   // samples per cell width in each direction
+  const dr = h / SUB, dz = h / SUB;
+  let total = 0;
+  const deposit = (r, z, w) => {
+    const fi = r / h, fj = (z - z0) / h;
+    const i0 = Math.floor(fi), j0 = Math.floor(fj), ai = fi - i0, aj = fj - j0;
+    for (const [di, wi] of [[0, 1 - ai], [1, ai]]) for (const [dj, wj] of [[0, 1 - aj], [1, aj]]) {
+      const i = i0 + di, j = j0 + dj;
+      if (i < 0 || i >= nr || j < 0 || j >= nz || wi * wj === 0) continue;
+      s.rho[s.idx(i, j)] += w * wi * wj; total += w * wi * wj;
+    }
+  };
+  for (let r = Rc - twC / 2 + dr / 2; r < Rc + twC / 2; r += dr) for (let z = -l / 2 + dz / 2; z < l / 2; z += dz) deposit(r, z, 1);
+  // normalise so the total current on the grid is exactly N I
+  const Jexact = (N * I) / (total * h * h);
+  for (let k = 0; k < s.rho.length; k++) if (s.rho[k] !== 0) s.rho[k] *= Jexact;
   const inObject = (r, z) => r <= a + h / 4 && z >= zPos - h / 4 && z <= zPos + Lo + h / 4;
   if (muR !== 1 && a > 0 && Lo > 0) {
     s.muWhere(inObject, muR);

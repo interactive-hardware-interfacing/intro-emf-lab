@@ -111,3 +111,24 @@ phase label is gone.
   value for mm cells at tens of GHz, reflected 12% at 1 GHz because alpha/eps0 was not small
   against omega; it is zero here. Bench: normal incidence Mur 5.7e-4 / PML 5.4e-5; grazing
   2-D case Mur 52% / PML 2% of the direct peak; PML in a dielectric < 2%.
+
+## Third audit (patch 6k)
+Fixed: the assignment banner was visible on every page (`.assign-banner { display:flex }`
+beat `[hidden]`); the locked layout collapsed the right panel below 1100 px; the FDTD line
+source sat inside the PML on the 101^2 grid (now clamped to npml + 3 cells); the PNG
+snapshot carried no semester tag; the live-site URL in the docs was mixed case (GitHub
+Pages serves only `intro-emf-lab`); a paint stroke re-created the FDTD solver and so wiped
+the PML's memory arrays (materials now change in place through a `materials` worker
+command; fields, clock, trace and PML memory continue); the Ez(t) trace went NaN after a
+paint with the probe off-grid; docs inaccuracies (tab count, Lab 3 R/gap, Lab 4 geometry,
+parse list, `summary` fallback).
+
+Inductor winding: `solenoidWithObject` snapped the winding onto whole cells, so a 0.5 mm
+change in wire thickness moved L by 3% and the Nagaoka comparison passed by luck (the ring
+landed at +5% in R^2). The winding is now deposited cloud-in-cell, which fixes the
+current-weighted mean radius at Rc on any grid. Against Nagaoka's thin-sheet formula the
+empty default coil now reads -7.5% at nr = 81, -4.2% at 161, -3.8% at 241 (converged to
+1e-13): the 1 mm winding is thinner than a cell and the grid smears it over about two, so L
+is low and converges slowly but monotonically. Golden numbers moved and were re-frozen:
+Lab 5 default L 276.42 -> 275.12 uH, empty coil 191.81 -> 188.57 uH. Tests: 9 new bench
+checks (188) and two smoke passes (lock behaviour at 900 px, semester tag on every download).

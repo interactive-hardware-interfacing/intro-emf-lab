@@ -63,8 +63,13 @@ export async function copyToClipboard(text) {
  * rather than into the data, so MATLAB and Excel read the CSV as is while a number in a lab
  * report can still be traced to the build that produced it.
  */
+/** `capacitors-field.csv` -> `capacitors-field.fall-2026.csv` (idempotent). */
+export function taggedName(filename) {
+  return filename.includes(`.${SEMESTER}.`) ? filename : filename.replace(/(\.[a-z0-9]+)$/i, `.${SEMESTER}$1`);
+}
+
 export function downloadText(filename, text, mime = 'text/csv') {
-  filename = filename.replace(/(\.[a-z0-9]+)$/i, `.${SEMESTER}$1`);
+  filename = taggedName(filename);
   const blob = new Blob([text], { type: mime });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

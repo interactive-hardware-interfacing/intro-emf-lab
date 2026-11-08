@@ -85,6 +85,47 @@ for (const id of tabs) {
 }
 console.log('ok  accessible names');
 
+// ---- Assignment lock: banner hidden when unlocked; the right panel survives a narrow locked window
+{
+  await page.goto(`${base}?tab=capacitors`, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
+  const disp = await page.evaluate(() => getComputedStyle(document.getElementById('assign-banner')).display);
+  if (disp !== 'none') errors.push(`assignment banner visible on an unlocked page (display ${disp})`);
+  await page.setViewportSize({ width: 900, height: 800 });
+  await page.goto(`${base}?tab=capacitors&lock=1&note=test`, { waitUntil: 'networkidle' }); await page.waitForTimeout(800);
+  const st = await page.evaluate(() => ({
+    banner: getComputedStyle(document.getElementById('assign-banner')).display,
+    right: document.querySelector('.panel-right').getBoundingClientRect().width,
+    controls: getComputedStyle(document.getElementById('controls')).display,
+    tabs: getComputedStyle(document.getElementById('tabs')).display,
+    resizer: getComputedStyle(document.getElementById('resize-right')).display,
+  }));
+  if (st.banner === 'none') errors.push('locked page: banner not shown');
+  if (st.right < 200) errors.push(`locked page at 900px: right panel only ${st.right}px wide`);
+  if (st.controls !== 'none' || st.tabs !== 'none' || st.resizer !== 'none') errors.push(`locked page leaks controls/tabs/resizer: ${JSON.stringify(st)}`);
+  await page.setViewportSize({ width: 1400, height: 900 });
+  console.log('ok  assignment lock');
+}
+
+// ---- Every download carries the semester tag exactly once and keeps its extension
+{
+  const { SEMESTER } = await import('../app/version.js');
+  const names = [];
+  page.on('download', (d) => { names.push(d.suggestedFilename()); d.cancel().catch(() => {}); });
+  const buttons = [['capacitors', ['#export-png', '#export-csv']], ['inductors', ['#export-png', '#export-csv']], ['fdtd', ['#export-csv']], ['gauss-law', ['#export-png', '#export-csv']]];
+  for (const [id, sels] of buttons) {
+    await page.goto(`${base}?tab=${id}`, { waitUntil: 'networkidle' }); await waitIdle();
+    for (const sel of sels) { await page.click(sel); await page.waitForTimeout(600); }
+  }
+  // probe log on one tab
+  await page.goto(`${base}?tab=point-charges`, { waitUntil: 'networkidle' }); await page.waitForTimeout(400);
+  await page.click('#probe-log'); await page.click('#probe-csv'); await page.waitForTimeout(600);
+  const re = new RegExp(`^[^.]+\\.${SEMESTER.replace(/[-]/g, '\\$&')}\\.(png|csv)$`);
+  const bad = names.filter((n) => !re.test(n));
+  if (names.length < 8) errors.push(`download test: only ${names.length} downloads captured`);
+  if (bad.length) errors.push(`downloads without a single semester tag: ${bad.join(', ')}`);
+  console.log(`ok  download names (${names.length})`);
+}
+
 // ---- Narrow layout: nothing should overflow horizontally at 900 px
 await page.setViewportSize({ width: 900, height: 800 });
 for (const id of ['capacitors', 'fdtd', 'gauss-law', 'about']) {
