@@ -23,8 +23,8 @@ index.html ─ app/main.js ─ Shell (app/shell.js) ─┬─ tab modules (app/t
   state, resizable panels and the assignment lock.
 - **app/tabs/** holds one module per tab. A tab is a plain object that follows the contract
   below; `tabs/index.js` lists them in display order.
-- **app/workers/relax-worker.js** runs the solvers off the main thread. It understands four
-  kinds (`cartesian`, `axisym`, `axisym-mag`, `fdtd`) and a small command set (`init`, `run`,
+- **app/workers/relax-worker.js** runs the solvers off the main thread. It understands five
+  kinds (`cartesian`, `axisym`, `axisym-mag`, `axisym-eddy`, `fdtd`) and a small command set (`init`, `run`,
   `step`, `pause`, `reset`, `probe`), posting frames every ~40 ms so the convergence is visible.
   `app/solverclient.js` wraps it in promises for the run-to-convergence tabs.
 
@@ -100,6 +100,9 @@ control that changes the picture must be in `getState()`, so the share link repr
 - `AxisymMag`: magnetostatics for ψ = rA_φ with coefficient 1/(μ r) on faces, `B()`,
   flux-linkage and energy inductance, and an optional saturating μ(B) updated between sweeps
   from the H side. Builder: `solenoidWithObject`.
+- `AxisymEddy` (core/eddy.js): `AxisymMag` with complex ψ (`V` + j`Vi`) and a conductivity
+  array; the eddy term jωσ/r sits on the diagonal of the same neighbour average. `Bc()`,
+  `Je()`, `power()`, `impedance(I)`; `cylinderFieldRatio` is the Bessel reference.
 - `FDTD2D` (core/fdtd2d.js): TMz Yee grid, per-cell ε_r/σ/PEC, soft point and line sources,
   CPML (default) or first-order Mur open walls, mirror or PEC top/bottom, Ez(t) trace.
 

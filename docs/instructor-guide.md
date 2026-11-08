@@ -18,7 +18,7 @@ and one tab serves several labs. The COMSOL steps in the original handouts map a
 | 4 mod 1 | Line currents versus a current sheet | Magnetic fields (module 1) | B of N wires approaches the sheet's B as N grows; the "difference" layer shows the remainder. |
 | 4 mod 2 | Four wires, find the currents | Magnetic fields (module 2) | Randomize hides the currents, not the positions. Probe |B| at the origin for +2 A at (−15, 15) mm and −2 A at (−15, −15) mm is 26.7 µT (golden). |
 | 5 | Solenoid with a permeable core; ring sensor | Inductors | Default rod gives L = 275 µH (flux linkage), empty coil 189 µH. The Sweep view moves the object through the coil. "Saturating core" adds μ(B). |
-| — | (new) Gauss's law, transmission lines, time-varying fields | Gauss's law, Transmission lines, Time-varying | Not in the original labs; ready for new exercises. |
+| — | (new) Gauss's law, transmission lines, eddy currents, time-varying fields | Gauss's law, Transmission lines, Eddy currents, Time-varying | Not in the original labs; ready for new exercises. Eddy currents is the natural extension of Lab 5: the same coil and object with an AC current, skin depth, and the coil's R + jωL — the metal-detector principle. |
 
 Every tab's About entry (About page, or the "about" link under each tab's title) says what
 it shows, how it computes, and what to look for, with the equations.
@@ -64,6 +64,10 @@ three steps.
   grid, −4% at the fine one, converging slowly. Comparisons between runs on the same grid
   are good to far better than that; absolute values should be quoted with the grid.
 - The energy-based L under-counts near a thin winding on a coarse grid; quote the
-  flux-linkage L.
+  flux-linkage L. The Inductors tab offers three reference values for the empty coil
+  (Nagaoka, thick-winding filament sum, filament sum at the grid's effective thickness).
+- Eddy currents: the skin depth must span at least two cells; the side panel says how many
+  it spans. Mild steel (μr = 100) has a skin depth ten times thinner than copper's and is
+  resolved only at low frequency.
 - FDTD open walls: the PML absorbs to ~1e-4; the Mur option is there to show what a
   one-line absorbing condition leaves behind.

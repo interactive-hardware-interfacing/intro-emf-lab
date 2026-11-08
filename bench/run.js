@@ -439,6 +439,7 @@ mark('report');
 // ---------------------------------------------------------------- app layer (worker, state, contracts, golden files)
 mark('fdtd');
 await (await import('./fdtd.js')).fdtdChecks(check);
+(await import('./eddy.js')).eddyChecks(check);
 
 mark('app layer');
 await (await import('./app.js')).run(check);

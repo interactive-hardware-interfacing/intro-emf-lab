@@ -3,6 +3,7 @@
 //   { cmd: 'init', nx, ny, extent, boundary, V, fixed, eps, rho }   arrays are copied in
 //   { cmd: 'init', kind: 'axisym', nr, nz, h, z0, boundary: {rmax, zmin, zmax}, V, fixed, eps, rho }
 //   { cmd: 'init', kind: 'axisym-mag', ... }  same shape; V holds psi = r A_phi, eps holds mu_r, rho holds J_phi
+//   { cmd: 'init', kind: 'axisym-eddy', ..., Vi, sigma, omega }  complex psi (V + j Vi); frames carry Vi too
 //   { cmd: 'materials', epsR, pec }                 fdtd: paint while keeping fields and PML memory
 //   { cmd: 'init', kind: 'fdtd', nx, ny, h, epsR, pec, sigma, yWall, abc, sources: [...], trace: {i, j},
 //                  Ez?, Hx?, Hy?, t?, step? }   time-domain solver (core/fdtd2d.js); warm fields optional
@@ -18,6 +19,7 @@
 import { Relax2D } from '../../core/relax2d.js';
 import { Axisym, AxisymMag } from '../../core/axisym.js';
 import { FDTD2D } from '../../core/fdtd2d.js';
+import { AxisymEddy } from '../../core/eddy.js';
 
 let solver = null;
 let running = false;
@@ -29,6 +31,7 @@ function post(type, extra = {}) {
   const msg = { type, sweeps: solver.sweeps, residual: solver.residual, V, delta, ...extra };
   const transfer = [V.buffer, delta.buffer];
   if (solver.sat) { msg.eps = new Float64Array(solver.eps); msg.meanMu = solver.meanMu(); transfer.push(msg.eps.buffer); } // nonlinear mu: send the material back too
+  if (solver.Vi) { msg.Vi = new Float64Array(solver.Vi); transfer.push(msg.Vi.buffer); } // complex psi: quadrature part
   self.postMessage(msg, transfer);
 }
 
@@ -90,11 +93,14 @@ self.onmessage = (ev) => {
         ? new Axisym(m.nr, m.nz, { h: m.h, z0: m.z0, boundary: m.boundary, boxV: m.boxV ?? 0 })
         : m.kind === 'axisym-mag'
           ? new AxisymMag(m.nr, m.nz, { h: m.h, z0: m.z0, boundary: m.boundary })
+          : m.kind === 'axisym-eddy'
+            ? new AxisymEddy(m.nr, m.nz, { h: m.h, z0: m.z0, boundary: m.boundary, omega: m.omega })
           : new Relax2D(m.nx, m.ny, m.extent, { boundary: m.boundary, boxV: m.boxV ?? 0 });
       solver.V.set(m.V);
       solver.fixed.set(m.fixed);
       solver.eps.set(m.eps);
       solver.rho.set(m.rho);
+      if (solver.Vi) { if (m.Vi) solver.Vi.set(m.Vi); solver.sigma.set(m.sigma); }
       if (m.faceR && solver.faceR) { solver.faceR.set(m.faceR); solver.faceZ.set(m.faceZ); solver.facesExplicit = !!m.facesExplicit; solver.facesDirty = false; }
       else if (solver.facesDirty !== undefined) solver.facesDirty = true;
       if (m.sat && solver.setSaturation) solver.setSaturation({ mask: m.sat.mask, muI: m.sat.muI, Bsat: m.sat.Bsat, damping: m.sat.damping ?? 0.5 });

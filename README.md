@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, thirteen tabs organized by physics process, plus an About page that explains each tab
+page, fourteen tabs organized by physics process, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -23,6 +23,7 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Magnetic fields | Line currents and a sheet current; a Randomize puzzle mode | Biot–Savart closed forms |
 | Inductors | Solenoid or ring sensor with a permeable object; optional saturating core μ(B); L from flux linkage and energy | Gauss–Seidel for ψ = rA_φ |
 | Sandbox | Paint conductors, dielectrics and charge; watch the neighbour average converge; Gauss paths | Gauss–Seidel (Laplace / Poisson) |
+| Eddy currents | A conductor in an AC coil: skin depth, induced currents, field phase, coil R + jωL vs frequency, animated cycle | Complex Gauss–Seidel for ψ = rA_φ (quasi-static) |
 | Time-varying | 2-D FDTD with ∂D/∂t on: pulse, slab, slit, lens, waveguide; paint; Ez(t) at the probe; PML or Mur walls | Yee FDTD (TMz) |
 | About | Per-tab descriptions, how the numbers are computed, every equation | — |
 
@@ -53,11 +54,12 @@ core/                   em-core: the numerics, no DOM
   render.js             colormap, scalar fields, quiver, streamlines, contours, viewport
   relax2d.js            plain neighbour-averaging Laplace/Poisson solver + Lab 2 presets
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
+  eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
 bench/
   run.js                the test runner (`npm test`); closed forms, solvers, parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files
-  tline.js, fdtd.js     tests for the transmission-line and FDTD modules
+  tline.js, fdtd.js, eddy.js   tests for the transmission-line, FDTD and eddy-current modules
   golden.json           frozen handout numbers (see Semester releases)
   smoke.mjs             headless-Chromium pass over every tab and view (`npm run smoke`)
 docs/                   architecture, instructor guide, build notes; docs/matlab has relax2d.m
@@ -86,7 +88,8 @@ npm run smoke     # headless Chromium; needs: npm install --no-save playwright &
 
 The bench covers every closed form against textbook results, each solver against problems
 with known answers (including the exact layered capacitor, the saturating rod, Nagaoka at two
-resolutions, FDTD reflection coefficients and wall absorption), discrete identities, the worker protocol, URL
+resolutions, the thick-winding filament sum, FDTD reflection coefficients and wall
+absorption, the eddy-current Bessel solution), discrete identities, the worker protocol, URL
 state, the Sandbox geometry encoding, mirroring, CSV alignment, tab/equation/DOM contracts,
 a KaTeX render of every equation, a parse of every module, and golden files:
 `bench/golden.json` freezes the numbers quoted in the handouts to 0.5%. If a solver change

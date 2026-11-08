@@ -13,6 +13,7 @@ import gaussLaw from './gauss-law.js';
 import interfaceTab from './interface.js';
 import transmissionLines from './transmission-lines.js';
 import fdtd from './fdtd.js';
+import eddy from './eddy.js';
 
 export const TABS = [
   about,
@@ -28,5 +29,6 @@ export const TABS = [
   gaussLaw,
   interfaceTab,
   transmissionLines,
+  eddy,
   fdtd,
 ];

@@ -169,6 +169,22 @@ export const EQUATIONS = {
     solver: { tex: String.raw`V_{i,j} \leftarrow \tfrac{1}{4}\left(V_{i+1,j} + V_{i-1,j} + V_{i,j+1} + V_{i,j-1}\right), \qquad C' = \frac{1}{V}\oint \mathbf{D}\cdot\hat{\mathbf{n}}\, dl` },
   },
 
+  eddy: {
+    governing: [
+      { title: 'Quasi-static Maxwell (no displacement current)', tex: String.raw`\nabla\times\mathbf{H} = \mathbf{J}_s + \mathbf{J}_e, \qquad \nabla\times\mathbf{E} = -\frac{\partial\mathbf{B}}{\partial t}, \qquad \mathbf{J}_e = \sigma\mathbf{E} = -\sigma\frac{\partial\mathbf{A}}{\partial t}` },
+      { title: 'Magnetic diffusion for the phasor ψ = rA_φ', tex: String.raw`\frac{\partial}{\partial r}\!\left(\frac{1}{\mu r}\frac{\partial\psi}{\partial r}\right) + \frac{\partial}{\partial z}\!\left(\frac{1}{\mu r}\frac{\partial\psi}{\partial z}\right) = -\mu_0 J_s + \frac{j\omega\sigma}{r}\,\psi` },
+      { title: 'Skin depth', tex: String.raw`\delta = \sqrt{\frac{2}{\omega\mu\sigma}}` },
+      { title: 'Coil impedance from the complex flux linkage', tex: String.raw`\Lambda = \frac{1}{I}\int \mathbf{J}_s\cdot\mathbf{A}\,dv, \qquad Z = \frac{j\omega\Lambda}{I} = R_\text{eddy} + j\omega L` },
+      { title: 'Long cylinder in a uniform axial field (reference)', tex: String.raw`\frac{B_z(r)}{B_0} = \frac{J_0(\alpha r)}{J_0(\alpha a)}, \qquad \alpha = \frac{1-j}{\delta}` },
+    ],
+    layers: {
+      B: { tex: String.raw`\mathbf{B} = \nabla\times\mathbf{A}; \quad \text{shown: } |\mathbf{B}|, \ \arg B_z, \ \mathrm{Re}[\mathbf{B}e^{j\omega t}]` },
+      Je: { tex: String.raw`\mathbf{J}_e = -j\omega\sigma\mathbf{A} = -\frac{j\omega\sigma}{r}\,\psi\,\hat{\boldsymbol{\phi}}` },
+      P: { tex: String.raw`\langle p\rangle = \frac{|J_e|^2}{2\sigma}, \qquad P = \int\langle p\rangle\,dv = \tfrac{1}{2}R_\text{eddy}I^2` },
+    },
+    solver: { tex: String.raw`\psi_{i,j} = \frac{\sum_n c_n\psi_n + \mu_0 h^2 J_{i,j}}{\sum_n c_n + j\,\omega\sigma\mu_0 h^2/r_i}, \qquad c_n = \frac{1}{\mu_{r,\text{face}}\, r_\text{face}}`, note: 'The same neighbour average as the Inductors tab, with a complex diagonal: the real and imaginary parts of ψ are swept together.' },
+  },
+
   fdtd: {
     governing: [
       { title: 'Faraday', tex: MAXWELL.faraday },

@@ -132,3 +132,19 @@ empty default coil now reads -7.5% at nr = 81, -4.2% at 161, -3.8% at 241 (conve
 is low and converges slowly but monotonically. Golden numbers moved and were re-frozen:
 Lab 5 default L 276.42 -> 275.12 uH, empty coil 191.81 -> 188.57 uH. Tests: 9 new bench
 checks (188) and two smoke passes (lock behaviour at 900 px, semester tag on every download).
+
+## Patch 6l: thick-winding reference, eddy-current tab, About notes
+- `thickCoilL` (core/analytic.js): filament sum of Maxwell mutual inductances over the
+  winding cross-section with an exact rectangle-GMD self term; 0.4% from Nagaoka in the thin
+  limit, 0.8% from Wheeler's multilayer formula at 10 mm thickness. Inductors tab:
+  "Reference L" select (Nagaoka / thick / thick at the grid's effective thickness max(tw, 2h)).
+- `AxisymEddy` (core/eddy.js): frequency-domain magnetic diffusion for complex psi; same
+  Gauss-Seidel with a complex diagonal; `Bc`, `Je`, `power`, `impedance`. Verified against
+  the long-cylinder Bessel solution (1% at a/delta = 1.5, 6% deep inside at a/delta = 4.8
+  where the field is 5% of the surface value) and by the power identity P = R I^2 / 2 (0.5%).
+  Worker kind 'axisym-eddy'. Tab: materials, log-frequency slider, amplitude/phase/snapshot
+  layers, animated cycle, radial profile view, frequency sweep of L(f) and R(f). Box factor 4
+  (not 8) for a finer grid around the object; the empty-coil L is solved on the same grid.
+- A ferromagnetic conductor does not go "diamagnetic" until mu_r delta is small against its
+  size: for a 5 mm steel rod that is beyond the frequencies this grid resolves, so the About
+  text describes the rise in L shrinking with frequency rather than a crossover.

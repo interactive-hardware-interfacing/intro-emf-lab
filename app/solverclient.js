@@ -20,7 +20,8 @@ export class SolverClient {
     const base = { cmd: 'init', kind, V: solver.V, fixed: solver.fixed, eps: solver.eps, rho: solver.rho, boundary: solver.boundary, boxV: solver.boxV };
     if (solver.faceR) { solver.prepare?.(); Object.assign(base, { faceR: solver.faceR, faceZ: solver.faceZ, facesExplicit: solver.facesExplicit }); }
     if (solver.sat) base.sat = { mask: solver.sat.mask, muI: solver.sat.muI, Bsat: solver.sat.Bsat, damping: solver.sat.damping };
-    if (kind === 'axisym' || kind === 'axisym-mag') Object.assign(base, { nr: solver.nr, nz: solver.nz, h: solver.h, z0: solver.z0 });
+    if (kind === 'axisym' || kind === 'axisym-mag' || kind === 'axisym-eddy') Object.assign(base, { nr: solver.nr, nz: solver.nz, h: solver.h, z0: solver.z0 });
+    if (kind === 'axisym-eddy') Object.assign(base, { Vi: solver.Vi, sigma: solver.sigma, omega: solver.omega });
     else Object.assign(base, { nx: solver.nx, ny: solver.ny, extent: solver.extent });
     return new Promise((resolve) => { this.ready = resolve; this.worker.postMessage(base); });
   }
