@@ -100,6 +100,7 @@ export const EQUATIONS = {
       { title: 'Vector potential, axisymmetric', tex: String.raw`\nabla \times \left(\frac{1}{\mu}\nabla \times A_\phi \hat{\boldsymbol{\phi}}\right) = J_\phi` },
       { title: 'Inductance two ways', tex: String.raw`L = \frac{N\Phi}{I} = \frac{2W}{I^2}, \qquad W = \tfrac{1}{2}\int \mathbf{B}\cdot\mathbf{H}\, dv` },
       { title: 'Long solenoid', tex: String.raw`L \approx \frac{\mu_0 N^2 A}{\ell}` },
+      { title: 'Thick-winding reference (filament sum)', tex: String.raw`L = \left(\tfrac{N}{n}\right)^2\Big[\sum_p L_\text{ring}(r_p, \rho) + \sum_{p \ne q} M(r_p, r_q, |z_p - z_q|)\Big], \quad M = \mu_0\sqrt{ab}\left[\left(\tfrac{2}{k}-k\right)K(k) - \tfrac{2}{k}E(k)\right]` },
       { title: 'Saturating core (optional)', tex: String.raw`B(H) = \mu_0 H + B_\text{sat}\tanh\!\left(\frac{\mu_0(\mu_{r0}-1)H}{B_\text{sat}}\right), \qquad \mu_r = \frac{B}{\mu_0 H}` },
     ],
     layers: {

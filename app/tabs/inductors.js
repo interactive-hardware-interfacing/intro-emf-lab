@@ -6,7 +6,7 @@
 // the object passes through. Same solver, different defaults.
 
 import { MU0, PI } from '../../core/constants.js';
-import { nagaoka } from '../../core/analytic.js';
+import { nagaoka, thickCoilL } from '../../core/analytic.js';
 import { Grid2D, magnitude } from '../../core/grid.js';
 import { AxisymMag, solenoidWithObject } from '../../core/axisym.js';
 import { drawScalarField, drawQuiver, drawStreamlines, drawContours, levelsBetween } from '../../core/render.js';
@@ -47,6 +47,7 @@ export default {
   nr: 81,
   objectIn: true,
   sat: false,
+  ref: 'nagaoka',     // reference L for the empty coil: 'nagaoka' | 'thick' | 'grid'
   Bsat: 1.5,   // tesla
   zoom: 'coil',
   mirror: true,
@@ -60,6 +61,7 @@ export default {
     this.nr = [61, 81, 121].includes(getNum(s, 'nr', 81)) ? getNum(s, 'nr', 81) : 81;
     this.objectIn = s.obj !== '0';
     this.sat = s.sat === '1';
+    this.ref = ['nagaoka', 'thick', 'grid'].includes(s.ref) ? s.ref : 'nagaoka';
     this.Bsat = Math.max(0.01, getNum(s, 'bsat', 1.5));
     this.zoom = s.zoom === 'box' ? 'box' : 'coil';
     this.mirror = s.half !== '1';
@@ -156,7 +158,7 @@ export default {
     const Lflux = 2 * Wja / (I * I), Lenergy = 2 * Wb / (I * I);
     const Llong = MU0 * N * N * PI * Rc * Rc / l;
     const Lnag = nagaoka(2 * Rc, l) * Llong;
-    this.results = { Lflux, Lenergy, Llong, Lnag, Wja };
+    this.results = { Lflux, Lenergy, Llong, Lnag, Wja, ...this.referenceL() };
     this.renderResults();
     this.shell.recompute();
   },
@@ -248,7 +250,7 @@ export default {
   },
 
   getState() {
-    const s = { mode: this.mode, nr: this.nr, obj: this.objectIn ? '1' : '0', sat: this.sat ? '1' : '0', bsat: this.Bsat, zoom: this.zoom, half: this.mirror ? '0' : '1', sw0: this.sweep.from, sw1: this.sweep.to, swn: this.sweep.n };
+    const s = { mode: this.mode, nr: this.nr, obj: this.objectIn ? '1' : '0', sat: this.sat ? '1' : '0', bsat: this.Bsat, ref: this.ref, zoom: this.zoom, half: this.mirror ? '0' : '1', sw0: this.sweep.from, sw1: this.sweep.to, swn: this.sweep.n };
     for (const k of ['N', 'I', 'Rc', 'l', 'tw', 'a', 'Lo', 'muR', 'zPos']) s[`i_${k}`] = this.p[k];
     return s;
   },
@@ -305,7 +307,8 @@ export default {
 
     box.appendChild(ui.el('h2', '', 'Inductance'));
     this.resultsEl = ui.el('table', 'probe-table'); this.resultsEl.appendChild(document.createElement('tbody')); box.appendChild(this.resultsEl);
-    box.appendChild(ui.el('p', 'hint', 'Flux linkage: L = (1/I²)∫J·A dv = NΦ/I. Energy: L = 2W/I² with W = ½∫B·H dv, evaluated from the field on the nodes, which under-counts near the thin winding; the flux-linkage value is the one to quote. Long-solenoid and Nagaoka values are for the empty coil.'));
+    box.appendChild(ui.field('Reference L (empty coil)', ui.select([['nagaoka', 'Nagaoka thin sheet'], ['thick', 'Thick winding (filament sum, tw as set)'], ['grid', 'Thick winding at the grid\'s effective thickness']], this.ref, (v) => { this.ref = v; if (this.results) { Object.assign(this.results, this.referenceL()); this.renderResults(); } this.shell.syncUrl(); })));
+    box.appendChild(ui.el('p', 'hint', 'Flux linkage: L = (1/I²)∫J·A dv = NΦ/I. Energy: L = 2W/I² with W = ½∫B·H dv from the field on the nodes, which under-counts near the thin winding; the flux-linkage value is the one to quote. The reference is for the empty coil: Nagaoka assumes an infinitely thin current sheet; the filament sum (Maxwell mutual inductances over the winding cross-section with a GMD self term) accounts for the winding thickness, and agrees with Wheeler\'s multilayer formula to under 1%. The grid smears a winding thinner than a cell over about two cells, which is why the solved L sits below both; the third option evaluates the filament sum at that effective thickness.'));
 
     box.appendChild(ui.el('h2', '', 'B, H, M along the axis'));
     const cr = ui.el('div', 'row'); cr.append(ui.button('Show axis plots', () => { shell.setStageView('axis'); shell.syncUrl(); }, 'btn btn-small'), ui.button('Download cutline CSV', () => { const t = this.cutlineCSV(); if (t) downloadText('inductor-axis-cutline.csv', t); }, 'btn btn-small')); box.appendChild(cr);
@@ -323,6 +326,23 @@ export default {
     this.renderResults(); this.renderSweep();
   },
 
+  /**
+   * Reference inductance of the empty coil, per the "Reference" setting:
+   *   nagaoka  Nagaoka's end correction for an infinitely thin current sheet
+   *   thick    filament sum over the actual winding cross-section (tw as set)
+   *   grid     the same filament sum at the thickness the grid can resolve, max(tw, 2h):
+   *            the solver smears a winding thinner than a cell over about two, so this is the
+   *            fair comparison for the solved L; the gap to 'thick' is the discretisation error
+   */
+  referenceL() {
+    const { N, Rc, l, h } = this.meta;
+    const tw = this.p.tw * 1e-3;                 // the wire thickness as set (meta.tw is the grid's clamp)
+    const twEff = Math.max(tw, 2 * h);
+    if (this.ref === 'thick') return { Lref: thickCoilL({ N, Rc, l, tw }), refLabel: `thick winding, filament sum (tw = ${(tw * 1e3).toFixed(2)} mm)` };
+    if (this.ref === 'grid') return { Lref: thickCoilL({ N, Rc, l, tw: twEff }), refLabel: `thick winding at the grid's effective thickness (${(twEff * 1e3).toFixed(2)} mm)` };
+    return { Lref: nagaoka(2 * Rc, l) * MU0 * N * N * PI * Rc * Rc / l, refLabel: `Nagaoka thin sheet (K = ${nagaoka(2 * Rc, l).toFixed(3)})` };
+  },
+
   renderResults() {
     if (!this.resultsEl) return;
     const tb = this.resultsEl.tBodies[0]; tb.innerHTML = '';
@@ -332,7 +352,8 @@ export default {
     row('L, flux linkage NΦ/I', uH(r.Lflux));
     row('L, energy 2W/I²', uH(r.Lenergy));
     row('μ₀N²A/ℓ, empty coil', uH(r.Llong));
-    row(`× Nagaoka ${nagaoka(2 * this.meta.Rc, this.meta.l).toFixed(3)}`, uH(r.Lnag));
+    row(`reference: ${r.refLabel}`, uH(r.Lref));
+    if (!this.objectIn || this.meta.muR === 1) row('solved ÷ reference', (r.Lflux / r.Lref).toFixed(4));
     if (this.objectIn && this.meta.muR > 1) row('object', `μr = ${this.meta.muR}, bottom at ${(this.meta.zPos * 1e3).toFixed(1)} mm`);
     if (this.sat && this.objectIn) row('mean μr(B) in object', Number.isFinite(this.meanMu) ? this.meanMu.toFixed(2) : '—');
     row('B_z at centre', `${sci(this.gridBz?.sample(0, 0) ?? NaN, 4)} T`);

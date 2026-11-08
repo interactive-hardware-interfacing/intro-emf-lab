@@ -11,7 +11,7 @@ import {
   ringChargeField, ringAsPointCharges, ringOnAxisEz,
   wireB, wireAz, wiresField,
   sheetB, sheetAsWiresB,
-  loopOnAxisBz, longSolenoidL, nagaoka, ellipticKE,
+  loopOnAxisBz, longSolenoidL, nagaoka, ellipticKE, thickCoilL, rectGMD,
 } from '../core/analytic.js';
 import { Grid2D, magnitude } from '../core/grid.js';
 import { Relax2D, lab2Preset } from '../core/relax2d.js';
@@ -119,6 +119,18 @@ check('mu0 = 4 pi 1e-7 (to 1e-9)', MU0, 4 * PI * 1e-7, 1e-9);
   check('nagaoka long-coil limit', nagaoka(0.01, 1), 1 - (4 / (3 * PI)) * 0.01, 1e-4);
   check('nagaoka(d = l) = 0.6884', nagaoka(1, 1), 0.68842, 2e-4);
   check('nagaoka(d = 0.2 l) = 0.9201', nagaoka(0.2, 1), 0.92009, 2e-4);
+  // Thick-winding filament sum: GMD of a square (Grover 0.44705 a), the thin-winding limit
+  // against Nagaoka, and a 10 mm thick winding against Wheeler's multilayer formula
+  // L(uH) = 0.8 a^2 N^2 / (6a + 9b + 10c) (inches), good to ~1%.
+  check('rectGMD: square of side a = 0.44705 a', rectGMD(1, 1), 0.44705, 1e-4);
+  {
+    const N = 100, Rc = 15e-3, l = 30e-3;
+    const Lnag = nagaoka(2 * Rc, l) * MU0 * N * N * PI * Rc * Rc / l;
+    check('thickCoilL: 0.2 mm winding within 1% of Nagaoka', thickCoilL({ N, Rc, l, tw: 0.2e-3 }), Lnag, 1e-2);
+    const toIn = (m) => m / 0.0254, a = toIn(Rc), b = toIn(l), c = toIn(10e-3);
+    check('thickCoilL: 10 mm winding within 1.5% of Wheeler multilayer', thickCoilL({ N, Rc, l, tw: 10e-3 }) * 1e6, 0.8 * a * a * N * N / (6 * a + 9 * b + 10 * c), 1.5e-2);
+    check('thickCoilL: thicker winding has lower L', thickCoilL({ N, Rc, l, tw: 3e-3 }) < thickCoilL({ N, Rc, l, tw: 1e-3 }) ? 1 : 0, 1, 0);
+  }
   const L = longSolenoidL(100, PI * 0.01 ** 2, 0.1);
   check('long solenoid L = mu0 N^2 A/l', L, MU0 * 1e4 * PI * 1e-4 / 0.1, 1e-12);
 }

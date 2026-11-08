@@ -226,3 +226,50 @@ export function nagaoka(d, l) {
   const { K, E } = ellipticKE(k);
   return (4 / (3 * PI * Math.sqrt(1 - k2))) * (((1 - k2) / k2) * (K - E) + E - k);
 }
+
+/**
+ * Mutual inductance of two coaxial circular filaments of radii a and b whose planes are a
+ * distance d apart (Maxwell):  M = mu0 sqrt(ab) [ (2/k - k) K(k) - (2/k) E(k) ],
+ * k^2 = 4ab / ((a+b)^2 + d^2).
+ */
+export function filamentM(a, b, d) {
+  const k2 = 4 * a * b / ((a + b) ** 2 + d * d);
+  const k = Math.sqrt(k2);
+  const { K, E } = ellipticKE(k);
+  return MU0 * Math.sqrt(a * b) * ((2 / k - k) * K - (2 / k) * E);
+}
+
+/** Self-inductance of a thin circular ring of radius R made of round wire of radius a. */
+export function ringL(R, a) { return MU0 * R * (Math.log(8 * R / a) - 2); }
+
+/**
+ * Inductance of a single-layer (or multi-layer) coil of N turns spread uniformly over a
+ * rectangular winding cross-section: mean radius Rc, axial length l, radial thickness tw.
+ * The section is cut into nr x nz filaments carrying N/(nr nz) turns each; L is the sum of
+ * their mutual inductances (Maxwell) plus a self term per filament using the geometric
+ * mean distance of its rectangular cell, 0.2235 (w + h) (Grover). This is the "filament
+ * method"; Lyle's equivalent-filament method and Grover's tables agree with it to a
+ * fraction of a percent, and in the limit tw -> 0 it reproduces Nagaoka's thin sheet.
+ */
+export function thickCoilL({ N, Rc, l, tw, nr = 6, nz } = {}) {
+  const dr = tw / nr;
+  nz = nz ?? Math.min(96, Math.max(8, Math.round(l / dr)));   // cells as near square as affordable
+  const dz = l / nz, n = nr * nz, turns = N / n;
+  const r = [], z = [];
+  for (let i = 0; i < nr; i++) for (let j = 0; j < nz; j++) { r.push(Rc - tw / 2 + (i + 0.5) * dr); z.push(-l / 2 + (j + 0.5) * dz); }
+  const gmd = rectGMD(dr, dz);
+  let L = 0;
+  for (let p = 0; p < n; p++) {
+    L += ringL(r[p], gmd);
+    for (let q = p + 1; q < n; q++) L += 2 * filamentM(r[p], r[q], Math.abs(z[p] - z[q]));
+  }
+  return turns * turns * L;
+}
+
+/** Geometric mean distance of a rectangle a x b from itself (Maxwell/Grover), exact. */
+export function rectGMD(a, b) {
+  const u = a / b, v = b / a;
+  const lnR = Math.log(Math.hypot(a, b)) - (v * v / 12) * Math.log(1 + u * u) - (u * u / 12) * Math.log(1 + v * v)
+    + (2 / 3) * v * Math.atan(u) + (2 / 3) * u * Math.atan(v) - 25 / 12;
+  return Math.exp(lnR);
+}
