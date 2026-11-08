@@ -63,8 +63,8 @@ three steps.
   about two cells and L reads low against Nagaoka's thin-sheet formula: −7% at the default
   grid, −4% at the fine one, converging slowly. Comparisons between runs on the same grid
   are good to far better than that; absolute values should be quoted with the grid.
-- The energy-based L under-counts near a thin winding on a coarse grid; quote the
-  flux-linkage L. The Inductors tab offers three reference values for the empty coil
+- The energy-based L (node-averaged B) reads a few percent low at any grid; quote the
+  flux-linkage L, which is the discrete solution's own energy exactly. The Inductors tab offers three reference values for the empty coil
   (Nagaoka, thick-winding filament sum, filament sum at the grid's effective thickness).
 - Eddy currents: the skin depth must span at least two cells; the side panel says how many
   it spans. Mild steel (μr = 100, σ = 1e7 S/m) has a skin depth about four times thinner than

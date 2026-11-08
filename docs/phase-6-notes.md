@@ -180,3 +180,11 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   lossy-medium attenuation; prepare() no-op; both Mur and PML in the energy test; eddy
   power identity at 1e-6; thick-coil thin limit, upper bound and cell-count independence;
   exact coax energy = Gauss identity; eddy in the smoke round trip. 239 checks.
+
+## Deep audit, pass B (patch 7b)
+- Status flag race: a solve() superseded by a newer one (parameter changed mid-solve) cleared
+  the running flag when its cancelled await resumed, so the status read "not converged"
+  through the whole new solve. Each solve carries a token; a stale continuation returns.
+- Energy row on Inductors relabelled "from node-averaged B (reads low)" with the honest
+  explanation (O(h) smoothing everywhere, ~4% at normal resolution), since the face-based
+  energy equals the flux-linkage value identically. About and the instructor guide updated.

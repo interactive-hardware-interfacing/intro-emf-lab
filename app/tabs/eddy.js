@@ -115,6 +115,7 @@ export default {
   async solve() {
     if (!this.client) return;
     this.shell.solverRunning = true;
+    const id = this.solveId = (this.solveId ?? 0) + 1; // a newer solve() supersedes this one: its continuation must not clear the flags
     this.running = true; this.converged = false;
     try {
       await this.client.init(this.solver, 'axisym-eddy');
@@ -122,6 +123,7 @@ export default {
       this.V = done.V; this.Vi = done.Vi; this.sweeps = done.sweeps; this.residual = done.residual; this.converged = done.converged;
       this.finish();
     } catch { /* cancelled */ }
+    if (id !== this.solveId) return;
     this.running = false; this.shell.solverRunning = false; this.shell.refreshStatus();
   },
 

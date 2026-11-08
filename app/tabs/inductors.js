@@ -128,6 +128,7 @@ export default {
   async solve() {
     if (!this.client) return;
     this.shell.solverRunning = true; this.shell.renderEquations();
+    const id = this.solveId = (this.solveId ?? 0) + 1; // a newer solve() supersedes this one: its continuation must not clear the flags
     this.running = true; this.converged = false;
     try {
       await this.client.init(this.solver, 'axisym-mag');
@@ -136,6 +137,7 @@ export default {
       if (done.eps) { this.solver.eps.set(done.eps); this.meanMu = done.meanMu; }
       this.finish();
     } catch { /* cancelled */ }
+    if (id !== this.solveId) return;
     this.running = false; this.shell.solverRunning = false; this.shell.renderEquations(); this.shell.refreshStatus();
   },
 
@@ -308,7 +310,7 @@ export default {
     box.appendChild(ui.el('h2', '', 'Inductance'));
     this.resultsEl = ui.el('table', 'probe-table'); this.resultsEl.appendChild(document.createElement('tbody')); box.appendChild(this.resultsEl);
     box.appendChild(ui.field('Reference L (empty coil)', ui.select([['nagaoka', 'Nagaoka thin sheet'], ['thick', 'Thick winding (filament sum, tw as set)'], ['grid', 'Thick winding at the grid\'s effective thickness']], this.ref, (v) => { this.ref = v; if (this.results) { Object.assign(this.results, this.referenceL()); this.renderResults(); } this.shell.syncUrl(); })));
-    box.appendChild(ui.el('p', 'hint', 'Flux linkage: L = (1/I²)∫J·A dv = NΦ/I. Energy: L = 2W/I² with W = ½∫B·H dv from the field on the nodes, which under-counts near the thin winding; the flux-linkage value is the one to quote. The reference is for the empty coil: Nagaoka assumes an infinitely thin current sheet; the filament sum (Maxwell mutual inductances over the winding cross-section with a GMD self term) accounts for the winding thickness, and agrees with Wheeler\'s multilayer formula to under 1%. The grid smears a winding thinner than a cell over about two cells, which is why the solved L sits below both; the third option evaluates the filament sum at that effective thickness.'));
+    box.appendChild(ui.el('p', 'hint', 'Flux linkage: L = (1/I²)∫J·A dv = NΦ/I, which is exactly the energy the discrete solution has (summing the field energy over the grid faces gives the same number to round-off). The energy row instead uses B averaged onto the nodes by central differences, which smooths the field and reads a few percent low everywhere on the grid (about 4% at normal resolution, 2% at fine) — a discretisation lesson, not physics; quote the flux-linkage value. The reference is for the empty coil: Nagaoka assumes an infinitely thin current sheet; the filament sum (Maxwell mutual inductances over the winding cross-section with a GMD self term) accounts for the winding thickness, and agrees with Wheeler\'s multilayer formula to under 1%. The grid smears a winding thinner than a cell over about two cells, which is why the solved L sits below both; the third option evaluates the filament sum at that effective thickness.'));
 
     box.appendChild(ui.el('h2', '', 'B, H, M along the axis'));
     const cr = ui.el('div', 'row'); cr.append(ui.button('Show axis plots', () => { shell.setStageView('axis'); shell.syncUrl(); }, 'btn btn-small'), ui.button('Download cutline CSV', () => { const t = this.cutlineCSV(); if (t) downloadText('inductor-axis-cutline.csv', t); }, 'btn btn-small')); box.appendChild(cr);
@@ -350,7 +352,7 @@ export default {
     if (!this.results) { row('L', this.running ? 'solving…' : '—'); return; }
     const r = this.results, uH = (x) => `${(x * 1e6).toPrecision(4)} µH`;
     row('L, flux linkage NΦ/I', uH(r.Lflux));
-    row('L, energy 2W/I²', uH(r.Lenergy));
+    row('L, energy 2W/I² from node-averaged B (reads low)', uH(r.Lenergy));
     row('μ₀N²A/ℓ, empty coil', uH(r.Llong));
     row(`reference: ${r.refLabel}`, uH(r.Lref));
     if (!this.objectIn || this.meta.muR === 1) row('solved ÷ reference', (r.Lflux / r.Lref).toFixed(4));

@@ -127,6 +127,7 @@ export default {
     if (!this.client) return;
     const s = this.solver;
     if (warm) for (let k = 0; k < s.V.length; k++) if (!s.fixed[k]) s.V[k] = this.V[k];
+    const id = this.solveId = (this.solveId ?? 0) + 1; // a newer solve() supersedes this one
     this.running = true; this.converged = false; this.shell.solverRunning = true; this.shell.renderEquations();
     try {
       await this.client.init(s, 'cartesian');
@@ -135,6 +136,7 @@ export default {
       this.updateCurrent();
       this.shell.recompute();
     } catch { /* cancelled */ }
+    if (id !== this.solveId) return;
     this.running = false; this.shell.solverRunning = false; this.shell.renderEquations(); this.shell.refreshStatus();
   },
 
