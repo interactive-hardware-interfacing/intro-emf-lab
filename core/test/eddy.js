@@ -1,7 +1,7 @@
 // Eddy-current (quasi-static) checks: the complex axisymmetric diffusion solver against the
 // exact long-cylinder solution, and the two routes to the eddy loss against each other.
-import { AxisymMag } from '../core/axisym.js';
-import { AxisymEddy, cylinderFieldRatio } from '../core/eddy.js';
+import { AxisymMag } from '../axisym.js';
+import { AxisymEddy, cylinderFieldRatio } from '../eddy.js';
 
 const MU0 = 4e-7 * Math.PI;
 

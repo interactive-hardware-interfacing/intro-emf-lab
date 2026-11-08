@@ -47,7 +47,7 @@ app/
   solverclient.js       promise wrapper around the worker for run-to-convergence tabs
   workers/relax-worker.js   the solvers off the main thread (cartesian, axisym, axisym-mag, fdtd)
   tabs/                 one module per tab; tabs/index.js is the registry
-core/                   em-core: the numerics, no DOM
+core/                   em-core: the numerics, no DOM; a git subtree of github.com/interactive-hardware-interfacing/em-core (docs/em-core.md)
   constants.js          eps0, mu0
   grid.js               Float64 grid with bilinear sampling and gradients
   analytic.js           closed forms: point/line/ring charges, wires, sheets, loops, Nagaoka
@@ -56,10 +56,11 @@ core/                   em-core: the numerics, no DOM
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
+  test/                 em-core's own checks (core, fdtd, eddy) and runner; bench/run.js imports them
 bench/
-  run.js                the test runner (`npm test`); closed forms, solvers, parse of every module
+  run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files
-  tline.js, fdtd.js, eddy.js   tests for the transmission-line, FDTD and eddy-current modules
+  tline.js, fdtd.js     app-side tests for transmission lines and the FDTD presets
   golden.json           frozen handout numbers (see Semester releases)
   smoke.mjs             headless-Chromium pass over every tab and view (`npm run smoke`)
 docs/                   architecture, instructor guide, build notes; docs/matlab has relax2d.m

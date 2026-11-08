@@ -1,0 +1,23 @@
+{
+  "name": "em-core",
+  "version": "1.0.0",
+  "description": "Teaching-grade electromagnetics numerics for the browser: closed forms, plain Gauss-Seidel field solvers in Cartesian and (r, z) coordinates, quasi-static eddy currents, 2-D FDTD, and canvas drawing primitives. Plain ES modules, no dependencies, no DOM in the solvers.",
+  "type": "module",
+  "main": "relax2d.js",
+  "exports": {
+    "./analytic.js": "./analytic.js",
+    "./axisym.js": "./axisym.js",
+    "./constants.js": "./constants.js",
+    "./eddy.js": "./eddy.js",
+    "./fdtd2d.js": "./fdtd2d.js",
+    "./grid.js": "./grid.js",
+    "./relax2d.js": "./relax2d.js",
+    "./render.js": "./render.js"
+  },
+  "files": ["*.js", "test", "README.md", "LICENSE"],
+  "scripts": {
+    "test": "node test/run.js"
+  },
+  "repository": "github:interactive-hardware-interfacing/em-core",
+  "license": "MIT"
+}

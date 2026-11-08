@@ -16,7 +16,9 @@ index.html ─ app/main.js ─ Shell (app/shell.js) ─┬─ tab modules (app/t
 ```
 
 - **core/** is pure numerics: grids, closed forms, solvers, drawing primitives. Nothing in
-  it touches the DOM, so every module runs under node in the bench.
+  it touches the DOM, so every module runs under node in the bench. It is the em-core
+  package, vendored here as a git subtree (`docs/em-core.md`); its own tests are in
+  `core/test/` and the site's bench imports them.
 - **app/shell.js** owns everything the tabs share: the tab bar, the control panel on the
   left, the stacked canvases in the middle (one per layer, plus an overlay), the stage-view
   tabs above them, the layer/colour/probe/export panel on the right, the status line, URL
