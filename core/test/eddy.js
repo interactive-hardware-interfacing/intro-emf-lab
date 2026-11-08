@@ -18,7 +18,7 @@ export function eddyChecks(check) {
       const mag = new AxisymMag(nr, nz, { h, z0: 0, boundary: { zmin: 'neumann', zmax: 'neumann' } });
       mag.jWhere((r) => Math.abs(r - Rc) < h / 4, 1000 / h);
       const s = AxisymEddy.fromMag(mag, { omega, sigmaAt: (r) => (r <= a + h / 4 ? sigma : 0) });
-      s.solve(1e-9 * MU0 * 1000 * Rc, 5e6, 200);
+      s.solve(1e-13 * MU0 * 1000 * Rc, 5e6, 200);
       const delta = s.skinDepth(sigma);
       const [, bzr, , bzi] = s.Bc();
       const j = 3, ig = Math.round(15e-3 / h);
@@ -33,7 +33,9 @@ export function eddyChecks(check) {
         check(`eddy: copper rod at ${f} Hz, phase lag at r = ${r * 1e3} mm vs Bessel (deg)`, Math.atan2(ri, rr) * 180 / Math.PI, Math.atan2(ei, er) * 180 / Math.PI, 0.03);
       }
       const P = s.power().total, Z = s.impedance(1);
-      check(`eddy: ${f} Hz, eddy power = R_eddy I^2 / 2 (0.5%)`, P, Z.Pcoil, 5e-3);
+      // P = R I^2 / 2 is an exact discrete identity (sum psi* x equation), so at a tight tolerance
+      // it must hold to round-off; a loose agreement only measures convergence.
+      check(`eddy: ${f} Hz, eddy power = R_eddy I^2 / 2 (discrete identity, 1e-6 at this tolerance)`, P, Z.Pcoil, 1e-6);
       mag.solve(1e-9 * MU0 * 1000 * Rc, 5e6, 200);
       check(`eddy: ${f} Hz, R_eddy > 0 and L below the static value`, Z.R > 0 && Z.L < 2 * mag.energyJA() ? 1 : 0, 1, 0);
     }

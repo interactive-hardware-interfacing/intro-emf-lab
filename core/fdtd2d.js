@@ -20,8 +20,10 @@
 //   'pml'  convolutional perfectly matched layer (CPML, Roden & Gedney 2000): the outer
 //          NPML cells are a lossy medium whose conductivity is graded from 0 to sigma_max
 //          and whose impedance matches the interior at every angle, so waves enter it and
-//          die out before the (Mur) wall behind it. Reflection ~1e-4 or better at any angle,
-//          in any material, at the cost of a few auxiliary arrays and a thicker border.
+//          die out before the (Mur) wall behind it. Reflection ~1e-4 up to ~45 degrees, rising
+//          to ~1e-2 near grazing (R ~ exp(-2 cos(theta) int sigma dx / eps0 c) in theory; the
+//          measured floor is set by discretisation), in any material, at the cost of a few
+//          auxiliary arrays and a thicker border.
 // PEC cells (pec = 1) hold Ez = 0.
 //
 // Sources are "soft": the source value is added to Ez at a point (or along a line, which
@@ -81,9 +83,11 @@ export class FDTD2D {
     const cdt = C0 * dt;
     this.mur = (cdt - h) / (cdt + h);
     this.cdt = cdt;
-    // previous-step Ez along each wall and one cell in, for the Mur update
-    this.prevL = new Float64Array(2 * this.ny); this.prevR = new Float64Array(2 * this.ny);
-    this.prevB = new Float64Array(2 * this.nx); this.prevT = new Float64Array(2 * this.nx);
+    // previous-step Ez along each wall and one cell in, for the Mur update. Allocated once:
+    // prepare() is also called after a paint stroke mid-run, and the wall history and the
+    // PML's convolution memory must survive that (zeroing them injects a spurious source).
+    this.prevL ??= new Float64Array(2 * this.ny); this.prevR ??= new Float64Array(2 * this.ny);
+    this.prevB ??= new Float64Array(2 * this.nx); this.prevT ??= new Float64Array(2 * this.nx);
     this.preparePml();
   }
 
@@ -124,8 +128,8 @@ export class FDTD2D {
     [this.bx, this.cx] = table(nx, false); [this.bxh, this.cxh] = table(nx, true);
     [this.by, this.cy] = table(ny, false); [this.byh, this.cyh] = table(ny, true);
     const n = nx * ny;
-    this.psiHyx = new Float64Array(n); this.psiHxy = new Float64Array(n);  // for the H updates
-    this.psiEzx = new Float64Array(n); this.psiEzy = new Float64Array(n);  // for the E update
+    this.psiHyx ??= new Float64Array(n); this.psiHxy ??= new Float64Array(n);  // for the H updates (kept across prepare())
+    this.psiEzx ??= new Float64Array(n); this.psiEzy ??= new Float64Array(n);  // for the E update
     this.pmlOn = this.abc === 'pml';
     this.pmlY = this.pmlOn && this.yWall === 'mur';                     // top/bottom only when they are open walls
   }

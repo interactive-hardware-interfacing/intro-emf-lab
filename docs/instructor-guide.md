@@ -14,7 +14,7 @@ and one tab serves several labs. The COMSOL steps in the original handouts map a
 | 1 | Ring and line charges | Ring charge, Line charge | Ring: compare N discrete charges with the continuous ring; remove charges to break the cancellation at the centre. Line charge: exact two-rod image solution with C′. |
 | 2 | Gauss–Seidel relaxation (students write the loop) | Sandbox, Line charge | Sandbox opens on the two-rod preset and shows every sweep; the Convergence view plots the residual. `docs/matlab/relax2d.m` is the same loop in MATLAB for comparison. |
 | 3 | Disk capacitor, C from the field; layered dielectric | Capacitors | Run 1 (5 V, R = 6 mm, gap 4 mm, εr 5/5) gives C = 1.56 pF at normal resolution, 1.64 pF coarse; layered 2/8 gives 1.34 pF. Sweep view for C against gap or εr. |
-| 3 | Boundary conditions at the dielectric interface | Interface | Closed form; shows E_t and D_n continuity, the bound surface charge and the refraction angles. |
+| 3 | Boundary conditions at the dielectric interface | Interface | Closed form; shows E_t and D_n continuity, the bound surface charge and the refraction angles; the conductor case reports ρs = −D1·n̂ with n̂ into the conductor. |
 | 4 mod 1 | Line currents versus a current sheet | Magnetic fields (module 1) | B of N wires approaches the sheet's B as N grows; the "difference" layer shows the remainder. |
 | 4 mod 2 | Four wires, find the currents | Magnetic fields (module 2) | Randomize hides the currents, not the positions. Probe |B| at the origin for +2 A at (−15, 15) mm and −2 A at (−15, −15) mm is 26.7 µT (golden). |
 | 5 | Solenoid with a permeable core; ring sensor | Inductors | Default rod gives L = 275 µH (flux linkage), empty coil 189 µH. The Sweep view moves the object through the coil. "Saturating core" adds μ(B). |
@@ -67,7 +67,7 @@ three steps.
   flux-linkage L. The Inductors tab offers three reference values for the empty coil
   (Nagaoka, thick-winding filament sum, filament sum at the grid's effective thickness).
 - Eddy currents: the skin depth must span at least two cells; the side panel says how many
-  it spans. Mild steel (μr = 100) has a skin depth ten times thinner than copper's and is
-  resolved only at low frequency.
+  it spans. Mild steel (μr = 100, σ = 1e7 S/m) has a skin depth about four times thinner than
+  copper's (δ ∝ 1/√(μσ)) and is resolved only at low frequency.
 - FDTD open walls: the PML absorbs to ~1e-4; the Mur option is there to show what a
   one-line absorbing condition leaves behind.

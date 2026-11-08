@@ -562,7 +562,8 @@ export class Shell {
 
   probeRow() {
     if (!this.lastProbe) return null;
-    const header = [this.tab.axes?.[0] ?? 'x', this.tab.axes?.[1] ?? 'y', ...this.lastProbe.map((r) => r.label + (r.unit ? `_${r.unit}` : ''))];
+    const csvField = (t) => (/[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t); // RFC 4180: a label with a comma must be quoted
+    const header = [this.tab.axes?.[0] ?? 'x', this.tab.axes?.[1] ?? 'y', ...this.lastProbe.map((r) => csvField(r.label + (r.unit ? `_${r.unit}` : '')))];
     const values = [num(this.probePt[0]), num(this.probePt[1]), ...this.lastProbe.map((r) => (Number.isFinite(r.value) ? r.value.toPrecision(8) : ''))];
     return { header, values };
   }

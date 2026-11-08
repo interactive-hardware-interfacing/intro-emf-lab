@@ -80,8 +80,10 @@ export default {
     const F1n = F1 * Math.cos(th1), F1t = F1 * Math.sin(th1);    // normal = x, tangential = y
     let F2n, F2t, rs = 0;
     if (cond) {
-      // perfect conductor on the right: E2 = 0; the free surface charge terminates D1
-      F2n = 0; F2t = 0; rs = k1 * F1n;
+      // perfect conductor on the right: E2 = 0. With n from medium 1 into the conductor,
+      // D2n - D1n = rho_s and D2 = 0, so rho_s = -D1n: a field pointing INTO the conductor
+      // ends on negative charge.
+      F2n = 0; F2t = 0; rs = -k1 * F1n;
     } else if (!mag) {
       // E_t continuous; D2n = D1n + ρs  (n from 1 to 2)
       rs = this.rs * 1e-9;
@@ -204,7 +206,7 @@ export default {
   statusText() {
     const s = this.sol;
     if (!s) return '';
-    if (s.cond) return `conductor: E inside = 0, ρs = D1·n = ${sci(s.rs, 3)} C/m²`;
+    if (s.cond) return `conductor: E inside = 0, ρs = −D1·n̂ = ${sci(s.rs, 3)} C/m² (n̂ from medium 1 into the conductor)`;
     if (Math.abs(s.th1) < 1e-9) return `normal incidence: θ1 = θ2 = 0, ${s.mag ? 'B_n' : 'D_n'} continuous${this.rs ? '' : `, ${s.mag ? 'H_t' : 'E_t'} = 0 on both sides`}`;
     return `tan θ2 / tan θ1 = ${sci(Math.tan(s.th2) / Math.tan(s.th1), 3)}${this.rs ? '' : ` = ${s.mag ? 'μ2/μ1' : 'ε2/ε1'} = ${sci(this.e2 / this.e1, 3)}`} (with ${s.mag ? 'K' : 'ρs'} = ${this.rs})`;
   },
@@ -270,7 +272,7 @@ export default {
     r2.appendChild(ui.field(mag ? '|B1| in medium 1 (µT)' : '|E1| in medium 1 (V/m)', ui.number(this.F1, { min: 0, max: 1e6, onChange: (v) => { this.F1 = v; re(); } })));
     if (!cond) r2.appendChild(ui.field('θ1 from the normal (°)', ui.number(this.th1, { min: -89, max: 89, onChange: (v) => { this.th1 = Math.max(-89, Math.min(89, v)); re(); } })));
     box.appendChild(r2);
-    if (cond) box.appendChild(ui.el('p', 'hint', 'At a perfect conductor the tangential E must vanish, so the field in medium 1 is forced normal to the surface (θ1 = 0) and D1·n is terminated by free surface charge.'));
+    if (cond) box.appendChild(ui.el('p', 'hint', 'At a perfect conductor the tangential E must vanish, so the field in medium 1 is forced normal to the surface (θ1 = 0) and D1 is terminated by free surface charge: ρs = D2·n̂ − D1·n̂ = −D1·n̂ with n̂ pointing into the conductor, so a field that points into the conductor ends on negative charge. Free and bound surface charge together sum to −ε₀E1·n̂.'));
     else {
       box.appendChild(ui.field(mag ? 'Sheet current K on the interface (A/m, along z)' : 'Free surface charge ρs on the interface (nC/m²)', ui.number(this.rs, { onChange: (v) => { this.rs = v; re(); } })));
       box.appendChild(ui.el('p', 'hint', mag

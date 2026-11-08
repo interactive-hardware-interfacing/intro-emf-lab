@@ -283,11 +283,15 @@ export function idealLayeredC({ g, R, epsR, epsR2 }) {
   return (EPS0 * PI * R * R) / ((g / 3) * (2 / epsR2 + 1 / epsR));
 }
 
-/** Kirchhoff's edge correction for a disk capacitor in a uniform dielectric epsEff. */
-export function kirchhoffC({ g, R, epsEff = 1, t = 0 }) {
-  // Kirchhoff (1877): C = eps pi R^2/g + eps R [ ln(16 pi R / g) - 1 ] + (t term, small)
-  const term = Math.log((16 * PI * R) / g) - 1 + (t > 0 ? (t / g) * Math.log(1 + g / t) : 0);
-  return EPS0 * epsEff * (PI * R * R / g + R * term);
+/**
+ * Kirchhoff's (1877) edge correction for a disk capacitor of THIN plates in a uniform
+ * dielectric epsEff:  C = eps [ pi R^2/g + R ( ln(16 pi R/g) - 1 ) ]  (proved by Hutson 1963;
+ * the next term is O(g)). Plate thickness is not included: the thickness corrections in the
+ * literature (Scott & Curtis 1939 and later) differ in form and we have not verified one, so
+ * the function takes no t and the UI labels the row "thin plates".
+ */
+export function kirchhoffC({ g, R, epsEff = 1 }) {
+  return EPS0 * epsEff * (PI * R * R / g + R * (Math.log((16 * PI * R) / g) - 1));
 }
 
 // ================================================================ magnetostatics
@@ -466,6 +470,25 @@ export class AxisymMag {
     return 0.5 * w;
   }
 
+  /**
+   * Stored energy summed over FACES, (pi/mu0) sum_f c_f (delta psi_f)^2 with c_f = 1/(mu_f r_f).
+   * Multiplying each node equation by psi_k and summing gives exactly sum_f c_f (dpsi)^2 =
+   * mu0 h^2 sum_k J_k psi_k, so this equals energyJA() to round-off on a Dirichlet box: it is
+   * the energy the discrete solution actually has. The node-based energy() above smooths B
+   * with central differences and reads several percent low (O(h), everywhere, not only near
+   * the winding).
+   */
+  energyFaces() {
+    const { nr, nz, V, h } = this;
+    let w = 0;
+    for (let j = 0; j < nz; j++) for (let i = 0; i < nr; i++) {
+      const k = this.idx(i, j);
+      if (i + 1 < nr) { const d = V[k + 1] - V[k]; w += this.coef(k, k + 1, (i + 0.5) * h) * d * d; }
+      if (j + 1 < nz && i > 0) { const d = V[k + nr] - V[k]; w += this.coef(k, k + nr, i * h) * d * d; }
+    }
+    return (PI / MU0) * w;
+  }
+
   /** 1/2 int J.A dv (J): equals the energy for the exact solution; the flux-linkage route. */
   energyJA() {
     let w = 0;
@@ -483,7 +506,7 @@ export class AxisymMag {
  * Lab 5 inductive sensor: a coil of N turns, mean radius Rc, length l, winding thickness
  * tw, carrying I, with a cylindrical object (radius a, length Lo, mu_r) whose bottom end
  * sits at z = zPos (sensor centre at z = 0). Square box of half-size `box` times the largest
- * dimension, psi = 0 on the walls: with box = 8 the walls lower L by about 1-2%.
+ * dimension, psi = 0 on the walls: with box = 8 the walls lower L by about 0.2% (1.7% at box = 4).
  */
 export function solenoidWithObject({ N = 100, I = 1, Rc = 15e-3, l = 30e-3, tw = 1e-3, a = 5e-3, Lo = 20e-3, muR = 100, zPos = -10e-3, nr = 81, box = 8, Bsat = 0 } = {}) {
   const S = box * Math.max(Rc + tw, a, l / 2, Lo / 2);      // half-size of the box

@@ -58,8 +58,9 @@ export async function run(check) {
     send({ cmd: 'run', k: 20, tol: 1e-6, maxSweeps: 100000 });
     const d1 = await until('done');
     check('worker: run converges and reports it', d1.converged ? 1 : 0, 1, 0);
-    const ref = lab2Preset('two-rods', { n: 33 }); ref.solve(1e-6, 100000, 20);
-    check('worker: result matches an in-process solve (1%)', d1.V[ref.idx(20, 16)], ref.V[ref.idx(20, 16)], 1e-2);
+    const ref = lab2Preset('two-rods', { n: 33 }); ref.solve(1e-6, 100000, 1); // the worker stops on the first sweep below tol
+    check('worker: result equals an in-process solve that stops on the same sweep (deterministic, 1e-12)', d1.V[ref.idx(20, 16)], ref.V[ref.idx(20, 16)], 1e-12);
+    check('worker: stops on the first sweep below tol, independent of chunking', d1.sweeps, ref.sweeps, 0);
     received.length = 0;
     send({ cmd: 'reset', guess: 0 });
     const f2 = await until('frame');
@@ -71,7 +72,7 @@ export async function run(check) {
     await until('ready'); received.length = 0;
     send({ cmd: 'run', k: 50, tol: 1e-5, maxSweeps: 100000 });
     const d2 = await until('done');
-    const capRef = diskCapacitor({ cellsPerLayer: 2, boxFactor: 1.5 }); capRef.solve(1e-5, 100000, 50);
+    const capRef = diskCapacitor({ cellsPerLayer: 2, boxFactor: 1.5 }); capRef.solve(1e-5, 100000, 1); // k = 1: the worker stops on the first sweep below tol
     check('worker: axisym with explicit faces matches in-process', d2.V[capRef.idx(0, Math.round(-capRef.z0 / capRef.h))], capRef.V[capRef.idx(0, Math.round(-capRef.z0 / capRef.h))], 1e-9);
     // axisym-mag
     const coil = solenoidWithObject({ nr: 41, box: 4 });
@@ -191,7 +192,8 @@ export async function run(check) {
     iface.rs = 10; sol = iface.solve();
     check('interface: D_n jumps by the free surface charge', sol.D2n - sol.D1n, 10e-9, 1e-12);
     iface.mode = 'conductor'; iface.rs = 0; sol = iface.solve();
-    check('interface: conductor: E2 = 0 and rho_s = D1n', sol.rs, EPS0 * 2 * 100, 1e-12);
+    check('interface: conductor: E2 = 0 and rho_s = D2n - D1n = -D1n (n into the conductor)', sol.rs, -EPS0 * 2 * 100, 1e-12);
+    check('interface: conductor: free + bound surface charge = -eps0 E1n', sol.rs + sol.bound, -EPS0 * 100, 1e-9);
     iface.mode = 'magnetic'; iface.e1 = 1; iface.e2 = 1000; iface.th1 = 10; sol = iface.solve();
     check('interface: magnetic: tan(th2)/tan(th1) = mu2/mu1', Math.tan(sol.th2) / Math.tan(sol.th1), 1000, 1e-9);
     check('interface: magnetic: B_n continuous, H_t continuous', Math.abs(sol.F2n - sol.F1n) + Math.abs(sol.F2t / sol.k2 - sol.F1t / sol.k1), 0, 1e-12);
@@ -237,6 +239,60 @@ export async function run(check) {
       check('capacitors tab: C(energy) vs C(Gauss) within 0.5% for a layered stack', cEnergy, q / 5, 5e-3);
     }
     cap.solver = null; cap.V = null; cap.meta = null;
+
+    // Shipped tolerance vs 100x tighter: every panel quantity must already be settled to 1e-4
+    // at the tolerance the UI uses (the Gauss-box C used to lag by 1.8e-3 and read like a
+    // second method).
+    {
+      const { AxisymEddy } = await import('../core/eddy.js');
+      const panel = (sol, V) => {
+        const { g, R, t, h } = sol.meta;
+        const jTop = Math.round((g / 2 - sol.z0) / h), jTopEnd = Math.round((g / 2 + t - sol.z0) / h);
+        return { cEnergy: 2 * sol.energy() / (V * V), cGauss: sol.gaussCharge(0, jTop - 1, Math.min(sol.nr - 2, Math.round((R + 3 * h) / h)), Math.min(sol.nz - 2, jTopEnd + 1)) / V };
+      };
+      const mk = () => diskCapacitor({ V: 5, R: 6e-3, g: 4e-3, epsR: 5, epsR2: 5, cellsPerLayer: 4 });
+      const a = mk(); a.solve(2e-8 * 5, 2e6, 50); const b = mk(); b.solve(2e-10 * 5, 4e6, 50);
+      const pa = panel(a, 5), pb = panel(b, 5);
+      for (const k of Object.keys(pa)) check(`capacitors: ${k} at the shipped tolerance is within 1e-4 of a 100x tighter solve`, pa[k], pb[k], 1e-4);
+      const tolL = 1e-7 * MU0 * 100 * 1 * 15e-3;
+      const la = solenoidWithObject({}); la.solve(tolL, 2e6, 50); const lb = solenoidWithObject({}); lb.solve(tolL / 100, 4e6, 50);
+      check('inductors: L (flux linkage) at the shipped tolerance within 1e-4 of a 100x tighter solve', 2 * la.energyJA(), 2 * lb.energyJA(), 1e-4);
+      const ed = (tol) => { const m = solenoidWithObject({ a: 5e-3, muR: 1, nr: 61, box: 4 }); const h = m.meta.h; const s = AxisymEddy.fromMag(m, { omega: 2 * Math.PI * 1e3, sigmaAt: (r, z) => (r <= 5e-3 + h / 4 && z >= -10e-3 - h / 4 && z <= 10e-3 + h / 4 ? 5.8e7 : 0) }); s.solve(tol, 4e6, 50); return { ...s.impedance(1), P: s.power().total }; };
+      const ea = ed(tolL / 20), eb = ed(tolL / 2000); // the eddy tab runs 20x tighter than Inductors: R_eddy settles later than L
+      for (const k of ['L', 'R', 'P']) check(`eddy: ${k} at the shipped tolerance within 1e-4 of a 100x tighter solve`, ea[k], eb[k], 1e-4);
+    }
+
+    // Eddy tab: the empty-coil reference must be solved on the object's grid (same h and box)
+    {
+      const eddyTab = TABS.find((t) => t.id === 'eddy');
+      const mm = 1e-3;
+      for (const [a, Lo] of [[5, 20], [20, 20], [5, 60]]) {
+        const p = { N: 100, I: 1, Rc: 15, l: 30, tw: 1, a, Lo, zPos: -10 };
+        const obj = solenoidWithObject({ N: 100, I: 1, Rc: 15e-3, l: 30e-3, tw: 1e-3, a: a * mm, Lo: Lo * mm, muR: 1, zPos: -10e-3, nr: 61, box: 4 });
+        eddyTab.p = p; eddyTab.nr = 61; eddyTab.objectIn = true; eddyTab.emptyCache = null;
+        // emptyL() solves; just compare the grid it would build
+        const empty = solenoidWithObject({ N: 100, I: 1, Rc: 15e-3, l: 30e-3, tw: 1e-3, a: a * mm, Lo: Lo * mm, muR: 1, zPos: -10e-3, nr: 61, box: 4 });
+        check(`eddy tab: empty-coil grid matches the object grid (a = ${a} mm, Lo = ${Lo} mm)`, empty.meta.h, obj.meta.h, 1e-12);
+      }
+    }
+
+    // Probe-log CSV on every tab's LIVE probe output: header and value counts must agree after
+    // CSV splitting (a label with a comma broke the Inductors log).
+    {
+      const { Shell } = await import('../app/shell.js');
+      const splitCsv = (line) => line.match(/("([^"]|"")*"|[^,]*)(,|$)/g).filter((x) => x !== '').map((x) => x.replace(/,$/, ''));
+      let bad = [];
+      for (const tab of TABS) {
+        if (!tab.probe) continue;
+        const fake = { tab, lastProbe: null, probePt: [0.01, 0.02] };
+        try { fake.lastProbe = tab.probe(0.01, 0.02); } catch { continue; } // tabs needing a solved field under node
+        if (!Array.isArray(fake.lastProbe)) continue;
+        const row = Shell.prototype.probeRow.call(fake);
+        const csv = Shell.probeLogCsv([row]).split('\n');
+        if (splitCsv(csv[0]).length !== splitCsv(csv[1]).length) bad.push(tab.id);
+      }
+      check(`probe log csv: header and value counts agree on every tab that probes under node (${bad.join(',') || 'none bad'})`, bad.length, 0, 0);
+    }
 
     // Interface, magnetic: n x (H2 - H1) = K with n from 1 to 2 gives H2t = H1t + K
     const iface = TABS.find((t) => t.id === 'interface');
@@ -312,13 +368,13 @@ export async function run(check) {
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};
-    const cap = (p) => { const s = diskCapacitor(p); s.solve(2e-6 * (p.V ?? 5), 1e6, 100); return 2 * s.energy() / (p.V ?? 5) ** 2; };
+    const cap = (p) => { const s = diskCapacitor(p); s.solve(2e-8 * (p.V ?? 5), 2e6, 1); return 2 * s.energy() / (p.V ?? 5) ** 2; }; // the tab's tolerance; k = 1 matches the worker's per-sweep stop
     cases['lab3 run1 C (5V,4mm,6mm,5,5) coarse'] = cap({ V: 5, g: 4e-3, R: 6e-3, epsR: 5, epsR2: 5, cellsPerLayer: 2 });
     cases['lab3 run1 C (5V,4mm,6mm,5,5) normal'] = cap({ V: 5, g: 4e-3, R: 6e-3, epsR: 5, epsR2: 5, cellsPerLayer: 4 });
     cases['lab3 layered C (5V,4mm,6mm,2,8) normal'] = cap({ V: 5, g: 4e-3, R: 6e-3, epsR: 2, epsR2: 8, cellsPerLayer: 4 });
-    const coil = solenoidWithObject({}); coil.solve(1e-7 * 1.25663706e-6 * 100 * 1 * 15e-3, 1e6, 50);
+    const coil = solenoidWithObject({}); coil.solve(1e-7 * 1.25663706e-6 * 100 * 1 * 15e-3, 2e6, 1);
     cases['lab5 default L flux (uH)'] = 2 * coil.energyJA() * 1e6;
-    const empty = solenoidWithObject({ a: 0, muR: 1 }); empty.solve(1e-7 * 1.25663706e-6 * 100 * 1 * 15e-3, 1e6, 50);
+    const empty = solenoidWithObject({ a: 0, muR: 1 }); empty.solve(1e-7 * 1.25663706e-6 * 100 * 1 * 15e-3, 2e6, 1);
     cases['lab5 empty coil L flux (uH)'] = 2 * empty.energyJA() * 1e6;
     cases['lab1 probe V (2C@0.2,0.3; -2C@0.3,0.2) at (0.25,0.25)'] = pointChargesField([{ q: 2, pos: [0.2, 0.3, 0] }, { q: -2, pos: [0.3, 0.2, 0] }], [0.25, 0.25, 0]).V;
     cases['lab4 probe |B| (2A@-15,15mm; -2A@-15,-15mm) at (0,0)'] = Math.hypot(...wiresField([{ I: 2, pos: [-0.015, 0.015] }, { I: -2, pos: [-0.015, -0.015] }], [0, 0]).B);

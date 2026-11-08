@@ -43,20 +43,24 @@ export async function tlineChecks(check) {
   // Parallel plates: C' = eps w / d
   check('tline plates: C\' = eps w / d', lineParams({ geom: 'plates', w: 20e-3, d: 2e-3, epsR: 3 }).C, 3 * EPS0 * 10, 1e-12);
 
-  // Gauss-Seidel coax in a square box: the outer conductor is the boundary, so the only
-  // error is discretisation of the circles. Mirrors transmission-lines.js buildSolver.
+  // Gauss-Seidel coax through the tab's own buildSolver (the outer conductor is the boundary,
+  // so the only error is discretisation of the circles). Two radius ratios: RG-58 (b/a = 3.3)
+  // and a tight one (b/a = 1.5) whose Gauss box must stay inside the outer conductor — the
+  // old square of half-side (a+b)/2 had corners in the outer conductor for b/a < 2.41 and
+  // read 28% low there. The energy route is an exact identity for a grounded outer conductor.
   {
-    const a = 0.45e-3, b = 1.475e-3, epsR = 2.25, n = 161, R = 1.15 * b;
-    const s = new Relax2D(n, n, [-R, R, -R, R], { boundary: 'dirichlet', boxV: 0 });
-    s.fixWhere((x, y) => Math.hypot(x, y) <= a, 1);
-    s.fixWhere((x, y) => Math.hypot(x, y) >= b, 0);
-    s.epsWhere(() => true, epsR);
-    s.solve(1e-8, 400000, 100);
-    const m = Math.round((a + b) / 2 / s.h), c = (n - 1) / 2;
-    const C = s.gaussCharge(Math.round(c - m), Math.round(c - m), Math.round(c + m), Math.round(c + m));
-    const exact = lineParams({ geom: 'coax', a, b, epsR }).C;
-    check('tline coax Gauss-Seidel 161^2: C\' within 2.5% of 2 pi eps / ln(b/a) (staircased circles)', C, exact, 2.5e-2);
-    check('tline coax Gauss-Seidel: C\' from energy agrees with Gauss box (2%)', 2 * s.energy(), C, 2e-2);
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'transmission-lines');
+    const shell = { view: { extent: null }, setExtent(e) { this.view.extent = e; } };
+    tab.shell = shell; tab.n = 161; tab.geom = 'coax';
+    for (const [a, b, epsR, tol] of [[0.45e-3, 1.475e-3, 2.25, 2.5e-2], [1e-3, 1.5e-3, 1, 4e-2]]) {
+      tab.a = a; tab.b = b; tab.epsR = epsR; tab.validate(); tab.applyExtent();
+      const s = tab.buildSolver(); s.solve(1e-9, 600000, 100);
+      const C = s.gaussCharge(...tab.gaussBox), exact = lineParams({ geom: 'coax', a, b, epsR }).C;
+      check(`tline coax Gauss-Seidel 161^2, b/a = ${(b / a).toFixed(2)}: C' within ${tol * 100}% of 2 pi eps / ln(b/a)`, C, exact, tol);
+      check(`tline coax b/a = ${(b / a).toFixed(2)}: C' from energy equals the Gauss box (exact identity, 1e-6)`, 2 * s.energy(), C, 1e-6);
+    }
+    tab.shell = null;
   }
 
   // Twin-lead and parallel plates through the tab's own buildSolver (a stub shell carries the

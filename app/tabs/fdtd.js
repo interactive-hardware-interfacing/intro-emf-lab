@@ -115,8 +115,9 @@ export default {
         s.addSource({ ...src, kind: 'line', i: lineI });
         break;
       case 'guide':
-        fillRect(s, 0, L, 0.68, 0.68 + 2 * h, { pec: 1 });
-        fillRect(s, 0, L, 1.32 - 2 * h, 1.32, { pec: 1 });
+        // plates just OUTSIDE the 0.64 m gap, so the Ez = 0 spacing is 0.64 m on every grid
+        fillRect(s, 0, L, 0.68 - 2 * h, 0.68, { pec: 1 });
+        fillRect(s, 0, L, 1.32, 1.32 + 2 * h, { pec: 1 });
         s.addSource({ ...src, kind: 'point', i: Math.round(0.3 / h), j: Math.round(1.0 / h) });
         break;
       case 'empty':
@@ -247,7 +248,7 @@ export default {
     r1b.appendChild(ui.field('Open walls absorb by', ui.select([['pml', 'PML (10-cell matched layer)'], ['mur', 'Mur (first-order, 1 cell)']], this.abc, (v) => { this.abc = v; this.reload(); })));
     box.appendChild(r1b);
     box.appendChild(ui.el('p', 'hint', this.abc === 'pml'
-      ? 'The shaded border is a perfectly matched layer: a graded lossy medium whose impedance matches the interior at every angle, so waves enter it and die out. Switch to Mur and run the free-space pulse to see what a one-line absorbing condition leaves behind, especially at grazing angles along the walls.'
+      ? 'The shaded border is a perfectly matched layer: a graded lossy medium whose impedance matches the interior at every angle, so waves enter it and die out (about 1e-4 is reflected up to 45°, about 1e-2 near grazing). Switch to Mur and run the free-space pulse to see what a one-line absorbing condition leaves behind, especially at grazing angles along the walls.'
       : 'Mur extrapolates the outgoing wave at each wall cell: cheap, good at normal incidence (~3·10⁻⁴), but a few percent to tens of percent come back at grazing angles. Compare with the PML.'));
     const lam = C0 / this.f;
     box.appendChild(ui.el('p', 'hint', `λ₀ = ${(lam * 100).toFixed(1)} cm = ${(lam / this.h).toFixed(1)} cells. Keep at least 10 cells per wavelength in the densest material (λ = λ₀/√εr). ${this.wave === 'pulse' ? 'The pulse has width τ = 1/(2f).' : 'The CW source ramps up over one period.'} Left and right walls are always absorbing; the source is "soft" (added to E_z), so waves pass through it.`));
@@ -256,7 +257,7 @@ export default {
       slab: 'A plane wave meets a slab of εr = 4 (n = 2). Part reflects (Γ = (1−n)/(1+n) = −1/3 at the first face), part transmits at c/2 and bounces inside the slab.',
       slit: 'The wave squeezes through a 30 cm slit in a perfect conductor and spreads out behind it: diffraction. Compare λ₀ with the slit width by changing the frequency.',
       lens: 'A dielectric cylinder slows the wave in its middle more than at its edges, so the wavefront curves and focuses behind it, like a lens.',
-      guide: 'Two conducting plates 64 cm apart. Each frequency above the cut-off f_c = mc/(2a) (m = 1: 0.23 GHz) travels as a mode with its own pattern; below cut-off nothing propagates.',
+      guide: 'Two conducting plates 64 cm apart. Each frequency above the cut-off f_c = mc/(2a) (m = 1: 0.234 GHz) travels as a mode with its own pattern; below cut-off nothing propagates.',
       empty: 'Paint conductors and dielectrics, then run.',
     };
     box.appendChild(ui.el('p', 'hint', presetHints[this.preset]));

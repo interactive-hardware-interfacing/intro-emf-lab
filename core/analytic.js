@@ -251,10 +251,17 @@ export function ringL(R, a) { return MU0 * R * (Math.log(8 * R / a) - 2); }
  * method"; Lyle's equivalent-filament method and Grover's tables agree with it to a
  * fraction of a percent, and in the limit tw -> 0 it reproduces Nagaoka's thin sheet.
  */
-export function thickCoilL({ N, Rc, l, tw, nr = 6, nz } = {}) {
-  const dr = tw / nr;
-  nz = nz ?? Math.min(96, Math.max(8, Math.round(l / dr)));   // cells as near square as affordable
-  const dz = l / nz, n = nr * nz, turns = N / n;
+export function thickCoilL({ N, Rc, l, tw, nr, nz } = {}) {
+  // Cells must stay near square: the filament approximation between neighbouring cells uses
+  // their centre distance, which is far too small for long thin slivers (a 125:1 strip put a
+  // long thin coil 17% above Nagaoka's upper bound). So choose the cell size from the
+  // thinner dimension, cap the count, and derive the other count from it.
+  const budget = 900;                                        // filaments; pairs ~ budget^2 / 2
+  if (!nr && !nz) {
+    const side = Math.max(Math.min(tw, l) / 6, Math.sqrt(tw * l / budget));
+    nr = Math.max(1, Math.round(tw / side)); nz = Math.max(1, Math.round(l / side));
+  } else { nr ??= 6; nz ??= Math.max(8, Math.round(l / (tw / nr))); }
+  const dr = tw / nr, dz = l / nz, n = nr * nz, turns = N / n;
   const r = [], z = [];
   for (let i = 0; i < nr; i++) for (let j = 0; j < nz; j++) { r.push(Rc - tw / 2 + (i + 0.5) * dr); z.push(-l / 2 + (j + 0.5) * dz); }
   const gmd = rectGMD(dr, dz);

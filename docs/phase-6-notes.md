@@ -148,3 +148,35 @@ checks (188) and two smoke passes (lock behaviour at 900 px, semester tag on eve
 - A ferromagnetic conductor does not go "diamagnetic" until mu_r delta is small against its
   size: for a 5 mm steel rod that is beyond the frequencies this grid resolves, so the About
   text describes the rise in L shrinking with frequency rather than a crossover.
+
+## Deep audit, pass A (patch 7a)
+Four independent reviewers re-derived the math and tested numerically. Fixed:
+- Interface, perfect conductor: rho_s = D2n - D1n = -D1n (n into the conductor); the sign
+  was flipped and the bench test enshrined it.
+- thickCoilL: cells are now kept square (count derived from the thinner dimension, 900
+  filament budget); long thin windings had 125:1 slivers and read 17% above Nagaoka's
+  upper bound. Now -0.14% at tw = 0.05 mm, below Nagaoka for every tw, converging to it.
+- Eddy tab: the empty-coil reference is solved on the object's grid (the box follows the
+  largest dimension, so a and Lo must be passed); a long object gave a spurious -0.8% dL.
+- Transmission lines: the coax Gauss box kept its corners inside the outer conductor
+  (b/a = 1.5 read -28%; now -3%, the staircase error). Bench covers b/a = 3.3 and 1.5.
+- FDTD: prepare() no longer reallocates the PML psi arrays or the Mur history (a paint
+  stroke mid-run injected ~1.4% of the pulse peak); waveguide plates sit outside the gap so
+  the spacing is 0.64 m on every grid (f_c = 0.234 GHz).
+- Capacitors: tolerance 2e-8 V (100x tighter): the Gauss-box C lagged the energy C by 0.17%
+  at the old tolerance and read like a method difference; now 1.7e-5. Golden re-frozen
+  (values move in the 5th digit). Normal-resolution solve takes ~4.5 s.
+- Worker: convergence tested after every sweep, so the stopping sweep and every digit are
+  machine-independent (chunking used to move the 5th digit between reloads).
+- Probe-log CSV: header fields with commas are quoted (RFC 4180); Inductors' log was misaligned.
+- Kirchhoff row: thin-plate formula only (the thickness term could not be verified against
+  the literature); labelled "thin plates".
+- Stated numbers: box walls lower L by 0.2% (not 1-2%); steel's skin depth is ~4x thinner
+  than copper's (not 10x); PML reflection ~1e-4 to 45 degrees, ~1e-2 near grazing.
+- Tests: the 1-D sheet+rod reference uses the control-volume radius a + h/2 (three mu_r at
+  1e-3); face-based energy identity (energyFaces = energyJA to 1e-8); shipped-vs-100x-tighter
+  tolerance consistency for every panel quantity; live probe CSV on every tab; eddy grid
+  match; deterministic worker stop; CW phase velocity vs the Yee dispersion relation (1e-4);
+  lossy-medium attenuation; prepare() no-op; both Mur and PML in the energy test; eddy
+  power identity at 1e-6; thick-coil thin limit, upper bound and cell-count independence;
+  exact coax energy = Gauss identity; eddy in the smoke round trip. 239 checks.

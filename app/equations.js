@@ -141,7 +141,7 @@ export const EQUATIONS = {
     governing: [
       { title: 'Electric: tangential E, normal D', tex: String.raw`E_{1t} = E_{2t}, \qquad D_{2n} - D_{1n} = \rho_s` },
       { title: 'Refraction of E lines (ρs = 0)', tex: String.raw`\frac{\tan\theta_2}{\tan\theta_1} = \frac{\varepsilon_2}{\varepsilon_1}` },
-      { title: 'Perfect conductor', tex: String.raw`\mathbf{E}_2 = 0, \qquad E_{1t} = 0, \qquad \rho_s = D_{1n}` },
+      { title: 'Perfect conductor', tex: String.raw`\mathbf{E}_2 = 0, \qquad E_{1t} = 0, \qquad \rho_s = D_{2n} - D_{1n} = -D_{1n}\ (\hat{\mathbf{n}}\text{ into the conductor})` },
       { title: 'Magnetic: normal B, tangential H', tex: String.raw`B_{1n} = B_{2n}, \qquad \hat{\mathbf{n}}\times(\mathbf{H}_2-\mathbf{H}_1) = \mathbf{K}\ \Rightarrow\ H_{2t} = H_{1t} + K, \qquad \frac{\tan\theta_2}{\tan\theta_1} = \frac{\mu_2}{\mu_1}\ (K = 0)` },
       { title: 'Bound surface charge', tex: String.raw`\rho_{sb} = (\mathbf{P}_1 - \mathbf{P}_2)\cdot\hat{\mathbf{n}}, \qquad \mathbf{P} = (\varepsilon_r - 1)\varepsilon_0\mathbf{E}` },
     ],

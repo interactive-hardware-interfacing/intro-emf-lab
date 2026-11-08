@@ -28,18 +28,42 @@ export function fdtdChecks(check) {
     for (let n = 0; n < 1400; n++) { s.step(1); t1.push([s.t, s.ez(120, 20)]); t2.push([s.t, s.ez(320, 20)]); }
     const dt = peakOf(t2)[0] - peakOf(t1)[0];
     check('fdtd: free-space pulse travels 2 m in 2/c (1%)', dt, 2 / C0, 1e-2);
+    // Numerical dispersion: a CW wave's phase velocity on the grid follows the Yee relation
+    //   sin^2(w dt/2) / (c dt)^2 = sin^2(k h/2) / h^2   (on-axis), v_p = w/k.
+    // At 30 cells per wavelength and S = 0.99/sqrt2 that is v_p/c = 0.99906; measure it from
+    // the phase difference between two probes 1 m apart (the 1% peak test above cannot see it).
+    {
+      const f = 1e9, w = 2 * Math.PI * f, cw = planeWaveBox({ f });
+      const srcs = cw.sources; cw.sources = srcs.map((q) => ({ ...q, wave: 'cw' }));
+      const h = cw.h, dt = cw.dt;
+      const kNum = (2 / h) * Math.asin((h / (C0 * dt)) * Math.sin(w * dt / 2));
+      const vYee = w / kNum;
+      // steady state after 1400 steps: fit phase at two probes over one period
+      const probes = [Math.round(1.0 / h), Math.round(2.0 / h)], acc = probes.map(() => [0, 0]);
+      for (let n = 0; n < 1400; n++) cw.step(1);
+      const N = Math.round(1 / (f * dt));
+      for (let n = 0; n < N; n++) { cw.step(1); probes.forEach((i, p) => { const v = cw.ez(i, 20); acc[p][0] += v * Math.cos(w * cw.t); acc[p][1] += v * Math.sin(w * cw.t); }); }
+      const ph = acc.map(([c, s]) => Math.atan2(s, c));
+      let dph = ph[1] - ph[0]; while (dph < 0) dph += 2 * Math.PI; while (dph > 2 * Math.PI) dph -= 2 * Math.PI;
+      const cycles = Math.floor((probes[1] - probes[0]) * h * kNum / (2 * Math.PI));
+      const kMeas = (dph + 2 * Math.PI * cycles) / ((probes[1] - probes[0]) * h);
+      check('fdtd: CW phase velocity matches the Yee dispersion relation (1e-4)', w / kMeas, vYee, 1e-4);
+      check('fdtd: numerical dispersion at 30 cells/lambda is about -0.1%', vYee / C0, 0.99906, 2e-4);
+    }
     check('fdtd: pulse amplitude survives the trip (plane wave, 2%)', Math.abs(peakOf(t2)[1]) / Math.abs(peakOf(t1)[1]), 1, 2e-2);
     check('fdtd: trace records every step', s.trace.v.length, 1400, 0);
   }
   // 2. Energy bounded with the Mur walls: after the pulse has left, the stored energy is a
   //    small fraction of its peak and does not grow.
   {
-    const s = new FDTD2D(101, 101, { h: 0.01 });
-    s.addSource({ kind: 'point', i: 50, j: 50, wave: 'pulse', f: 1e9 });
-    let peak = 0, late = 0, later = 0;
-    for (let n = 0; n < 900; n++) { s.step(1); const W = s.energy(); if (W > peak) peak = W; if (n === 599) late = W; if (n === 899) later = W; }
-    check('fdtd: energy after the pulse exits < 2% of the peak (Mur ABC)', late / peak < 0.02 ? 1 : 0, 1, 0);
-    check('fdtd: energy keeps falling (no late growth)', later <= late * 1.01 ? 1 : 0, 1, 0);
+    for (const abc of ['mur', 'pml']) {
+      const s = new FDTD2D(101, 101, { h: 0.01, abc });
+      s.addSource({ kind: 'point', i: 50, j: 50, wave: 'pulse', f: 1e9 });
+      let peak = 0, late = 0, later = 0;
+      for (let n = 0; n < 900; n++) { s.step(1); const W = s.energy(); if (W > peak) peak = W; if (n === 599) late = W; if (n === 899) later = W; }
+      check(`fdtd: energy after the pulse exits < 2% of the peak (${abc})`, late / peak < 0.02 ? 1 : 0, 1, 0);
+      check(`fdtd: energy keeps falling, no late growth (${abc})`, later <= late * 1.01 ? 1 : 0, 1, 0);
+    }
   }
   // 3. Dielectric half-space: reflection = (1 - n) / (1 + n), transmission = 2 / (1 + n).
   //    Source at x = 0.2 m, interface at x = 3.5 m, probes at 2.5 m (incident, then reflected)
@@ -138,5 +162,29 @@ export function fdtdChecks(check) {
     check('fdtd: changing materials in place mid-run keeps the PML memory (late field within 1e-3 of the pulse peak)', d < 1e-3 ? 1 : 0, 1, 0);
     const t = new FDTD2D(41, 41, { h: 0.01 }); t.setTrace(20, 20); t.addSource({ i: 10, j: 20, f: 1e9 }); t.step(300);
     check('fdtd: trace values are finite', t.trace.v.every(Number.isFinite) ? 1 : 0, 1, 0);
+  }
+
+  // 8. Lossy half-space: a plane wave in a conductor (sigma, eps_r = 1) decays as exp(-alpha x) with
+  //    alpha = w sqrt(mu eps/2) [ sqrt(1 + (sigma/w eps)^2) - 1 ]^(1/2); the (1 - loss)/(1 + loss)
+  //    coefficients are otherwise untested.
+  {
+    const f = 1e9, w = 2 * Math.PI * f, sigma = 0.01, eps = 8.8541878128e-12, mu = 4e-7 * Math.PI;
+    const alpha = w * Math.sqrt(mu * eps / 2) * Math.sqrt(Math.sqrt(1 + (sigma / (w * eps)) ** 2) - 1);
+    const s = new FDTD2D(401, 11, { h: 0.01, yWall: 'mirror', abc: 'pml' });
+    s.addSource({ kind: 'line', i: 30, f, wave: 'cw' });
+    for (let k = 0; k < s.sigma.length; k++) if (k % 401 >= 100) s.sigma[k] = sigma;
+    s.prepare();
+    for (let n = 0; n < 2500; n++) s.step(1);
+    const amp = (i) => { let m = 0; const N = Math.round(1 / (f * s.dt)); for (let n = 0; n < N; n++) { s.step(1); m = Math.max(m, Math.abs(s.ez(i, 5))); } return m; };
+    const a1 = amp(150), a2 = amp(250);
+    check('fdtd: lossy medium attenuation over 1 m matches exp(-alpha d) (2%)', a2 / a1, Math.exp(-alpha * 1.0), 2e-2);
+  }
+  // 9. prepare() mid-run must be a no-op for the fields: the PML memory and the Mur history
+  //    survive it (a paint stroke calls prepare() while waves may be inside the layer).
+  {
+    const run = (prepAt) => { const s = new FDTD2D(201, 201, { h: 0.01, abc: 'pml' }); s.addSource({ i: 100, j: 100, f: 1e9 }); for (let k = 0; k < 600; k++) { s.step(1); if (k === prepAt) s.prepare(); } return s; };
+    const ref = run(-1), p = run(190);
+    let d = 0; for (let k = 0; k < ref.Ez.length; k++) d = Math.max(d, Math.abs(ref.Ez[k] - p.Ez[k]));
+    check('fdtd: prepare() while the pulse is in the PML changes nothing (1e-12)', d < 1e-12 ? 1 : 0, 1, 0);
   }
 }

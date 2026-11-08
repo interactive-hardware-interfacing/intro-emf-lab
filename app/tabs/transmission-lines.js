@@ -223,7 +223,10 @@ export default {
       s.fixWhere((x, y) => Math.hypot(x, y) <= this.a, V0);
       s.fixWhere((x, y) => Math.hypot(x, y) >= this.b, 0);
       s.epsWhere(() => true, this.epsR);
-      const m = Math.round((this.a + this.b) / 2 / h), c = (n - 1) / 2;
+      // Gauss box: a square whose corners (at sqrt2 m) must stay inside the outer conductor,
+      // and whose sides must clear the inner one by a couple of cells.
+      const mMax = this.b / Math.SQRT2 - 2 * h, mMin = this.a + 2 * h;
+      const m = Math.round(Math.max(mMin, Math.min((this.a + this.b) / 2, mMax)) / h), c = (n - 1) / 2;
       this.gaussBox = [Math.round(c - m), Math.round(c - m), Math.round(c + m), Math.round(c + m)];
     } else if (this.geom === 'twin') {
       const { D } = this.twinSetup();

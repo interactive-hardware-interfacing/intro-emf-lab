@@ -108,7 +108,9 @@ export default {
     else this.shell.setExtent([0, 2 * Z, -Z, Z], ['r', 'z']);
   },
 
-  tol() { return 1e-7 * MU0 * this.meta.N * this.meta.I * this.meta.Rc; },
+  // 20x tighter than the Inductors tab: R_eddy comes from the small quadrature part of psi and
+  // settles later than L (at the Inductors tolerance it was still moving in its 4th digit).
+  tol() { return 5e-9 * MU0 * this.meta.N * this.meta.I * this.meta.Rc; },
 
   async solve() {
     if (!this.client) return;
@@ -136,10 +138,12 @@ export default {
 
   /** The empty coil's L at this grid, for the "change from empty coil" readout (solved once per geometry). */
   emptyL() {
-    const key = `${this.nr}|${this.p.N}|${this.p.Rc}|${this.p.l}|${this.p.tw}`;
+    // Same grid as the object solve: the box size follows the largest dimension, so the
+    // object's a and Lo must be passed (with mu_r = 1 and no conductivity they do nothing else).
+    const key = `${this.nr}|${this.p.N}|${this.p.Rc}|${this.p.l}|${this.p.tw}|${this.p.a}|${this.p.Lo}|${this.objectIn}`;
     if (this.emptyCache?.key === key) return this.emptyCache.L;
     const mm = 1e-3, p = this.p;
-    const mag = solenoidWithObject({ N: p.N, I: p.I, Rc: p.Rc * mm, l: p.l * mm, tw: p.tw * mm, a: 0, Lo: 0, muR: 1, zPos: 0, nr: this.nr, box: 4 });
+    const mag = solenoidWithObject({ N: p.N, I: p.I, Rc: p.Rc * mm, l: p.l * mm, tw: p.tw * mm, a: this.objectIn ? p.a * mm : 0, Lo: p.Lo * mm, muR: 1, zPos: p.zPos * mm, nr: this.nr, box: 4 });
     mag.solve(this.tol(), 400000, 100);
     const L = 2 * mag.energyJA() / (p.I * p.I);
     this.emptyCache = { key, L };
@@ -334,7 +338,7 @@ export default {
     r4.appendChild(ui.field('View', ui.select([['coil', 'Coil region'], ['box', 'Whole box']], this.zoom, (v) => { this.zoom = v; this.applyZoom(); shell.recompute(); shell.syncUrl(); })));
     r4.appendChild(ui.field('Section', ui.select([['full', 'Full cross-section'], ['half', 'r–z half-plane']], this.mirror ? 'full' : 'half', (v) => { this.mirror = v === 'full'; this.applyZoom(); shell.recompute(); shell.syncUrl(); })));
     box.appendChild(r4);
-    box.appendChild(ui.el('p', 'hint', 'The box is 4× the largest dimension here (closer walls than the Inductors tab, for a finer grid around the object); the empty-coil L is solved on the same grid so ΔL is unaffected. The skin depth should span at least two cells for the current distribution to be resolved: at high frequency pick a finer grid, a lower conductivity or a larger object. Mild steel is the hard case: with μr = 100 its skin depth is ten times thinner than copper\'s.'));
+    box.appendChild(ui.el('p', 'hint', 'The box is 4× the largest dimension here (closer walls than the Inductors tab, for a finer grid around the object); the empty-coil L is solved on the same grid so ΔL is unaffected. The skin depth should span at least two cells for the current distribution to be resolved: at high frequency pick a finer grid, a lower conductivity or a larger object. Mild steel is the hard case: with μr = 100 and σ = 1e7 S/m its skin depth is about four times thinner than copper\'s (δ ∝ 1/√(μσ)).'));
 
     box.appendChild(ui.el('h2', '', 'Coil impedance and losses'));
     this.resultsEl = ui.el('table', 'probe-table'); this.resultsEl.appendChild(document.createElement('tbody')); box.appendChild(this.resultsEl);

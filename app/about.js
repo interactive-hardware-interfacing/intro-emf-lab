@@ -24,7 +24,7 @@ export const SITE = {
   numerics: [
     ['Units', 'SI throughout: metres, coulombs, amperes, volts, teslas. Lengths in the side panels are in millimetres where the handouts use millimetres.'],
     ['Grids', 'The solvers work on uniform square grids. Finer grids are more accurate and slower: with plain neighbour averaging the time grows roughly as (grid side)⁴. Each solver tab has a resolution setting; refine once to see how much an answer moves.'],
-    ['Boxes', 'A numerical solution needs a finite box. Capacitors use insulating walls (no stray capacitance); inductors use ψ = 0 walls far away (about 1–2% low on L). The status line under the plot reports grid size, sweep count and residual.'],
+    ['Boxes', 'A numerical solution needs a finite box. Capacitors use insulating walls (no stray capacitance); inductors use ψ = 0 walls far away (about 0.2% low on L at 8× the coil size, 1.7% at the 4× box of the Eddy currents tab). The status line under the plot reports grid size, sweep count and residual.'],
     ['Checks', 'Every closed form and both solvers are tested against problems with known answers before the site deploys; the numbers quoted in the handouts are frozen as golden files.'],
   ],
 };

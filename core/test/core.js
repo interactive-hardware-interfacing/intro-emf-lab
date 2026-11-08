@@ -117,6 +117,9 @@ export async function coreChecks(check, mark = () => {}) {
       const N = 100, Rc = 15e-3, l = 30e-3;
       const Lnag = nagaoka(2 * Rc, l) * MU0 * N * N * PI * Rc * Rc / l;
       check('thickCoilL: 0.2 mm winding within 1% of Nagaoka', thickCoilL({ N, Rc, l, tw: 0.2e-3 }), Lnag, 1e-2);
+    check('thickCoilL: 0.05 mm winding within 0.3% of Nagaoka (thin limit)', thickCoilL({ N, Rc, l, tw: 0.05e-3 }), Lnag, 3e-3);
+    check('thickCoilL: a finite winding never exceeds Nagaoka (long thin coil, l = 400 mm, tw = 0.2 mm)', thickCoilL({ N: 1000, Rc, l: 0.4, tw: 0.2e-3 }) < nagaoka(2 * Rc, 0.4) * MU0 * 1e6 * PI * Rc * Rc / 0.4 ? 1 : 0, 1, 0);
+    check('thickCoilL: result independent of the cell count once cells are square (0.3%)', thickCoilL({ N, Rc, l, tw: 1e-3 }), thickCoilL({ N, Rc, l, tw: 1e-3, nr: 3, nz: 90 }), 3e-3);
       const toIn = (m) => m / 0.0254, a = toIn(Rc), b = toIn(l), c = toIn(10e-3);
       check('thickCoilL: 10 mm winding within 1.5% of Wheeler multilayer', thickCoilL({ N, Rc, l, tw: 10e-3 }) * 1e6, 0.8 * a * a * N * N / (6 * a + 9 * b + 10 * c), 1.5e-2);
       check('thickCoilL: thicker winding has lower L', thickCoilL({ N, Rc, l, tw: 3e-3 }) < thickCoilL({ N, Rc, l, tw: 1e-3 }) ? 1 : 0, 1, 0);
@@ -211,7 +214,7 @@ export async function coreChecks(check, mark = () => {}) {
       check('relax2d coax: V(r) within 2% at 161x161 (staircase circle)', r161.vErr, 0, 2e-2);
       check('relax2d coax: error shrinks with refinement', r161.vErr < r81.vErr ? 1 : 0, 1, 0);
       check('relax2d coax: C from Gauss within 2% of 2 pi eps0 / ln(b/a)', r161.cGauss, r161.cEx, 2e-2);
-      check('relax2d coax: C from energy agrees with Gauss (2%)', r161.cEnergy, r161.cGauss, 2e-2);
+      check('relax2d coax: C from energy equals Gauss (exact identity with a grounded outer conductor, 1e-6)', r161.cEnergy, r161.cGauss, 1e-6);
       // Corner order must not matter (a box dragged upward or leftward)
       {
         const s = new Relax2D(81, 81, [-1, 1, -1, 1], { boundary: 'dirichlet' });
@@ -272,7 +275,7 @@ export async function coreChecks(check, mark = () => {}) {
       s.solve(1e-8, 1e6, 100);
       const cE = 2 * s.energy() / 1;
       const { g, R, t, h } = s.meta;
-      const ck = kirchhoffC({ g, R, epsEff: 1, t });
+      const ck = kirchhoffC({ g, R, epsEff: 1 });
       const ideal = EPS0 * PI * R * R / g;
       const jTop = Math.round((g / 2 - s.z0) / h), jTopEnd = Math.round((g / 2 + t - s.z0) / h);
       const cG = s.gaussCharge(0, jTop - 1, Math.round((R + 3 * h) / h), jTopEnd + 1) / 1;
@@ -340,26 +343,29 @@ export async function coreChecks(check, mark = () => {}) {
     // 1. Infinite current sheet at r = Rc with a permeable rod r <= a inside, in a box of
     //    radius Rw with psi = 0 on the wall and mirror ends: an exact 1-D problem.
     //    H1 - H2 = K, and zero net flux: H1 (mu_r a^2 + Rc^2 - a^2) + H2 (Rw^2 - Rc^2) = 0.
-    {
-      const h = 0.005, Rw = 1, Rc = 0.5, a = 0.2, muR = 8, K = 100;
+    //    The grid's rod is the nodes r <= a, whose control volumes reach a + h/2: that is the
+    //    radius the exact balance must use (with a itself the test only passed at 1% because
+    //    mu_r = 8; at mu_r = 500 the offset is 2.4%). Three permeabilities, 1e-3.
+    for (const muR of [8, 50, 500]) {
+      const h = 0.005, Rw = 1, Rc = 0.5, a = 0.2 + h / 2, K = 100;
       const s = new AxisymMag(201, 7, { h, z0: 0, boundary: { zmin: 'neumann', zmax: 'neumann' } });
       s.jWhere((r) => Math.abs(r - Rc) < h / 4, K / h);
-      s.muWhere((r) => r <= a + h / 4, muR);
+      s.muWhere((r) => r <= 0.2 + h / 4, muR);
       s.solve(1e-13, 1e6, 100);
       const [, bz] = s.B();
       const H1 = K / (1 + (muR * a * a + Rc * Rc - a * a) / (Rw * Rw - Rc * Rc));
-      check('axisym-mag sheet+rod: B_z in rod = mu0 mu_r H1 (1%)', bz.get(20, 3), MU0 * muR * H1, 1e-2);
-      check('axisym-mag sheet+rod: B_z in gap = mu0 H1 (1%)', bz.get(70, 3), MU0 * H1, 1e-2);
-      check('axisym-mag sheet+rod: B_z outside sheet = mu0 H2 (1%)', bz.get(150, 3), MU0 * (H1 - K), 1e-2);
+      check(`axisym-mag sheet+rod mu_r = ${muR}: B_z in rod = mu0 mu_r H1 (1e-3)`, bz.get(20, 3), MU0 * muR * H1, 1e-3);
+      check(`axisym-mag sheet+rod mu_r = ${muR}: B_z in gap = mu0 H1 (1e-3)`, bz.get(70, 3), MU0 * H1, 1e-3);
+      check(`axisym-mag sheet+rod mu_r = ${muR}: B_z outside sheet = mu0 H2 (1e-3)`, bz.get(150, 3), MU0 * (H1 - K), 1e-3);
     }
     // 1b. Saturating rod in the same 1-D geometry: with the B-H curve the rod's B must satisfy
     //     B = mu0 H1 + Bsat tanh(mu0 (mu_i - 1) H1 / Bsat), with H1 fixed by the sheet and the
     //     flux balance. Solve that transcendental system here and compare.
     {
-      const h = 0.005, Rw = 1, Rc = 0.5, a = 0.2, muI = 50, K = 2e5, Bsat = 1.0;
+      const h = 0.005, Rw = 1, Rc = 0.5, a = 0.2 + h / 2, muI = 50, K = 2e5, Bsat = 1.0; // a: control-volume radius, see above
       const s = new AxisymMag(201, 7, { h, z0: 0, boundary: { zmin: 'neumann', zmax: 'neumann' } });
       s.jWhere((r) => Math.abs(r - Rc) < h / 4, K / h);
-      s.muWhere((r) => r <= a + h / 4, muI);
+      s.muWhere((r) => r <= 0.2 + h / 4, muI);
       const mask = new Uint8Array(s.eps.length); for (let k = 0; k < mask.length; k++) if (s.eps[k] === muI) mask[k] = 1;
       s.setSaturation({ mask, muI, Bsat });
       s.solve(1e-12, 1e6, 100);
@@ -369,7 +375,7 @@ export async function coreChecks(check, mark = () => {}) {
       let lo = 0, hi = K; for (let n = 0; n < 200; n++) { const mid = 0.5 * (lo + hi); if (F(mid) > 0) hi = mid; else lo = mid; }
       const H1 = 0.5 * (lo + hi);
       const [, bz] = s.B();
-      check('axisym-mag saturating rod: B in rod follows the B-H curve (1%)', bz.get(20, 3), Bcurve(H1), 1e-2);
+      check('axisym-mag saturating rod: B in rod follows the B-H curve (0.2%)', bz.get(20, 3), Bcurve(H1), 2e-3);
       check('axisym-mag saturating rod: mean mu_r matches the curve (3%)', s.meanMu(), Bcurve(H1) / (MU0 * H1), 3e-2);
       check('axisym-mag muOfB: small-B limit is mu_i', AxisymMag.muOfB(1e-6, muI, Bsat), muI, 1e-3);
       check('axisym-mag muOfB: large-B limit -> 1', AxisymMag.muOfB(50, muI, Bsat), 1, 3e-2);
@@ -391,7 +397,10 @@ export async function coreChecks(check, mark = () => {}) {
       check('axisym-mag coil l = d: L (J.A) within 10% of Nagaoka at nr = 81', Lja, Lnag, 1e-1);
       check('axisym-mag coil l = d: L (J.A) within 5% of Nagaoka at nr = 161', LjaFine, Lnag, 5e-2);
       check('axisym-mag coil: the Nagaoka error shrinks with resolution', Math.abs(LjaFine / Lnag - 1) < 0.7 * Math.abs(Lja / Lnag - 1) ? 1 : 0, 1, 0);
-      check('axisym-mag coil: L from node-based B.H within 10% of J.A (coarse winding)', Lb, Lja, 1e-1);
+      check('axisym-mag coil: node-based B.H energy reads a few % low (O(h) smoothing), within 10% of J.A', Lb, Lja, 1e-1);
+      // the face energy is the discrete solution's own energy: identical to J.A by the discrete Green identity
+      const tight = build(41); tight.solve(1e-17, 5e6, 100);
+      check('axisym-mag coil: face-based energy = J.A flux linkage (discrete identity, 1e-8)', tight.energyFaces(), tight.energyJA(), 1e-8);
       // On-axis field at the centre vs the finite-solenoid formula B = mu0 N I/(2l) [cos a1 - cos a2]
       const [, bz] = s.B();
       const jC = Math.round(-s.z0 / s.meta.h);

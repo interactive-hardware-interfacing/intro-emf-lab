@@ -107,13 +107,20 @@ export default {
   /** Mirror-aware sampling: x may be negative in the full cross-section. */
   rOf(x) { return this.mirror ? Math.abs(x) : x; },
 
+  /**
+   * Stop when the largest per-sweep change is below 2e-8 V (for V = 1). The energy-based C
+   * settles at 100x looser tolerance, but the Gauss-box charge lags: at 2e-6 V the two rows
+   * differed by 0.17% purely from incomplete convergence, which read like a method difference.
+   */
+  tol() { return 2e-8 * this.meta.V; },
+
   async solve() {
     if (!this.client) return;
     this.shell.solverRunning = true; this.shell.renderEquations();
     this.running = true; this.converged = false;
     try {
       await this.client.init(this.solver, 'axisym');
-      const done = await this.client.run({ k: 50, tol: 2e-6 * this.meta.V });
+      const done = await this.client.run({ k: 50, tol: this.tol() });
       this.V = done.V; this.sweeps = done.sweeps; this.residual = done.residual; this.converged = done.converged;
       this.finish();
     } catch { /* cancelled */ }
@@ -137,7 +144,7 @@ export default {
     const cGauss = Q / V;
     const cIdeal = idealLayeredC({ g, R, epsR, epsR2 });
     const epsEff = 1 / ((2 / epsR2 + 1 / epsR) / 3); // series-equivalent permittivity of the stack
-    const cKirch = kirchhoffC({ g, R, epsEff, t });
+    const cKirch = kirchhoffC({ g, R, epsEff });
     this.results = { W, Q, cEnergy, cGauss, cIdeal, cKirch, epsEff };
     this.renderResults();
     this.shell.recompute();
@@ -276,7 +283,7 @@ export default {
     box.appendChild(ui.el('h2', '', 'Capacitance'));
     this.resultsEl = ui.el('table', 'probe-table'); this.resultsEl.appendChild(document.createElement('tbody'));
     box.appendChild(this.resultsEl);
-    box.appendChild(ui.el('p', 'hint', 'Energy: C = 2W/V². Gauss: C = Q/V with Q the flux of D out of a box around the top plate. Ideal: the handout\'s three-capacitors-in-series formula (no fringing). Kirchhoff: the classical edge correction, which assumes the dielectric fills all space, so it overshoots when the dielectric stops at the plate edge.'));
+    box.appendChild(ui.el('p', 'hint', 'Energy: C = 2W/V². Gauss: C = Q/V with Q the flux of D out of a box around the top plate. Ideal: the handout\'s three-capacitors-in-series formula (no fringing). Kirchhoff: the classical edge correction for thin plates (plate thickness not included), which assumes the dielectric fills all space, so it overshoots when the dielectric stops at the plate edge.'));
 
     box.appendChild(ui.el('h2', '', 'D, ε₀E and P along the axis'));
     const cr = ui.el('div', 'row');
@@ -313,7 +320,7 @@ export default {
     row('Ideal C (series layers)', `${sci(r.cIdeal, 5)} F`);
     row('Simulated / ideal', `${(r.cEnergy / r.cIdeal).toFixed(4)}`);
     row('% difference', `${(100 * (r.cEnergy - r.cIdeal) / r.cIdeal).toFixed(2)} %`);
-    row(`Kirchhoff, if εr = ${r.epsEff.toFixed(2)} filled all space`, `${sci(r.cKirch, 5)} F`);
+    row(`Kirchhoff (thin plates), if εr = ${r.epsEff.toFixed(2)} filled all space`, `${sci(r.cKirch, 5)} F`);
     row('Stored energy W', `${sci(r.W, 5)} J`);
     row('Charge on top plate Q', `${sci(r.Q, 5)} C`);
   },
@@ -391,7 +398,7 @@ export default {
       this.shell.solverRunning = true;
       try {
         await this.client.init(this.solver, 'axisym');
-        const done = await this.client.run({ k: 50, tol: 2e-6 * this.meta.V });
+        const done = await this.client.run({ k: 50, tol: this.tol() });
         if (!this.sweep.running) break;
         this.V = done.V; this.sweeps = done.sweeps; this.residual = done.residual; this.converged = done.converged;
         this.finish();

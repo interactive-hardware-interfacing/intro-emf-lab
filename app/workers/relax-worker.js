@@ -66,9 +66,11 @@ function runLoop(k, tol, maxSweeps) {
   if (!running) return;
   let r = Infinity;
   const t0 = performance.now();
-  // Do up to k sweeps, but cap the chunk at ~40 ms so pause/step stay responsive on big grids
+  // Do up to k sweeps, but cap the chunk at ~40 ms so pause/step stay responsive on big grids.
+  // Convergence is tested after EVERY sweep, so the stopping sweep (and hence every digit of
+  // the result) is the same on every machine, however the chunks fall.
   let n = 0;
-  while (n < k && performance.now() - t0 < 40) { r = solver.sweep(); n++; }
+  while (n < k && performance.now() - t0 < 40) { r = solver.sweep(); n++; if (r < tol && !solver.sat) break; }
   const muChange = solver.sat ? solver.updateMu() : 0;
   solver.history.push([solver.sweeps, r]);
   const converged = r < tol && muChange < 1e-4;

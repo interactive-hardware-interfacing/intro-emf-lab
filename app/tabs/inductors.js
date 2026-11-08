@@ -303,7 +303,7 @@ export default {
     r4.appendChild(ui.field('View', ui.select([['coil', 'Coil region'], ['box', 'Whole box']], this.zoom, (v) => { this.zoom = v; this.applyZoom(); shell.recompute(); shell.syncUrl(); })));
     r4.appendChild(ui.field('Section', ui.select([['full', 'Full cross-section'], ['half', 'r–z half-plane']], this.mirror ? 'full' : 'half', (v) => { this.mirror = v === 'full'; this.applyZoom(); shell.recompute(); shell.syncUrl(); })));
     box.appendChild(r4);
-    box.appendChild(ui.el('p', 'hint', 'Solved in the r–z half-plane and mirrored for display. The box is 8× the largest dimension with ψ = 0 on its walls, which lowers L by roughly 1–2%. Release the slider to re-solve.'));
+    box.appendChild(ui.el('p', 'hint', 'Solved in the r–z half-plane and mirrored for display. The box is 8× the largest dimension with ψ = 0 on its walls, which lowers L by about 0.2%. Release the slider to re-solve.'));
 
     box.appendChild(ui.el('h2', '', 'Inductance'));
     this.resultsEl = ui.el('table', 'probe-table'); this.resultsEl.appendChild(document.createElement('tbody')); box.appendChild(this.resultsEl);
