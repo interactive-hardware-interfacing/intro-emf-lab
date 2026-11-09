@@ -188,3 +188,34 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
 - Energy row on Inductors relabelled "from node-averaged B (reads low)" with the honest
   explanation (O(h) smoothing everywhere, ~4% at normal resolution), since the face-based
   energy equals the flux-linkage value identically. About and the instructor guide updated.
+
+## Dielectrics tab (patch 7c)
+- New tab between Capacitors and Conduction: a Cartesian parallel-plate capacitor with two to
+  four dielectric regions, layered (same D, series), side by side (same E, parallel) or split
+  by a tilted interface (no closed form; Wiener bounds). Built on `Relax2D` through the new
+  `core/dielectrics.js` (em-core), which also does the bookkeeping: free charge on the plates
+  from D·n, bound charge on every dielectric face from P·n (both sides added at a
+  dielectric–dielectric face), Gauss box, per-region table, ideal formulas, slab force.
+- The solve runs at 1 V and is scaled, so "hold V" and "hold Q" (V = Q/C) and the depth need
+  no re-solve; changing a permittivity at fixed Q shows V, E and W falling by εr.
+- Region fractions snap to the grid. With node-centred ε and harmonic-mean faces the
+  effective interface is half a cell beyond a region's last node and a conductor surface is
+  its node row, so a layer against a plate is (k + ½) cells and an interior layer m cells;
+  the status line and the ideal formulas use the snapped values. The harmonic-mean face is
+  half a cell of each material, so its voltage drop is attributed 1/ε₁ : 1/ε₂ (not half and
+  half; the first draft did that and read D 10 % discontinuous). A 5 % air gap needs the fine
+  resolution (1.5 cells of 30) and then takes exactly the handout's 20.8 % of V.
+- Box: plates plus 1.5 gaps of clear space; w/d = 5 by default (fringing ~10–25 % on C,
+  visible and discussed, while the per-region ratios are exact). Plain Gauss–Seidel at
+  321×189 took 77 s, so the box is kept small: 10/20/30 cells across the gap are 0.2 / 3 /
+  11 s, helped ~25 % by starting from the 1-D stack. Grids over 361 cells wide coarsen.
+- Slab force: two extra solves with the first interface moved ±1 column give dC/dx; the
+  result equals (ε₁ − ε₂)ε₀ℓV²/(2d) to four digits, because the fringe at the plate ends
+  does not move. The About text says so rather than claiming a fringing correction.
+- Tests: `core/test/dielectrics.js` (57 checks: snapping, identities at a tight solve and
+  at the shipped tolerance, series shares to 1e-4 for two layers and 2e-3 for four (a little
+  flux spreads sideways through an εr = 8 layer), the air gap, side-by-side shares, zero
+  bound charge on a side-by-side interface, the slab-force slope, Wiener bounds and
+  refraction direction for the tilted case, a slab that fills only the gap raising C by less
+  than εr); bench app checks for URL state, CSV, `scale()`; a golden case for the default C;
+  the smoke round trip. 305 checks, smoke on 16 tabs.

@@ -365,6 +365,33 @@ export async function run(check) {
     }
   }
 
+  // ------------------------------------------------------------ 5f. Dielectrics tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const { buildPlates } = await import('../core/dielectrics.js');
+    const tab = TABS.find((t) => t.id === 'dielectrics');
+    // URL state: regions round-trip through de/df lists, hold and mode survive
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults, V: 12 }; stub.mode = 'side'; stub.hold = 'Q'; stub.regions = [{ eps: 3, f: 0.25 }, { eps: 7, f: 0.75 }]; stub.res = 10; stub.walls = 'neumann';
+    const st = stub.getState();
+    check('dielectrics state: eps list', st.de.join(',') === '3,7' ? 1 : 0, 1, 0);
+    check('dielectrics state: fraction list', st.df.join(',') === '0.25,0.75' ? 1 : 0, 1, 0);
+    check('dielectrics state: mode and hold', `${st.dm}/${st.dq}/${st.d_V}` === 'side/Q/12' ? 1 : 0, 1, 0);
+    // csv: one row per node with eps and region columns aligned
+    const s = buildPlates({ mode: 'layered', res: 6, regions: [{ eps: 5, f: 0.5 }, { eps: 2, f: 0.5 }] });
+    stub.solver = s; stub.V = new Float64Array(s.V); stub.meta = s.meta; stub.results = null; stub.hold = 'V'; stub.p.V = 1;
+    const rows = tab.csv.call(stub).split('\n');
+    check('dielectrics csv: one row per node (+ header)', rows.length, s.nx * s.ny + 1, 0);
+    const k = s.idx(s.meta.ic, s.meta.jBot + 2), cols = rows[1 + k].split(',');
+    check('dielectrics csv: eps column aligned with the node', parseFloat(cols[5]), s.eps[k], 0);
+    check('dielectrics csv: region column is 1-based', parseFloat(cols[6]), s.reg[k] + 1, 0);
+    // the tab's scale(): hold V gives V; hold Q gives Q/C
+    stub.results = { C: 2e-12 }; stub.hold = 'Q'; stub.p.Q = 4; // 4 nC
+    check('dielectrics scale(): V = Q / C when Q is held', tab.scale.call(stub), 4e-9 / 2e-12, 1e-12);
+    stub.hold = 'V'; stub.p.V = 7;
+    check('dielectrics scale(): V itself when V is held', tab.scale.call(stub), 7, 0);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};
@@ -374,6 +401,7 @@ export async function run(check) {
     cases['lab3 layered C (5V,4mm,6mm,2,8) normal'] = cap({ V: 5, g: 4e-3, R: 6e-3, epsR: 2, epsR2: 8, cellsPerLayer: 4 });
     const coil = solenoidWithObject({}); coil.solve(1e-7 * 1.25663706e-6 * 100 * 1 * 15e-3, 2e6, 1);
     cases['lab5 default L flux (uH)'] = 2 * coil.energyJA() * 1e6;
+    { const { buildPlates } = await import('../core/dielectrics.js'); const dp = buildPlates({ mode: 'layered', res: 20, regions: [{ eps: 5, f: 0.5 }, { eps: 2, f: 0.5 }] }); dp.solve(2e-8, 2e6, 1); cases['dielectrics default C per metre (layered 5|2, 20 cells)'] = 2 * dp.energy(); }
     const empty = solenoidWithObject({ a: 0, muR: 1 }); empty.solve(1e-7 * 1.25663706e-6 * 100 * 1 * 15e-3, 2e6, 1);
     cases['lab5 empty coil L flux (uH)'] = 2 * empty.energyJA() * 1e6;
     cases['lab1 probe V (2C@0.2,0.3; -2C@0.3,0.2) at (0.25,0.25)'] = pointChargesField([{ q: 2, pos: [0.2, 0.3, 0] }, { q: -2, pos: [0.3, 0.2, 0] }], [0.25, 0.25, 0]).V;

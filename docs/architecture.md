@@ -99,6 +99,11 @@ control that changes the picture must be in `getState()`, so the share link repr
 - `Axisym` (core/axisym.js): the (r, z) twin with 1/r face weights and the axis stencil;
   explicit face permittivities (`setFacesFrom`) so layer interfaces fall exactly on faces.
   Builders: `diskCapacitor`, `kirchhoffC`, `idealLayeredC`.
+- `core/dielectrics.js`: builds the parallel-plate Dielectrics problem on `Relax2D` (up to four
+  regions, layered / side by side / tilted, fractions snapped to half-cell interfaces, 1-D initial
+  guess) and does its bookkeeping: `plateCharges` (D·n on the plates), `boundCharges` (P·n on
+  every dielectric face), `gaussTopPlate`, `regionTable` (same D layered, same E side by side),
+  `seriesC` / `parallelC` / `idealC` (Wiener bounds for tilted), `idealSlabForce`.
 - `AxisymMag`: magnetostatics for ψ = rA_φ with coefficient 1/(μ r) on faces, `B()`,
   flux-linkage and energy inductance, and an optional saturating μ(B) updated between sweeps
   from the H side. Builder: `solenoidWithObject`.

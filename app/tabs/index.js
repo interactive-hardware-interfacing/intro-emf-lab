@@ -5,6 +5,7 @@ import pointCharges from './point-charges.js';
 import pointCharges3d from './point-charges-3d.js';
 import { makeTab as makeRingLine } from './ring-line.js';
 import capacitors from './capacitors.js';
+import dielectrics from './dielectrics.js';
 import conduction from './conduction.js';
 import magneticFields from './magnetic-fields.js';
 import inductors from './inductors.js';
@@ -22,6 +23,7 @@ export const TABS = [
   makeRingLine('ring'),
   makeRingLine('rods'),
   capacitors,
+  dielectrics,
   conduction,
   magneticFields,
   inductors,

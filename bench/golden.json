@@ -6,6 +6,7 @@
     "lab3 run1 C (5V,4mm,6mm,5,5) normal": 1.5619513444768615e-12,
     "lab3 layered C (5V,4mm,6mm,2,8) normal": 1.3353165022292526e-12,
     "lab5 default L flux (uH)": 275.1243523870014,
+    "dielectrics default C per metre (layered 5|2, 20 cells)": 1.3537355043495244e-10,
     "lab5 empty coil L flux (uH)": 188.5678402029468,
     "lab1 probe V (2C@0.2,0.3; -2C@0.3,0.2) at (0.25,0.25)": 0,
     "lab4 probe |B| (2A@-15,15mm; -2A@-15,-15mm) at (0,0)": 0.00002666666668118335

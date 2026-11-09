@@ -66,6 +66,25 @@ export const EQUATIONS = {
     solver: { tex: String.raw`V_{i,j} \leftarrow \frac{\varepsilon_E V_{i+1,j} + \varepsilon_W V_{i-1,j} + \varepsilon_N V_{i,j+1} + \varepsilon_S V_{i,j-1}}{\varepsilon_E+\varepsilon_W+\varepsilon_N+\varepsilon_S}`, note: 'Neighbour average, repeated until max |dV| < tolerance.' },
   },
 
+  dielectrics: {
+    governing: [
+      { title: 'Gauss, no free charge in the dielectrics', tex: String.raw`\nabla \cdot (\varepsilon \nabla V) = 0` },
+      { title: 'Boundary conditions at a charge-free interface', tex: String.raw`D_{1n} = D_{2n}, \qquad E_{1t} = E_{2t}` },
+      { title: 'Layered: same D, capacitors in series', tex: String.raw`\frac{1}{C} = \sum_i \frac{d_i}{\varepsilon_0 \varepsilon_{ri}\, A}` },
+      { title: 'Side by side: same E, capacitors in parallel', tex: String.raw`C = \sum_i \frac{\varepsilon_0 \varepsilon_{ri}\, A_i}{d}` },
+      { title: 'Hold Q or hold V', tex: String.raw`V = \frac{Q}{C}, \qquad W = \tfrac{1}{2} C V^2 = \frac{Q^2}{2C}, \qquad F_x = \tfrac{1}{2} V^2 \frac{dC}{dx}` },
+      { title: 'Ampere, nothing flows', tex: MAXWELL_STATIC.ampereNoJ, zero: true },
+    ],
+    layers: {
+      V: { tex: String.raw`\nabla^2 V = 0 \text{ in each region}` },
+      E: { tex: String.raw`\mathbf{E} = -\nabla V`, note: 'Tangential E is continuous across an interface.' },
+      D: { tex: String.raw`\mathbf{D} = \varepsilon_0 \varepsilon_r \mathbf{E}`, note: 'Normal D is continuous across a charge-free interface.' },
+      P: { tex: String.raw`\mathbf{P} = \mathbf{D} - \varepsilon_0 \mathbf{E} = \varepsilon_0(\varepsilon_r - 1)\mathbf{E}` },
+      sigma: { tex: String.raw`\rho_s = \mathbf{D}\cdot\hat{\mathbf{n}} \text{ (plate)}, \qquad \rho_{sb} = \mathbf{P}\cdot\hat{\mathbf{n}} \text{ (dielectric face)}`, note: 'Against the + plate the bound charge is negative: the net at the plate is Q/εr for one dielectric.' },
+    },
+    solver: { tex: String.raw`V_{i,j} \leftarrow \frac{\varepsilon_E V_{i+1,j} + \varepsilon_W V_{i-1,j} + \varepsilon_N V_{i,j+1} + \varepsilon_S V_{i,j-1}}{\varepsilon_E+\varepsilon_W+\varepsilon_N+\varepsilon_S}`, note: 'Neighbour average at 1 V, repeated until max |dV| < 2e-8; the result is scaled to the held V or Q.' },
+  },
+
   conduction: {
     governing: [
       { title: 'Steady current: charge conservation', tex: String.raw`\nabla \cdot \mathbf{J} = 0 \;\Rightarrow\; \nabla \cdot (\sigma \nabla V) = 0` },

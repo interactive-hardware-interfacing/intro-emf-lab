@@ -46,7 +46,7 @@ for (const id of tabs) {
 // ---- URL round trip with one control perturbed per tab: the share link must reproduce it
 const perturb = {
   'point-charges': 'n=3&q1=2.5&x1=0.1', 'point-charges-3d': 'n=2&cz=0.1&az=1.2', 'ring-charge': 'N=7&rm=1,4&plane=xz&off=0.1',
-  'line-charge': 'd=0.5&a=0.2', 'capacitors': 'half=1', 'conduction': '', 'magnetic-fields': 'm=1&nl=7&K=50',
+  'line-charge': 'd=0.5&a=0.2', 'capacitors': 'half=1', 'dielectrics': 'dm=side&dq=Q&de=3,7&df=0.25,0.75&d_Q=2&d_w=20&res=10', 'conduction': '', 'magnetic-fields': 'm=1&nl=7&K=50',
   'inductors': 'mode=ring&sat=1&bsat=1.2&obj=0', 'sandbox': '', 'gauss-law': 'sk=box&sa=0.12&n=3&res=48',
   'interface': 'mode=magnetic&e2=300&th=-25&rs=3', 'eddy': 'mat=custom&sig=22000000&emu=3&f=3300&ph=123&half=1&nr=61', 'transmission-lines': 'geom=twin&a=1&d=6&er=3', 'fdtd': 'preset=guide&side=mirror&src=cw&f=2000000000',
 };

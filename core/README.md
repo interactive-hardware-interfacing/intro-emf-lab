@@ -12,6 +12,7 @@ build step. The solvers never touch the DOM, so everything runs under node as we
 | `analytic.js` | Closed forms: point, line and ring charges, wires, current sheets, loops, Nagaoka, Maxwell's filament mutual inductance, the thick-coil filament sum |
 | `relax2d.js` | `Relax2D`: Cartesian Gauss–Seidel for ∇·(ε∇V) = −ρ, Gauss-box charge, energy, Lab 2 presets |
 | `axisym.js` | `Axisym` (electrostatics/conduction in (r, z) with explicit face permittivities) and `AxisymMag` (magnetostatics for ψ = rA_φ, optional saturating μ(B)); disk-capacitor and solenoid builders |
+| `dielectrics.js` | Parallel plates with up to four dielectric regions on `Relax2D`: builder with grid-snapped fractions, plate and bound charges face by face, per-region table, series/parallel/Wiener references, slab force |
 | `eddy.js` | `AxisymEddy`: frequency-domain eddy currents (complex ψ), skin depth, J_eddy, power, coil impedance; the long-cylinder Bessel reference |
 | `fdtd2d.js` | `FDTD2D`: 2-D TMz Yee FDTD with per-cell ε_r/σ/PEC, point and line sources, CPML or Mur open walls |
 | `render.js` | Canvas drawing: colour maps, scalar fields, quiver, streamlines, marching-squares contours, colour bar, `Viewport` |
@@ -43,7 +44,11 @@ problem with a known answer (spherical and coaxial capacitors, the exact layered
 capacitor, a saturating rod against the exact flux balance, Nagaoka at two resolutions, the
 thick-winding filament sum against Wheeler); `test/fdtd.js` checks pulse speed, reflection
 coefficients and wall absorption (Mur and PML); `test/eddy.js` checks the eddy solver
-against the Bessel solution for a long cylinder and the power identity P = ½RI².
+against the Bessel solution for a long cylinder and the power identity P = ½RI²; `test/dielectrics.js`
+checks the parallel-plate builder: same D in a layered stack and same E side by side, drops adding
+to V and charges to Q, energy = Gauss = plate charge, free + bound = Q/εr at the plate, the 5 % air
+gap taking 20.8 % of V, dC/dx against the slab-force formula, and the Wiener bounds for a tilted
+interface.
 
 ## In intro-EMF-lab
 

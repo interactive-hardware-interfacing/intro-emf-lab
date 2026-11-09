@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, fourteen tabs organized by physics process, plus an About page that explains each tab
+page, fifteen tabs organized by physics process, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -18,6 +18,7 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Gauss's law | A movable sphere or cube tiled into patches; E·n painted and summed against Q_enc/ε₀ | Coulomb + midpoint sum |
 | Interface | Plane boundary: dielectric–dielectric, dielectric–conductor, magnetic–magnetic; refraction, bound charge | Boundary conditions, closed form |
 | Capacitors | Disk capacitor, three-layer dielectric, C from Gauss and from energy, sweeps, axis plots | Gauss–Seidel in (r, z) |
+| Dielectrics | Parallel plates with up to four dielectrics, layered (same D, series) or side by side (same E, parallel) or tilted; free and bound charge face by face; hold V or hold Q; slab force from dC/dx | Gauss–Seidel in (x, y) |
 | Conduction (J) | Steady current between electrodes, J = σE, current through a cut, R | Gauss–Seidel in (r, z) |
 | Transmission lines | C′, L′, Z₀, v of coax, twin-lead, parallel plates, with a numeric check | Closed form + Gauss–Seidel |
 | Magnetic fields | Line currents and a sheet current; a Randomize puzzle mode | Biot–Savart closed forms |
@@ -53,10 +54,11 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   analytic.js           closed forms: point/line/ring charges, wires, sheets, loops, Nagaoka
   render.js             colormap, scalar fields, quiver, streamlines, contours, viewport
   relax2d.js            plain neighbour-averaging Laplace/Poisson solver + Lab 2 presets
+  dielectrics.js        parallel plates with up to four dielectric regions on Relax2D; plate/bound charges, region table, slab force
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files
@@ -90,7 +92,8 @@ npm run smoke     # headless Chromium; needs: npm install --no-save playwright &
 The bench covers every closed form against textbook results, each solver against problems
 with known answers (including the exact layered capacitor, the saturating rod, Nagaoka at two
 resolutions, the thick-winding filament sum, FDTD reflection coefficients and wall
-absorption, the eddy-current Bessel solution), discrete identities, the worker protocol, URL
+absorption, the eddy-current Bessel solution, the two-dielectric series and parallel shares and
+the slab-force slope), discrete identities, the worker protocol, URL
 state, the Sandbox geometry encoding, mirroring, CSV alignment, tab/equation/DOM contracts,
 a KaTeX render of every equation, a parse of every module, and golden files:
 `bench/golden.json` freezes the numbers quoted in the handouts to 0.5%. If a solver change
