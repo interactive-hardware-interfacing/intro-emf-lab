@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, twenty-two tabs grouped by topic, plus an About page that explains each tab
+page, twenty-three tabs grouped by topic, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -28,6 +28,7 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Solenoids | A solenoid built from its turns: B along the axis vs μ₀nI and the finite-sheet formula, the ends, discrete turns vs the ideal sheet, a single loop, Helmholtz and anti-Helmholtz pairs; exact field lines | Biot–Savart loop field (elliptic integrals) |
 | Charges in fields | The Lorentz force: a particle tracer (cyclotron circles, E×B cycloid, velocity selector, mass spectrometer, parabola), the Hall effect, the force between wires, torque on a loop | Boris pusher + closed forms |
 | Inductors | Solenoid or ring sensor with a permeable object; optional saturating core μ(B); L from flux linkage and energy | Gauss–Seidel for ψ = rA_φ |
+| Div and curl | Divergence as flux per area through a shrinking box and curl as circulation per area around a shrinking loop, at the probe, on a library of 2-D fields (linear with coefficients, line source, vortex, dipole, swirl, bump) | Closed forms + midpoint sums |
 | Sandbox | Paint conductors, dielectrics and charge; watch the neighbour average converge; Gauss paths | Gauss–Seidel (Laplace / Poisson) |
 | Faraday's law | ε = −dΦ/dt animated: a bar on rails (driven or coasting with magnetic braking), a loop through a field region, a loop in a changing B, a generator; Lenz, force, power balance | Closed form |
 | Eddy currents | A conductor in an AC coil: skin depth, induced currents, field phase, coil R + jωL vs frequency, animated cycle | Complex Gauss–Seidel for ψ = rA_φ (quasi-static) |
@@ -69,10 +70,11 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   lorentz.js            Boris pusher and particle tracer; cyclotron, E×B, selector, spectrometer, Hall, parallel wires, loop torque
   tline.js              waves on a lossless line: Γ, VSWR, Z_in, steady state with envelopes and instantaneous parts, step bounce diagram
   planewave.js          medium parameters (γ, η, δ, loss tangent), normal-incidence Fresnel, E and H along z, Poynting flux, polarization
+  operators.js          2-D field library with closed-form div and curl; box flux and loop circulation; central differences
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files

@@ -341,3 +341,13 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   swapped and the test now pins the convention.
 - Tests: `core/test/planewave.js` (38 checks), bench app checks, smoke round trip. 651
   checks, smoke on 23 tabs.
+
+## Div and curl tab (patch 7l)
+- New tab heading the Tools group: a library of 2-D fields painted with ∇·F and (∇×F)_z, and
+  at the probe a box and a loop whose flux per area and circulation per area are summed at
+  the chosen size, half and a quarter of it, beside the closed forms and a central-difference
+  estimate. The line source and vortex read 2π through any box or loop around the origin and
+  0 otherwise. `core/operators.js` (em-core). The probe starts off the origin since two of
+  the fields are singular there.
+- Tests: `core/test/operators.js` (33 checks), bench app checks, smoke round trip. 689
+  checks, smoke on 24 tabs.

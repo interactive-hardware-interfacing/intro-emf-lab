@@ -526,6 +526,22 @@ export async function run(check) {
     check('plane-waves csv: 401 rows + header', rows.length, 402, 0);
   }
 
+  // ------------------------------------------------------------ 5n. Div and curl tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'operators');
+    const stub = Object.create(tab);
+    stub.kind = 'linear'; stub.k = { a: 0, b: -1, c: 0, d: 1, e: 0, f: 0 }; stub.size = 0.4; stub.shell = { probePt: [0.3, -0.2], layerOn: new Map() }; stub.resultsEl = null;
+    const st = stub.getState();
+    check('operators state: coefficients written for the linear field', st.kd === 1 && st.kb === -1 && st.bs === 0.4 ? 1 : 0, 1, 0);
+    tab.updateProbe.call(stub);
+    check('operators probe: rotation field gives circulation/area 2 at every size', stub.probeRes.rows.every((r) => Math.abs(r.circPerArea - 2) < 1e-9) ? 1 : 0, 1, 0);
+    check('operators probe: and flux/area 0', stub.probeRes.rows.every((r) => Math.abs(r.fluxPerArea) < 1e-9) ? 1 : 0, 1, 0);
+    stub.kind = 'vortex'; tab.updateProbe.call(stub, [0.1, 0.1]);
+    check('operators probe: vortex loop around the origin circulates 2π', stub.probeRes.rows[0].circ, 2 * Math.PI, 1e-6);
+    check('operators probe: closed-form curl at the probe is 0 off the origin', stub.probeRes.curl, 0, 0);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

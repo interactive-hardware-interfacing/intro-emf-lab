@@ -10,6 +10,7 @@ and one tab serves several labs. The COMSOL steps in the original handouts map a
 
 | Lab | COMSOL exercise | Tab(s) | Notes |
 | --- | --- | --- | --- |
+| 0 | (new) Vector calculus: divergence and curl | Div and curl | For the first weeks: the radial, rotation, shear and saddle presets give exact div and curl at any box size; the line source and vortex show the delta function (2π through any box or loop around the origin, 0 otherwise), which is Gauss and Ampère in miniature; the swirl shows curl changing sign where the field still swirls the same way. Click to move the probe, shrink the box with the slider. |
 | 1 | Point charges: V and E of two charges, probe values | Point charges, 3D point charges | The Randomize mode hides charge values for a "find the charges from the field" exercise; Reveal shows them. The probe at (0.25, 0.25) for 2 C at (0.2, 0.3) and −2 C at (0.3, 0.2) reads V = 0 (golden). |
 | 1 | Ring and line charges | Ring charge, Line charge | Ring: compare N discrete charges with the continuous ring; remove charges to break the cancellation at the centre. Line charge: exact two-rod image solution with C′. |
 | 2 | Gauss–Seidel relaxation (students write the loop) | Sandbox, Line charge | Sandbox opens on the two-rod preset and shows every sweep; the Convergence view plots the residual. `docs/matlab/relax2d.m` is the same loop in MATLAB for comparison. |

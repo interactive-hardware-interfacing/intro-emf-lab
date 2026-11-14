@@ -18,6 +18,7 @@ import faraday from './faraday.js';
 import chargesInFields from './charges-in-fields.js';
 import tlineWaves from './tline-waves.js';
 import planeWaves from './plane-waves.js';
+import operators from './operators.js';
 import interfaceTab from './interface.js';
 import transmissionLines from './transmission-lines.js';
 import fdtd from './fdtd.js';
@@ -31,7 +32,7 @@ export const GROUPS = [
   { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, chargesInFields, inductors] },
   { label: 'Induction', tabs: [faraday, eddy] },
   { label: 'Waves', tabs: [transmissionLines, tlineWaves, planeWaves, fdtd] },
-  { label: 'Tools', tabs: [sandbox] },
+  { label: 'Tools', tabs: [operators, sandbox] },
 ];
 
 export const TABS = GROUPS.flatMap((g) => g.tabs.map((tab) => { tab.group = g.label; return tab; }));

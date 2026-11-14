@@ -184,6 +184,22 @@ export const EQUATIONS = {
     solver: { tex: String.raw`E(z) = E_0\left(e^{-\gamma_1 z} + \Gamma e^{\gamma_1 z}\right)\ (z<0), \qquad E(z) = \tau E_0 e^{-\gamma_2 z}\ (z>0)`, note: 'Closed form; the Time-varying tab is the same problem by FDTD.' },
   },
 
+  operators: {
+    governing: [
+      { title: 'Divergence as a limit', tex: String.raw`\nabla\cdot\mathbf{F} = \lim_{A\to 0}\frac{1}{A}\oint_{\partial A}\mathbf{F}\cdot\hat{\mathbf{n}}\,dl = \frac{\partial F_x}{\partial x} + \frac{\partial F_y}{\partial y}` },
+      { title: 'Curl as a limit', tex: String.raw`(\nabla\times\mathbf{F})_z = \lim_{A\to 0}\frac{1}{A}\oint_{\partial A}\mathbf{F}\cdot\hat{\mathbf{t}}\,dl = \frac{\partial F_y}{\partial x} - \frac{\partial F_x}{\partial y}` },
+      { title: 'Divergence theorem and Stokes', tex: String.raw`\oint_S \mathbf{F}\cdot d\mathbf{S} = \int_V \nabla\cdot\mathbf{F}\,dv, \qquad \oint_C \mathbf{F}\cdot d\mathbf{l} = \int_S (\nabla\times\mathbf{F})\cdot d\mathbf{S}` },
+      { title: 'Where they come from', tex: String.raw`\nabla\cdot\mathbf{D} = \rho_v, \qquad \nabla\times\mathbf{H} = \mathbf{J}` },
+    ],
+    layers: {
+      div: { tex: String.raw`\nabla\cdot\mathbf{F}`, note: 'Positive where the field spreads out (a source), negative where it converges (a sink).' },
+      curl: { tex: String.raw`(\nabla\times\mathbf{F})_z`, note: 'Positive where a paddle wheel would turn counter-clockwise.' },
+      F: { tex: String.raw`\mathbf{F}(x, y)` },
+      box: { tex: String.raw`\frac{1}{s^2}\sum \mathbf{F}\cdot\hat{\mathbf{n}}\,\Delta l, \qquad \frac{1}{\pi (s/2)^2}\sum \mathbf{F}\cdot\hat{\mathbf{t}}\,\Delta l`, note: 'Midpoint sums on the box and the loop at the probe.' },
+    },
+    solver: { tex: String.raw`\text{closed forms for } \mathbf{F}, \nabla\cdot\mathbf{F}, \nabla\times\mathbf{F}`, note: 'Nothing is solved; the point is the definitions.' },
+  },
+
   conduction: {
     governing: [
       { title: 'Steady current: charge conservation', tex: String.raw`\nabla \cdot \mathbf{J} = 0 \;\Rightarrow\; \nabla \cdot (\sigma \nabla V) = 0` },

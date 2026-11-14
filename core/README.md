@@ -20,6 +20,7 @@ build step. The solvers never touch the DOM, so everything runs under node as we
 | `lorentz.js` | Boris pusher and tracer for charged particles in E and B; cyclotron, E×B drift, velocity selector, spectrometer radius, Hall effect, force between wires, loop torque |
 | `tline.js` | Waves on a lossless transmission line: Γ, VSWR, Z_in(d), the sinusoidal steady state with envelopes and instantaneous forward/reflected parts, the step bounce diagram and V(z, t) |
 | `planewave.js` | Uniform plane waves: medium parameters, normal-incidence Fresnel coefficients, E and H along z with an interface, Poynting flux, polarization |
+| `operators.js` | 2-D vector fields with closed-form divergence and curl; outward flux through a box and circulation around a loop by midpoint sums; central differences |
 | `eddy.js` | `AxisymEddy`: frequency-domain eddy currents (complex ψ), skin depth, J_eddy, power, coil impedance; the long-cylinder Bessel reference |
 | `fdtd2d.js` | `FDTD2D`: 2-D TMz Yee FDTD with per-cell ε_r/σ/PEC, point and line sources, CPML or Mur open walls |
 | `render.js` | Canvas drawing: colour maps, scalar fields, quiver, streamlines, marching-squares contours, colour bar, `Viewport` |
@@ -65,7 +66,9 @@ exponential braking of the coasting bar; `test/lorentz.js` checks the Boris push
 (closure, exact energy), the cycloid's E×B mean velocity, the parabola, the selector and the closed forms;
 `test/tline.js` checks Γ, VSWR and Z_in for the textbook loads, the envelopes, the quarter-wave transformer,
 power bookkeeping and the bounce-diagram sums; `test/planewave.js` checks the lossless and good-conductor
-limits, Fresnel with R + T = 1, field continuity, the standing wave and the polarization classifier.
+limits, Fresnel with R + T = 1, field continuity, the standing wave and the polarization classifier;
+`test/operators.js` checks every field's div and curl against central differences, the box and loop ratios
+(exact for linear fields, converging otherwise) and the 2π of the line source and vortex.
 
 ## In intro-EMF-lab
 

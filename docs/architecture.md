@@ -129,6 +129,8 @@ control that changes the picture must be in `getState()`, so the share link repr
 - `core/planewave.js`: `medium` (γ = α + jβ and η from f, εr, μr, σ, with λ, v_p, δ, loss tangent and the
   good-conductor α), `normalIncidence` (Γ, τ, R, T, SWR), `phasors` / `instantaneous` (two-media fields),
   `poynting`, `polarization` (type, IEEE handedness, axial ratio, tilt) and `polarizationTrace`.
+- `core/operators.js`: `FIELDS` (F, div, curl in closed form), `boxFlux`, `loopCirculation`, `numericDivCurl`.
+  The Div and curl tab recomputes the box and loop at every probe move (`probe()` calls `updateProbe`).
 - `AxisymMag`: magnetostatics for ψ = rA_φ with coefficient 1/(μ r) on faces, `B()`,
   flux-linkage and energy inductance, and an optional saturating μ(B) updated between sweeps
   from the H side. Builder: `solenoidWithObject`.

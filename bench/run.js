@@ -15,6 +15,7 @@ import { faradayChecks } from '../core/test/faraday.js';
 import { lorentzChecks } from '../core/test/lorentz.js';
 import { tlineChecks } from '../core/test/tline.js';
 import { planeWaveChecks } from '../core/test/planewave.js';
+import { operatorChecks } from '../core/test/operators.js';
 
 const { check, mark, report } = makeRunner();
 
@@ -30,6 +31,7 @@ mark('faraday'); faradayChecks(check);
 mark('lorentz'); lorentzChecks(check);
 mark('tline-waves'); tlineChecks(check);
 mark('planewave'); planeWaveChecks(check);
+mark('operators'); operatorChecks(check);
 
 // ---------------------------------------------------------------- syntax of every browser module
 // The tabs and shell never run under node, so at least parse them: a dropped comma must fail CI.

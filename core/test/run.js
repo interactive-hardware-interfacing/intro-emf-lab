@@ -11,6 +11,7 @@ import { faradayChecks } from './faraday.js';
 import { lorentzChecks } from './lorentz.js';
 import { tlineChecks } from './tline.js';
 import { planeWaveChecks } from './planewave.js';
+import { operatorChecks } from './operators.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -24,4 +25,5 @@ mark('faraday'); faradayChecks(check);
 mark('lorentz'); lorentzChecks(check);
 mark('tline-waves'); tlineChecks(check);
 mark('planewave'); planeWaveChecks(check);
+mark('operators'); operatorChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }
