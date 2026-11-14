@@ -290,3 +290,15 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   units. The bench checks every tab is in exactly one group. Tab ids and URLs are unchanged.
 - `docs/phase-6-notes.md` was the running log for everything after the first release; it is
   now `docs/changelog.md`.
+
+## Faraday's law tab (patch 7h)
+- New field-less tab heading the Induction group: four settings (sliding bar, driven or
+  coasting; loop through a field region; stationary loop in B(t); generator), each with Φ(t)
+  in closed form and ε as its exact derivative (`core/faraday.js`, em-core). The scene
+  draws the induced current's direction (Lenz) and the velocity and opposing force; the
+  plots show Φ, ε and I with a marker at the current time; the table carries the identities
+  (ε = Blv, F = BIl, F·v = ε²/R, τ = mR/B²l², Q = ΔΦ/R, N B₀ A ω, peak and rms EMF, τω = ε²/R).
+- Animation: play / pause / scrub with a log speed slider, looping over one pass or two
+  periods; `destroy()` cancels the frame loop.
+- Tests: `core/test/faraday.js` (37 checks), bench app checks, smoke round trip. 516 checks,
+  smoke on 20 tabs.

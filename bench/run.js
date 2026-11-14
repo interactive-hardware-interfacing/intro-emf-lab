@@ -11,6 +11,7 @@ import { dielectricsChecks } from '../core/test/dielectrics.js';
 import { ampereChecks } from '../core/test/ampere.js';
 import { solenoidChecks } from '../core/test/solenoid.js';
 import { filterChecks } from '../core/test/filters.js';
+import { faradayChecks } from '../core/test/faraday.js';
 
 const { check, mark, report } = makeRunner();
 
@@ -22,6 +23,7 @@ mark('dielectrics'); dielectricsChecks(check);
 mark('ampere'); ampereChecks(check);
 mark('solenoid'); solenoidChecks(check);
 mark('filters'); filterChecks(check);
+mark('faraday'); faradayChecks(check);
 
 // ---------------------------------------------------------------- syntax of every browser module
 // The tabs and shell never run under node, so at least parse them: a dropped comma must fail CI.

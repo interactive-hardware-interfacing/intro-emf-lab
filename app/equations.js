@@ -133,6 +133,19 @@ export const EQUATIONS = {
     solver: { tex: String.raw`H(j\omega) = \frac{Z_{out}}{Z_R + Z_L + Z_C}`, note: 'Closed form: a voltage divider of impedances. The step response is the textbook second-order solution for each damping case.' },
   },
 
+  faraday: {
+    governing: [
+      { title: "Faraday's law", tex: String.raw`\varepsilon = \oint \mathbf{E}\cdot d\mathbf{l} = -\frac{d\Phi}{dt}, \qquad \Phi = \int_S \mathbf{B}\cdot d\mathbf{S}` },
+      { title: 'Differential form', tex: MAXWELL.faraday },
+      { title: 'Motional EMF', tex: String.raw`\varepsilon = \oint (\mathbf{v}\times\mathbf{B})\cdot d\mathbf{l} = B l v` },
+      { title: 'Transformer EMF', tex: String.raw`\varepsilon = -N A \frac{dB}{dt}` },
+      { title: 'Generator', tex: String.raw`\Phi = N B A\cos\omega t, \qquad \varepsilon = N B A \omega \sin\omega t` },
+      { title: 'Lenz and power', tex: String.raw`F = B I l = \frac{B^2 l^2 v}{R}, \qquad F v = \frac{\varepsilon^2}{R}` },
+    ],
+    layers: {},
+    solver: { tex: String.raw`\varepsilon(t) = -\frac{d\Phi}{dt} \text{ in closed form}`, note: 'Each setting has Φ(t) in closed form and the EMF is its exact derivative; the bench checks it against a numerical one.' },
+  },
+
   conduction: {
     governing: [
       { title: 'Steady current: charge conservation', tex: String.raw`\nabla \cdot \mathbf{J} = 0 \;\Rightarrow\; \nabla \cdot (\sigma \nabla V) = 0` },

@@ -116,6 +116,9 @@ control that changes the picture must be in `getState()`, so the share link repr
   (τ, f_c; ω₀, Q, B, f₁, f₂, ζ), `steadyState` (phasors, waveforms, ½Cv² and ½Li²), `stepResponse`
   (closed form for all three damping cases), `realCapacitorZ` / `selfResonance`. The Filters tab is
   field-less (`hideField`, no layers) and reads C and L from the other tabs' last results via `shell.tabs`.
+- `core/faraday.js`: `barState`, `loopState`, `fieldState`, `generatorState` give Φ, ε = −dΦ/dt (analytic),
+  I, force or torque and the two powers as functions of time; `numericEmf` is the check. The Faraday tab
+  is field-less and animates with requestAnimationFrame, calling `shell.updateStageView()` each frame.
 - `AxisymMag`: magnetostatics for ψ = rA_φ with coefficient 1/(μ r) on faces, `B()`,
   flux-linkage and energy inductance, and an optional saturating μ(B) updated between sweeps
   from the H side. Builder: `solenoidWithObject`.

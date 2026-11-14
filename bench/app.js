@@ -454,6 +454,23 @@ export async function run(check) {
     check('filters csv: gain column is finite', rows.slice(1).every((r) => Number.isFinite(parseFloat(r.split(',')[1]))) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5j. Faraday tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'faraday');
+    const stub = Object.create(tab);
+    stub.mode = 'loop'; stub.p = JSON.parse(JSON.stringify({ bar: { B: 1 }, loop: { B: 0.5, W: 200, w: 80, h: 50, R: 0.05, v: 1, x0: -150 }, field: {}, generator: {} })); stub.t = 0.2; stub.speed = 0.5;
+    const st = stub.getState();
+    check('faraday state: only the active setting\'s parameters are written', Object.keys(st).filter((k) => k.includes('_')).every((k) => k.startsWith('loop_')) ? 1 : 0, 1, 0);
+    check('faraday state: time and speed', st.t === 0.2 && st.spd === 0.5 ? 1 : 0, 1, 0);
+    const q = tab.params.call(stub);
+    check('faraday params: mm → m', q.W === 0.2 && q.w === 0.08 && q.x0 === -0.15 ? 1 : 0, 1, 0);
+    check('faraday window: covers the whole pass', tab.window.call(stub) > (0.2 + 0.08 + 0.15) / 1 ? 1 : 0, 1, 0);
+    const rows = tab.csv.call(stub).split('\n');
+    check('faraday csv: 501 rows + header', rows.length, 502, 0);
+    check('faraday csv: loop columns include x and F', rows[0].split(',').length, 6, 0);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};
