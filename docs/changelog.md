@@ -361,3 +361,15 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   Inductors coil with its ring sensor. `core/coupled.js` (em-core).
 - Tests: `core/test/coupled.js` (21 checks), bench app checks, smoke round trip. 715
   checks, smoke on 25 tabs.
+
+## Radiation tab (patch 7n)
+- New tab in the Waves group between Plane waves and Time-varying: the Hertzian dipole from
+  its exact fields in the plane through its axis, animated. The E field lines are drawn as
+  contours of r sinθ H_φ so the loops can be watched pinching off at kr ≈ 1 and leaving at
+  c; the kr = 1 circle, a wavelength bar, |E|, H_φ and the time-average Poynting vector as
+  colour maps. Plots: |E_θ| and |E_r| against kr on log axes with the 1/r³, 1/r² and 1/r
+  asymptotes; the sin²θ pattern with the half-power points. Numbers: λ, k, R_rad (exact and
+  80π² forms), P_rad, directivity, and the far-field E and power density at a chosen
+  distance. `core/radiation.js` (em-core).
+- Tests: `core/test/radiation.js` (30 checks), bench app checks, smoke round trip. 754
+  checks, smoke on 26 tabs.

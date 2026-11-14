@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, twenty-four tabs grouped by topic, plus an About page that explains each tab
+page, twenty-five tabs grouped by topic, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -23,6 +23,7 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Transmission lines | C′, L′, Z₀, v of coax, twin-lead, parallel plates, with a numeric check | Closed form + Gauss–Seidel |
 | Line waves | A terminated line: Γ, VSWR, standing-wave envelopes with the forward and reflected waves animated, Z_in along the line, the step bounce diagram and V(z, t); Z₀ and v from the Transmission lines tab | Closed form (lossless line) |
 | Plane waves | The uniform plane wave in closed form: E and H along z animated, lossy media and skin depth, normal incidence on a second medium (Γ, τ, standing wave, decay), polarization | Closed form |
+| Radiation | The Hertzian dipole in closed form: the exact fields animated with the E lines pinching off into closed loops, near vs far field along a radius (1/r³, 1/r², 1/r), the sin²θ pattern, R_rad and P_rad | Closed form |
 | Magnetic fields | Line currents and a sheet current; a Randomize puzzle mode | Biot–Savart closed forms |
 | Ampère's law | A draggable Amperian loop with B·t̂ painted segment by segment and summed against μ₀ I_enc; wires, thick wire, coax, sheet, solenoid and toroid cross-sections | Closed forms + midpoint sum |
 | Solenoids | A solenoid built from its turns: B along the axis vs μ₀nI and the finite-sheet formula, the ends, discrete turns vs the ideal sheet, a single loop, Helmholtz and anti-Helmholtz pairs; exact field lines | Biot–Savart loop field (elliptic integrals) |
@@ -73,10 +74,11 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   planewave.js          medium parameters (γ, η, δ, loss tangent), normal-incidence Fresnel, E and H along z, Poynting flux, polarization
   operators.js          2-D field library with closed-form div and curl; box flux and loop circulation; central differences
   coupled.js            coil turns, mutual inductance by the filament sum, Nagaoka/ring self-inductance, coupling, the transformer in phasors
+  radiation.js          Hertzian dipole: exact and far-field phasors, instantaneous fields, the stream function for E lines, Poynting, R_rad, P_rad
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files

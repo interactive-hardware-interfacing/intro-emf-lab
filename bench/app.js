@@ -558,6 +558,27 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5p. Radiation tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'radiation');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults, f: 100, dl: 20 }; stub.t = 0; stub.speed = 0.1; stub.resultsEl = null; stub.shell = { setExtent() {}, layerOn: new Map() };
+    const st = stub.getState();
+    check('radiation state: all parameters plus t and speed', Object.keys(st).length, Object.keys(tab.pDefaults).length + 2, 0);
+    check('radiation state: f carried as MHz', st.rd_f, 100, 0);
+    tab.build.call(stub);
+    check('radiation build: extent is ±span wavelengths', stub.extent[1], 1.5 * 2.99792458, 1e-3);
+    tab.compute.call(stub);
+    check('radiation compute: R_rad for 20 mm at 100 MHz ≈ 80π²(0.02/3)²', stub.results.Rrad, 80 * Math.PI ** 2 * (0.02 / 2.99792458) ** 2, 1e-3);
+    check('radiation compute: |E| grid symmetric in x', stub.gridE.get(20, 80), stub.gridE.get(140, 80), 1e-9);
+    check('radiation compute: H_φ antisymmetric in x', stub.gridH.get(20, 80), -stub.gridH.get(140, 80), 1e-9);
+    check('radiation compute: S_r never negative, zero only on the axis', Array.from(stub.gridS.data).every((v) => v >= 0) && stub.gridS.get(80, 140) === 0 && stub.gridS.get(81, 140) > 0 ? 1 : 0, 1, 0);
+    check('radiation compute: far-field power density matches 1.5 P_rad/4πr²', stub.results.Sfar, (1.5 * stub.results.Prad) / (4 * Math.PI * 1000 * 1000), 1e-3);
+    const rows = tab.csv.call(stub).split('\n');
+    check('radiation csv: 161² rows + header', rows.length, 161 * 161 + 1, 0);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

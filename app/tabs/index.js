@@ -18,6 +18,7 @@ import faraday from './faraday.js';
 import chargesInFields from './charges-in-fields.js';
 import tlineWaves from './tline-waves.js';
 import planeWaves from './plane-waves.js';
+import radiation from './radiation.js';
 import operators from './operators.js';
 import coupledCoils from './coupled-coils.js';
 import interfaceTab from './interface.js';
@@ -32,7 +33,7 @@ export const GROUPS = [
   { label: 'Currents & circuits', tabs: [conduction, filters] },
   { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, chargesInFields, inductors] },
   { label: 'Induction', tabs: [faraday, coupledCoils, eddy] },
-  { label: 'Waves', tabs: [transmissionLines, tlineWaves, planeWaves, fdtd] },
+  { label: 'Waves', tabs: [transmissionLines, tlineWaves, planeWaves, radiation, fdtd] },
   { label: 'Tools', tabs: [operators, sandbox] },
 ];
 

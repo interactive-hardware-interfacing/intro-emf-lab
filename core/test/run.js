@@ -13,6 +13,7 @@ import { tlineChecks } from './tline.js';
 import { planeWaveChecks } from './planewave.js';
 import { operatorChecks } from './operators.js';
 import { coupledChecks } from './coupled.js';
+import { radiationChecks } from './radiation.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -28,4 +29,5 @@ mark('tline-waves'); tlineChecks(check);
 mark('planewave'); planeWaveChecks(check);
 mark('operators'); operatorChecks(check);
 mark('coupled'); coupledChecks(check);
+mark('radiation'); radiationChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }

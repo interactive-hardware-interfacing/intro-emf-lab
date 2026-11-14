@@ -22,6 +22,7 @@ build step. The solvers never touch the DOM, so everything runs under node as we
 | `planewave.js` | Uniform plane waves: medium parameters, normal-incidence Fresnel coefficients, E and H along z with an interface, Poynting flux, polarization |
 | `operators.js` | 2-D vector fields with closed-form divergence and curl; outward flux through a box and circulation around a loop by midpoint sums; central differences |
 | `coupled.js` | Two coaxial coils: mutual inductance by Maxwell's filament sum, Nagaoka or ring self-inductance, coupling coefficient, transformer in phasors |
+| `radiation.js` | Hertzian dipole: exact phasors (E_r, E_θ, H_φ), far-field forms, instantaneous fields, the stream function r sinθ H_φ whose contours are the E lines, time-average Poynting, R_rad, P_rad, directivity |
 | `eddy.js` | `AxisymEddy`: frequency-domain eddy currents (complex ψ), skin depth, J_eddy, power, coil impedance; the long-cylinder Bessel reference |
 | `fdtd2d.js` | `FDTD2D`: 2-D TMz Yee FDTD with per-cell ε_r/σ/PEC, point and line sources, CPML or Mur open walls |
 | `render.js` | Canvas drawing: colour maps, scalar fields, quiver, streamlines, marching-squares contours, colour bar, `Viewport` |
@@ -71,7 +72,9 @@ limits, Fresnel with R + T = 1, field continuity, the standing wave and the pola
 `test/operators.js` checks every field's div and curl against central differences, the box and loop ratios
 (exact for linear fields, converging otherwise) and the 2π of the line source and vortex; `test/coupled.js` checks
 the symmetry and dipole limit of M, k against offset, the open-circuit ratio and the loaded transformer's power
-balance and reflected impedance.
+balance and reflected impedance; `test/radiation.js` checks the far-field impedance and amplitude, the static-dipole
+near field, that the power through a sphere is independent of its radius and equals ½I₀²R_rad, the two R_rad forms, the
+sin²θ pattern and the periodicity of the instantaneous fields.
 
 ## In intro-EMF-lab
 

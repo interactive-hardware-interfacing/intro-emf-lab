@@ -200,6 +200,25 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed forms for } \mathbf{F}, \nabla\cdot\mathbf{F}, \nabla\times\mathbf{F}`, note: 'Nothing is solved; the point is the definitions.' },
   },
 
+  radiation: {
+    governing: [
+      { title: 'The Hertzian dipole (exact)', tex: String.raw`H_\phi = \frac{j k I_0\,dl\,\sin\theta}{4\pi r}\left(1 + \frac{1}{jkr}\right)e^{-jkr}` },
+      { title: 'Electric field', tex: String.raw`E_\theta = \frac{j\eta k I_0\,dl\,\sin\theta}{4\pi r}\left(1 + \frac{1}{jkr} - \frac{1}{(kr)^2}\right)e^{-jkr}, \qquad E_r = \frac{\eta I_0\,dl\cos\theta}{2\pi r^2}\left(1 + \frac{1}{jkr}\right)e^{-jkr}` },
+      { title: 'Far field (kr ≫ 1)', tex: String.raw`E_\theta \approx \frac{j\eta k I_0\,dl}{4\pi r}\sin\theta\, e^{-jkr}, \qquad H_\phi = \frac{E_\theta}{\eta}, \qquad E_r \to 0` },
+      { title: 'Radiated power and resistance', tex: String.raw`P_{\text{rad}} = \oint \langle\mathbf{S}\rangle\cdot d\mathbf{S} = \tfrac{1}{2} I_0^2 R_{\text{rad}}, \qquad R_{\text{rad}} = \frac{\eta (k\,dl)^2}{6\pi} \approx 80\pi^2\left(\frac{dl}{\lambda}\right)^2` },
+      { title: 'Pattern and directivity', tex: String.raw`\langle S_r\rangle = \frac{\eta}{2}\left(\frac{k I_0\,dl}{4\pi r}\right)^2 \sin^2\theta, \qquad D = \frac{4\pi\, S_{\max}}{P_{\text{rad}}/r^2} = 1.5` },
+      { title: 'Maxwell, full', tex: MAXWELL.ampere },
+    ],
+    layers: {
+      E: { tex: String.raw`|\mathbf{E}(t)| = \sqrt{E_r^2 + E_\theta^2}`, note: 'A snapshot at the scrubbed time, log scale.' },
+      H: { tex: String.raw`H_\phi(t) = \mathrm{Re}\,[H_\phi e^{j\omega t}]`, note: 'Out of the page on one side of the axis, into it on the other.' },
+      S: { tex: String.raw`\langle S_r\rangle = \tfrac{1}{2}\mathrm{Re}\,(E_\theta H_\phi^*)`, note: 'The time average; the 1/r² and 1/r³ terms carry none on average.' },
+      psi: { tex: String.raw`\psi = r\sin\theta\, H_\phi(t), \qquad \mathbf{E}\parallel\nabla\psi\times\hat{\boldsymbol\phi}`, note: 'From ∇×H = ε∂E/∂t: at every instant E is tangent to the level curves of r sinθ H_φ.' },
+      kr: { tex: String.raw`kr = 1 \iff r = \frac{\lambda}{2\pi}`, note: 'Where the 1/r, 1/r² and 1/r³ terms are equal in size.' },
+    },
+    solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid, re-evaluated at each time}`, note: 'Nothing is solved; the fields are clipped inside r = 0.03 λ.' },
+  },
+
   'coupled-coils': {
     governing: [
       { title: 'Mutual inductance', tex: String.raw`M = \frac{N_2\Phi_{21}}{I_1} = \frac{N_1\Phi_{12}}{I_2}, \qquad k = \frac{M}{\sqrt{L_1 L_2}} \le 1` },

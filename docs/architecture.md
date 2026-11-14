@@ -135,6 +135,10 @@ control that changes the picture must be in `getState()`, so the share link repr
   formula for one turn), `coupling`, `transformer` (phasor solution with an open or resistive secondary),
   `fluxFraction`. The Coupled coils tab draws coil 1's field with `core/solenoid.js` and marks the ψ contour
   through coil 2's winding.
+- `core/radiation.js`: `wavenumber`, `hertzFields` (exact phasors), `farFields`, `instantaneous`, `streamPsi`
+  (r sinθ H_φ; its level curves are the instantaneous E lines, from ∇×H = ε ∂E/∂t), `poyntingAvg`, `radiation`
+  (R_rad exact and 80π² form, P_rad, directivity), `pattern`, `nearFarBoundary`. The Radiation tab re-evaluates
+  the closed form on a 161² grid at each animation step; nothing is solved.
 - `AxisymMag`: magnetostatics for ψ = rA_φ with coefficient 1/(μ r) on faces, `B()`,
   flux-linkage and energy inductance, and an optional saturating μ(B) updated between sweeps
   from the H side. Builder: `solenoidWithObject`.
