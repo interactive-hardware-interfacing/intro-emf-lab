@@ -56,6 +56,20 @@ export function radiationChecks(check) {
   check('radiation instantaneous: flips sign after T/2', inst0.Eth, -instHalf.Eth, 1e-9);
   check('radiation instantaneous: far field E_θ/H_φ = η₀ at every instant', inst0.Eth / inst0.Hph, ETA0, 1e-3);
   check('radiation streamPsi: zero on the axis', Math.abs(streamPsi(I0, dl, f, lambda, 0, 0)) < 1e-30 ? 1 : 0, 1, 0);
+  // the drawn lines are the lines of E itself: E(t) ∥ (∂ψ/∂θ / r², −∂ψ/∂r / r) at several points and times
+  {
+    let worst = 0;
+    for (const t of [0, 0.3e-9, 1.1e-9]) for (const [r, th] of [[lambda / 20, 1], [lambda / 3, 0.7], [lambda, 1.2], [2.5 * lambda, 0.4]]) {
+      const h = 1e-7, dpr = (streamPsi(I0, dl, f, r + h, th, t) - streamPsi(I0, dl, f, r - h, th, t)) / (2 * h), dpt = (streamPsi(I0, dl, f, r, th + h, t) - streamPsi(I0, dl, f, r, th - h, t)) / (2 * h);
+      const vr = dpt / (r * r * Math.sin(th)), vth = -dpr / (r * Math.sin(th)), E = instantaneous(I0, dl, f, r, th, t);
+      worst = Math.max(worst, Math.abs(E.Er * vth - E.Eth * vr) / (Math.hypot(E.Er, E.Eth) * Math.hypot(vr, vth)));
+    }
+    check('radiation streamPsi: the instantaneous E is tangent to its level curves (|sin ∠| < 1e-6 at 12 points and times)', worst < 1e-6 ? 1 : 0, 1, 0);
+    // and the lines of r sinθ Re[H_φ e^{jωt}] would not be: they belong to ∂E/∂t
+    const r = lambda / 3, th = 0.7, t = 0.3e-9, h = 1e-7, reP = (rr, tt) => { const F = hertzFields(I0, dl, f, rr, tt); return rr * Math.sin(tt) * (F.Hph[0] * Math.cos(2 * PI * f * t) - F.Hph[1] * Math.sin(2 * PI * f * t)); };
+    const dpr = (reP(r + h, th) - reP(r - h, th)) / (2 * h), dpt = (reP(r, th + h) - reP(r, th - h)) / (2 * h), vr = dpt / (r * r * Math.sin(th)), vth = -dpr / (r * Math.sin(th)), E = instantaneous(I0, dl, f, r, th, t);
+    check('radiation streamPsi: contours of Re[H_φ e^{jωt}] are NOT the E lines (angle well off)', Math.abs(E.Er * vth - E.Eth * vr) / (Math.hypot(E.Er, E.Eth) * Math.hypot(vr, vth)) > 0.1 ? 1 : 0, 1, 0);
+  }
   // r sinθ H_φ ∝ cos(ωt − kr + …) far out, so ψ(r + λ/2) = −ψ(r) up to the 1/(kr) correction
   check('radiation streamPsi: far out ψ(r + λ/2) = −ψ(r) within 3 %', streamPsi(I0, dl, f, 20 * lambda, PI / 2, 0) / streamPsi(I0, dl, f, 20.5 * lambda, PI / 2, 0), -1, 0.03);
 }

@@ -18,6 +18,18 @@ export function tlineChecks(check) {
   check('tline Z_in: quarter-wave transformer Z0²/ZL', zin([100, 0], Z0, beta, lam / 4)[0], 25, 1e-9);
   check('tline Z_in: half-wave repeats the load', zin([100, 0], Z0, beta, lam / 2)[0], 100, 1e-9);
   check('tline Z_in: shorted λ/8 stub is +jZ0', zin([0, 0], Z0, beta, lam / 8)[1], 50, 1e-9);
+  {
+    // an open λ/4 line: Z_in = 0 so V_in = 0, yet the load end sits at |V_L| = Vs Z0/Rs (current Vs/Rs feeds the line)
+    const ss = steadyState({ Vs: 2, Rs: 50, Z0: 50, beta: 2 * PI, l: 0.25, ZL: [Infinity, 0] });
+    check('tline open λ/4: V_in ≈ 0 (the line looks like a short)', cabs(ss.Vin) < 1e-9 ? 1 : 0, 1, 0);
+    check('tline open λ/4: |V| at the load = Vs Z0/Rs = 2 V, finite and nonzero', cabs(ss.V(0)), 2, 1e-9);
+    check('tline open λ/4: |I| at the generator = Vs/Rs', cabs(ss.I(0.25)), 2 / 50, 1e-9);
+    const sh = steadyState({ Vs: 2, Rs: 50, Z0: 50, beta: 2 * PI, l: 0.5, ZL: [0, 0] });
+    check('tline shorted λ/2: |I| at the load = Vs/Rs, finite', cabs(sh.I(0)), 2 / 50, 1e-9);
+    check('tline shorted λ/2: V at the load 0', cabs(sh.V(0)) < 1e-9 ? 1 : 0, 1, 0);
+    const rs0 = steadyState({ Vs: 2, Rs: 0, Z0: 50, beta: 2 * PI, l: 0.1, ZL: [100, 0] });
+    check('tline Rs = 0: V_in = Vs', cabs(rs0.Vin), 2, 1e-12);
+  }
   check('tline Z_in: open λ/4 looks like a short', cabs(zin([Infinity, 0], Z0, beta, lam / 4)), 0, 1e-9);
   check('tline Z_in: matched is Z0 anywhere', zin([50, 0], Z0, beta, 0.37 * lam)[0], 50, 1e-12);
   for (const [name, ZL] of [['100 Ω', [100, 0]], ['25 + j25', [25, 25]], ['open', [Infinity, 0]]]) {

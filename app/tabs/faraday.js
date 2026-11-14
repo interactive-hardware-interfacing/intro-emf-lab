@@ -66,7 +66,7 @@ export default {
   window() {
     const q = this.params();
     switch (this.mode) {
-      case 'bar': return q.mode === 'coast' && q.B > 0 ? Math.max((q.W - q.x0) / q.v0, 4 * (q.m * q.R) / (q.B * q.B * q.l * q.l)) * 1.2 : ((q.W - q.x0) / q.v0) * 1.3;
+      case 'bar': return q.mode === 'coast' && q.B !== 0 ? Math.max((q.W - q.x0) / q.v0, 4 * (q.m * q.R) / (q.B * q.B * q.l * q.l)) * 1.2 : ((q.W - q.x0) / q.v0) * 1.3;
       case 'loop': return ((q.W + q.w - q.x0) / q.v) * 1.15;
       case 'field': return q.wave === 'sine' ? 2 / q.f : q.wave === 'ramp' ? 1 : 6 * q.tau;
       default: return (2 * 2 * PI) / q.omega;
@@ -127,10 +127,12 @@ export default {
       if (Math.abs(B) > 1e-9) for (let i = 0; i < n; i++) for (let j = 0; j < ny; j++) ctx.fillText(B > 0 ? '×' : '•', X(x0 + (i + 0.5) * dx), Y(y0 + (j + 0.5) * dy));
       ctx.font = '12px system-ui'; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
     };
-    // current arrows along a rectangle path (ccw if I > 0)
-    const arrows = (pts, I, Imax) => {
+    // current arrows along a rectangle path. The paths below are listed counter-clockwise on
+    // screen (y up); the core's sense is about the into-the-page normal, so I > 0 is clockwise.
+    const arrows = (pts, s, Imax) => {
+      const I = s.I;
       if (Math.abs(I) < 1e-12 * Math.max(Imax, 1e-30)) return;
-      const dir = I > 0 ? 1 : -1, col = I > 0 ? '#e5484d' : '#7b61ff';
+      const dir = s.sense === 'ccw' ? 1 : -1, col = s.sense === 'ccw' ? '#e5484d' : '#7b61ff';
       ctx.strokeStyle = col; ctx.lineWidth = 2 + 4 * Math.min(1, Math.abs(I) / (Imax || 1));
       for (let k = 0; k < pts.length; k++) {
         const a = pts[k], b = pts[(k + 1) % pts.length];
@@ -153,13 +155,13 @@ export default {
       forceArrow(s.x, q.l / 2 + 0.3 * q.l * 0.2, s.v, Math.abs(q.v0), `v = ${s.v.toFixed(3)} m/s`);
       forceArrow(s.x, 0, s.F, this.peakF(), `F = ${sci(s.F, 3)} N`);
       // current loop: resistor end, rails, bar
-      arrows([[xr, -q.l / 2], [s.x, -q.l / 2], [s.x, q.l / 2], [xr, q.l / 2]], s.I, Imax);
+      arrows([[xr, -q.l / 2], [s.x, -q.l / 2], [s.x, q.l / 2], [xr, q.l / 2]], s, Imax);
       ctx.fillStyle = '#5a5955'; ctx.fillText(`Φ = B·l·(length of circuit in the field) = ${sci(s.Phi, 4)} Wb · ε = −dΦ/dt = ${sci(s.emf, 4)} V · I = ${sci(s.I, 4)} A${s.inField ? '' : ' (bar outside the field: no EMF)'}`, 12, H - 12);
     } else if (this.mode === 'loop') {
       fieldRect(0, q.W, -ymax, ymax, q.B);
       const a0 = s.x - q.w / 2, a1 = s.x + q.w / 2;
       ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 4; ctx.strokeRect(X(a0), Y(q.h / 2), X(a1) - X(a0), Y(-q.h / 2) - Y(q.h / 2));
-      arrows([[a0, -q.h / 2], [a1, -q.h / 2], [a1, q.h / 2], [a0, q.h / 2]], s.I, Imax);
+      arrows([[a0, -q.h / 2], [a1, -q.h / 2], [a1, q.h / 2], [a0, q.h / 2]], s, Imax);
       forceArrow(s.x, q.h / 2 + 0.01, q.v, q.v, `v = ${q.v} m/s`);
       forceArrow(s.edges.lead && !s.edges.trail ? a1 : a0, 0, s.F, this.peakF(), `F = ${sci(s.F, 3)} N`);
       ctx.fillStyle = '#5a5955'; ctx.fillText(`Φ = ${sci(s.Phi, 4)} Wb · ε = ${sci(s.emf, 4)} V · I = ${sci(s.I, 4)} A · ${s.edges.lead && s.edges.trail ? 'both edges inside: Φ constant, no EMF' : s.edges.lead ? 'entering: flux rising' : s.edges.trail ? 'leaving: flux falling' : 'outside the field'}`, 12, H - 12);
@@ -167,11 +169,11 @@ export default {
       const side = Math.sqrt(q.A);
       fieldRect(-side * 0.9, side * 0.9, -side * 0.9, side * 0.9, s.B);
       ctx.strokeStyle = '#f5a623'; ctx.lineWidth = 4; ctx.strokeRect(X(-side / 2), Y(side / 2), X(side / 2) - X(-side / 2), Y(-side / 2) - Y(side / 2));
-      arrows([[-side / 2, -side / 2], [side / 2, -side / 2], [side / 2, side / 2], [-side / 2, side / 2]], s.I, Imax);
+      arrows([[-side / 2, -side / 2], [side / 2, -side / 2], [side / 2, side / 2], [-side / 2, side / 2]], s, Imax);
       ctx.fillStyle = '#5a5955'; ctx.fillText(`B(t) = ${sci(s.B, 4)} T, dB/dt = ${sci(s.dB, 4)} T/s · Φ = N B A = ${sci(s.Phi, 4)} Wb · ε = −N A dB/dt = ${sci(s.emf, 4)} V · I = ${sci(s.I, 4)} A`, 12, H - 12);
-      wrapText(ctx, '× marks: B into the page (density ∝ |B|); • when B reverses. Red arrows: induced current counter-clockwise (seen from above); purple: clockwise.', 12, 20, W - 24);
+      wrapText(ctx, '× marks: B into the page (density ∝ |B|); • when B reverses. Red arrows: induced current counter-clockwise seen from above (while flux into the page grows, Lenz); purple: clockwise.', 12, 20, W - 24);
     }
-    if (this.mode !== 'field') wrapText(ctx, 'Red arrows: induced current counter-clockwise (ε > 0); purple: clockwise. Green: velocity, and the magnetic force on the moving conductor, which always opposes the motion (Lenz).', 12, 20, W - 24);
+    if (this.mode !== 'field') wrapText(ctx, 'Red arrows: induced current counter-clockwise seen from above (while flux into the page grows, Lenz); purple: clockwise. Green: velocity, and the magnetic force on the moving conductor, which always opposes the motion (Lenz).', 12, 20, W - 24);
   },
 
   drawGenerator(ctx, W, H) {

@@ -2,7 +2,7 @@
 // and transformer EMF formulas, Lenz (the force opposes the motion for either sign of B),
 // the power balance, the coasting bar's exponential braking, and the generator identities.
 import { PI } from '../constants.js';
-import { overlap, barState, loopState, fieldState, generatorState, numericEmf } from '../faraday.js';
+import { overlap, barState, loopState, fieldState, generatorState, numericEmf, senseOf } from '../faraday.js';
 
 export function faradayChecks(check) {
   check('faraday overlap: partial', overlap(-1, 2, 0, 5), 2, 1e-15);
@@ -13,6 +13,12 @@ export function faradayChecks(check) {
     const s = barState(p, 0.1);
     check('faraday bar: ε = −B l v inside the field', s.emf, -0.5 * 0.1 * 1, 1e-12);
     check('faraday bar: ε = −dΦ/dt numerically (1e-6)', s.emf, numericEmf((t) => barState(p, t), 0.1), 1e-6);
+    // Lenz by hand: B into the page, bar moving +x: q v × B = q v B ŷ pushes charge up the bar, so the
+    // current runs up the bar, back along the top rail: counter-clockwise seen from above. The core
+    // counts flux with the normal into the page, so that is ε < 0, I < 0, sense 'ccw'.
+    check('faraday sense: I > 0 is clockwise about the into-page normal', senseOf(1) === 'cw' && senseOf(-1) === 'ccw' && senseOf(0) === '' ? 1 : 0, 1, 0);
+    check('faraday bar: entering a ×-field the current is counter-clockwise (Lenz)', s.I < 0 && s.sense === 'ccw' ? 1 : 0, 1, 0);
+    check('faraday bar: with B reversed (• field) it is clockwise', barState({ ...p, B: -0.5 }, 0.1).sense === 'cw' ? 1 : 0, 1, 0);
     check('faraday bar: no EMF before the field', barState(p, 0.02).emf, 0, 0);
     check('faraday bar: no EMF after the field', barState(p, 0.3).emf, 0, 0);
     check('faraday bar: F = −B² l² v / R opposes v', s.F, -(0.25 * 0.01 * 1) / 2, 1e-12);
@@ -41,6 +47,9 @@ export function faradayChecks(check) {
     const p = { B: 0.5, W: 0.2, w: 0.08, h: 0.05, R: 1, v: 1, x0: -0.1 };
     const enter = loopState(p, 0.1), inside = loopState(p, 0.2), leave = loopState(p, 0.28);
     check('faraday loop: entering, ε = −B h v', enter.emf, -0.5 * 0.05 * 1, 1e-12);
+    check('faraday loop: entering, counter-clockwise (flux into the page growing)', enter.sense === 'ccw' ? 1 : 0, 1, 0);
+    check('faraday loop: leaving, clockwise (flux into the page shrinking)', leave.sense === 'cw' ? 1 : 0, 1, 0);
+    check('faraday loop: fully inside, no sense', inside.sense === '' ? 1 : 0, 1, 0);
     check('faraday loop: fully inside, Φ = B w h and ε = 0', inside.Phi, 0.5 * 0.08 * 0.05, 1e-12);
     check('faraday loop: fully inside, no EMF', inside.emf, 0, 0);
     check('faraday loop: fully inside, no force', inside.F, 0, 0);
@@ -56,6 +65,8 @@ export function faradayChecks(check) {
     check('faraday field: sine EMF amplitude N B₀ A ω at t = 0', Math.abs(fieldState(p, 0).emf), 10 * 0.2 * 0.01 * 2 * PI * 50, 1e-12);
     const r = { ...p, wave: 'ramp', rate: 2 };
     check('faraday field: ramp gives constant ε = −N A (dB/dt)', fieldState(r, 0.7).emf, -10 * 0.01 * 2, 1e-12);
+    check('faraday field: B into the page rising → counter-clockwise current', fieldState(r, 0.7).sense === 'ccw' ? 1 : 0, 1, 0);
+    check('faraday field: B into the page falling → clockwise', fieldState({ ...r, rate: -2 }, 0.7).sense === 'cw' ? 1 : 0, 1, 0);
     const u = { ...p, wave: 'pulse', tau: 0.01 };
     check('faraday field: pulse ε = −dΦ/dt numerically (1e-6)', fieldState(u, 0.004).emf, numericEmf((t) => fieldState(u, t), 0.004), 1e-6);
   }

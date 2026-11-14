@@ -373,3 +373,28 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   distance. `core/radiation.js` (em-core).
 - Tests: `core/test/radiation.js` (30 checks), bench app checks, smoke round trip. 754
   checks, smoke on 26 tabs.
+
+## Audit of the seven new tabs (patch 7o)
+Independent re-derivation of every new core module against textbook forms and numeric
+cross-checks (Neumann double integral for the filament M, finite-difference tangency for
+field lines, power through spheres). Two sign defects and two robustness items, each with a
+regression test:
+- **Faraday's law (drawing):** the induced-current arrows ran the wrong way. The core counts
+  flux with the normal into the page, so a positive EMF is clockwise seen from above; the tab
+  drew I > 0 counter-clockwise, showing a clockwise current for a bar entering a ×-field where
+  Lenz (and q v×B by hand) gives counter-clockwise. The states now carry `sense` ('cw'/'ccw'
+  seen from above) from one rule in `core/faraday.js`; the tab draws from it; tests pin the
+  Lenz direction for the bar, the loop entering and leaving, and a rising or falling B.
+- **Radiation (field lines):** the E lines were contours of r sinθ·Re[H_φ e^{jωt}]. From
+  ∇×H = ε ∂E/∂t those are the lines of ∂E/∂t, a quarter period ahead of E; the instantaneous E
+  is tangent to contours of r sinθ·Im[H_φ e^{jωt}] (= Re[H_φ e^{jωt}/j]). Same picture, now in
+  step with the E arrows. A test checks the tangency at 12 points and times (|sin ∠| < 1e-6)
+  and that the old form is not tangent.
+- **Line waves:** V⁺ was V_in divided by (e^{jβl} + Γe^{−jβl}), which is 0/0 for an open λ/4
+  or shorted λ/2 line (only floating point kept it finite). It is now Vs/(A + (Rs/Z0)B) from
+  the source loop, finite for every length and for Rs = 0; tests at both resonant lengths.
+- **Div and curl:** the dipole field is −∇(x/r²) (E of a line dipole along +x), not ∇(x/r²) as
+  its label said; label fixed, test pins the direction on the axes.
+- Coast-mode window on the Faraday tab used the braking time only for B > 0; now for B ≠ 0.
+- 599 em-core checks, 772 in the bench, smoke on 26 tabs. No defects found in lorentz,
+  planewave, coupled, filters, ampere or solenoid; their forms were re-derived and agree.

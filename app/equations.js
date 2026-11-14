@@ -213,7 +213,7 @@ export const EQUATIONS = {
       E: { tex: String.raw`|\mathbf{E}(t)| = \sqrt{E_r^2 + E_\theta^2}`, note: 'A snapshot at the scrubbed time, log scale.' },
       H: { tex: String.raw`H_\phi(t) = \mathrm{Re}\,[H_\phi e^{j\omega t}]`, note: 'Out of the page on one side of the axis, into it on the other.' },
       S: { tex: String.raw`\langle S_r\rangle = \tfrac{1}{2}\mathrm{Re}\,(E_\theta H_\phi^*)`, note: 'The time average; the 1/r² and 1/r³ terms carry none on average.' },
-      psi: { tex: String.raw`\psi = r\sin\theta\, H_\phi(t), \qquad \mathbf{E}\parallel\nabla\psi\times\hat{\boldsymbol\phi}`, note: 'From ∇×H = ε∂E/∂t: at every instant E is tangent to the level curves of r sinθ H_φ.' },
+      psi: { tex: String.raw`\psi(t) = r\sin\theta\;\mathrm{Re}\!\left[\frac{H_\phi e^{j\omega t}}{j}\right], \qquad \mathbf{E}(t)\parallel\nabla\psi\times\hat{\boldsymbol\phi}`, note: 'From ∇×H = ε ∂E/∂t, E = (1/jωε) ∇×H: at every instant E is tangent to the level curves of r sinθ times H_φ/j. (Contours of r sinθ H_φ itself would be the lines of ∂E/∂t, a quarter period ahead.)' },
       kr: { tex: String.raw`kr = 1 \iff r = \frac{\lambda}{2\pi}`, note: 'Where the 1/r, 1/r² and 1/r³ terms are equal in size.' },
     },
     solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid, re-evaluated at each time}`, note: 'Nothing is solved; the fields are clipped inside r = 0.03 λ.' },

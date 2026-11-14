@@ -27,7 +27,7 @@ export default {
     { id: 'Hphi', label: 'H_φ (snapshot, signed)', kind: 'scalar', unit: 'A/m', signed: true, eq: 'H' },
     { id: 'S', label: 'time-average Poynting S_r', kind: 'scalar', unit: 'W/m²', log: true, eq: 'S' },
     { id: 'E', label: 'E (snapshot)', kind: 'vector', styles: ['arrows'] },
-    { id: 'lines', label: 'E field lines (snapshot)', kind: 'contour', default: true, eq: 'psi' },
+    { id: 'lines', label: 'E field lines (snapshot)', kind: 'contour', default: true, eq: 'psi', note: 'Level curves of the stream function of the instantaneous E; the E arrows are tangent to them.' },
     { id: 'nf', label: 'near/far boundary kr = 1', kind: 'contour', default: true, eq: 'kr' },
   ],
 
@@ -95,7 +95,7 @@ export default {
     const [, lz] = view.toPx(0, this.extent[3]); const [lx] = view.toPx(this.lambda, 0);
     ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(cx, lz + 16); ctx.lineTo(lx, lz + 16); ctx.stroke(); ctx.fillStyle = '#fff'; ctx.font = '12px system-ui'; ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 3; ctx.fillText(`λ = ${sci(this.lambda, 3)} m`, cx + 4, lz + 30);
     ctx.fillText(`I₀ dl = ${this.p.I0} A × ${this.p.dl} mm along z, f = ${this.p.f} MHz, t = ${(this.t * this.f()).toFixed(2)} T`, 10, view.height - 26);
-    ctx.fillText('white: E field lines (contours of r sinθ H_φ) · pink: kr = 1, where the near and far fields trade places', 10, view.height - 10);
+    ctx.fillText('white: E field lines at this instant (contours of r sinθ·H_φ/j) · pink: kr = 1, the near/far boundary', 10, view.height - 10);
     ctx.restore();
   },
 

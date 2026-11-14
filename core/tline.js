@@ -53,9 +53,13 @@ export function zin(ZL, Z0, beta, d) {
 export function steadyState({ Vs, Rs, Z0, beta, l, ZL }) {
   const GL = gamma(ZL, Z0);
   const Zin = zin(ZL, Z0, beta, l);
-  const Vin = Number.isFinite(Zin[0]) ? cmul([Vs, 0], cdiv(Zin, cadd(Zin, [Rs, 0]))) : [Vs, 0];
-  const den = cadd(cexp(beta * l), cmul(GL, cexp(-beta * l)));
-  const Vp = cdiv(Vin, den);                       // V(d) = V+ (e^{jβd} + Γ_L e^{−jβd})
+  // V(d) = V+ (e^{jβd} + Γ_L e^{−jβd}), I(d) = (V+/Z0)(e^{jβd} − Γ_L e^{−jβd}); at the generator
+  // Vs = V(l) + Rs I(l), so V+ = Vs / (A + (Rs/Z0) B) with A, B the two brackets at d = l. This
+  // stays finite where Z_in is 0 or ∞ (an open λ/4 line, a shorted λ/2 line), where dividing
+  // V_in by A would be 0/0.
+  const A = cadd(cexp(beta * l), cmul(GL, cexp(-beta * l))), Bq = csub(cexp(beta * l), cmul(GL, cexp(-beta * l)));
+  const Vp = cdiv([Vs, 0], cadd(A, cmul([Rs / Z0, 0], Bq)));
+  const Vin = cmul(Vp, A);
   const V = (d) => cmul(Vp, cadd(cexp(beta * d), cmul(GL, cexp(-beta * d))));
   const Ifn = (d) => { const f = cmul(Vp, cexp(beta * d)), r = cmul(cmul(Vp, GL), cexp(-beta * d)); return [(f[0] - r[0]) / Z0, (f[1] - r[1]) / Z0]; };
   const Iin = Ifn(l);

@@ -10,10 +10,17 @@
 //
 // Geometry (bar and loop): x along the rails or the motion; the field region is 0 ≤ x ≤ W,
 // B points into the page (−z) when B > 0 and the flux is counted with the normal into the
-// page, so Φ ≥ 0 while the circuit overlaps the region. A positive EMF drives a
-// counter-clockwise current seen from above (the right-hand rule on that normal).
+// page, so Φ ≥ 0 while the circuit overlaps the region. By the right-hand rule on that normal
+// a positive EMF (and a positive I) circulates CLOCKWISE seen from above (+z toward the
+// viewer); a bar entering the field has dΦ/dt > 0, ε < 0, and so a counter-clockwise current,
+// as Lenz requires (its own field inside the loop points out of the page, against the growing
+// flux). Each state carries `sense`, the direction seen from above, so the drawing and the
+// tests use one rule.
 
 import { PI } from './constants.js';
+
+/** Direction of a current I about the into-the-page normal, seen from above: 'cw' for I > 0, 'ccw' for I < 0. */
+export function senseOf(I) { return I > 0 ? 'cw' : I < 0 ? 'ccw' : ''; }
 
 /** Length of the overlap of [a0, a1] with [b0, b1]. */
 export function overlap(a0, a1, b0, b1) { return Math.max(0, Math.min(a1, b1) - Math.max(a0, b0)); }
@@ -54,7 +61,7 @@ function finishBar(p, x, v, tau, inside) {
   const emf = -B * l * v * inField;
   const I = emf / R;
   const F = -(B * B * l * l * v * inField) / R;      // on the bar, along x: opposes v
-  return { x, v, Phi, emf, I, F, Pelec: (emf * emf) / R, Pmech: -F * v, inField: !!inField, tau: inside ? tau : 0 };
+  return { x, v, Phi, emf, I, F, Pelec: (emf * emf) / R, Pmech: -F * v, inField: !!inField, tau: inside ? tau : 0, sense: senseOf(I) };
 }
 
 /** Rectangular loop w × h carried at speed v along x; its centre at x0 + v t. p = { B, W, w, h, R, v, x0 } */
@@ -67,7 +74,7 @@ export function loopState(p, t) {
   const dPhi = B * h * v * (lead - trail);
   const emf = -dPhi, I = emf / R;
   const F = -(B * B * h * h * v * (lead - trail) * (lead - trail)) / R; // only an edge inside the field feels a force; both inside: no net flux change, no force
-  return { x, v, Phi, emf, I, F, Pelec: (emf * emf) / R, Pmech: -F * v, edges: { lead: !!lead, trail: !!trail } };
+  return { x, v, Phi, emf, I, F, Pelec: (emf * emf) / R, Pmech: -F * v, edges: { lead: !!lead, trail: !!trail }, sense: senseOf(I) };
 }
 
 /** Uniform B(t) through a stationary loop of area A: 'sine' B0 sin 2πft, 'ramp' B0 + rate·t, 'pulse' B0 (1 − e^{−t/τ}). */
@@ -80,7 +87,7 @@ export function fieldB(p, t) {
 export function fieldState(p, t) {
   const { A, N = 1, R } = p, { B, dB } = fieldB(p, t);
   const Phi = N * B * A, emf = -N * A * dB, I = emf / R;
-  return { B, dB, Phi, emf, I, Pelec: (emf * emf) / R };
+  return { B, dB, Phi, emf, I, Pelec: (emf * emf) / R, sense: senseOf(I) };
 }
 
 /** Generator: N turns of area A rotating at ω in uniform B, θ = ω t + θ0 between the normal and B. p = { B, A, N, R, omega, theta0 } */

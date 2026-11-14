@@ -42,10 +42,15 @@ export function instantaneous(I0, dl, f, r, theta, t) {
   return { Er: re(F.Er), Eth: re(F.Eth), Hph: re(F.Hph) };
 }
 
-/** Stream function of E: ψ = r sinθ H_φ (instantaneous). E lines are its level curves. */
+/**
+ * Stream function of the instantaneous E: ψ(t) = r sinθ · Re[H_φ e^{jωt} / j] = r sinθ · Im[H_φ e^{jωt}].
+ * From ∇×H = ε ∂E/∂t, E = (1/(jωε)) ∇×H in phasors, so E(t) is tangent to the level curves of
+ * r sinθ times the real part of H_φ e^{jωt}/j, not of H_φ e^{jωt} itself (those are the lines of
+ * ∂E/∂t, a quarter period ahead). The picture looks the same but would not match the E arrows.
+ */
 export function streamPsi(I0, dl, f, r, theta, t) {
   const F = hertzFields(I0, dl, f, r, theta), ph = cexp(2 * PI * f * t);
-  return r * Math.sin(theta) * cmul(F.Hph, ph)[0];
+  return r * Math.sin(theta) * cmul(F.Hph, ph)[1];
 }
 
 /** Time-average radial Poynting flux ½ Re(E_θ H_φ*). */

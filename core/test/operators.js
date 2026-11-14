@@ -23,6 +23,8 @@ export function operatorChecks(check) {
   // nonlinear: converges
   const conv = (kind, x, y) => [1, 0.5, 0.25].map((s) => Math.abs(boxFlux(kind, k, x, y, s).flux / (s * s) - divAt(kind, x, y, k)));
   const e = conv('hill', 0.4, 0.2);
+  check('operators dipole: −∇(x/r²), so F on the +x axis points +x (E of a line dipole along +x)', fieldAt('dipole', 1, 0)[0] > 0 && Math.abs(fieldAt('dipole', 1, 0)[0] - 1) < 1e-12 ? 1 : 0, 1, 0);
+  check('operators dipole: and on the y axis points −x', fieldAt('dipole', 0, 1)[0], -1, 1e-12);
   check('operators hill: box flux/area converges to div as the box shrinks', e[0] > e[1] && e[1] > e[2] ? 1 : 0, 1, 0);
   check('operators hill: within 2 % at side 0.25', e[2] / Math.abs(divAt('hill', 0.4, 0.2, k)), 0, 2e-2);
   const cl = [1, 0.5, 0.25].map((s) => Math.abs(loopCirculation('swirl', k, 0.4, 0.2, s / 2).circ / (PI * s * s / 4) - curlAt('swirl', 0.4, 0.2, k)));

@@ -33,7 +33,7 @@ export const FIELDS = {
     note: 'Zero curl everywhere except the origin: the circulation around any loop enclosing the origin is 2π (Ampère), around any loop that does not it is 0, however much the field seems to swirl.',
   },
   dipole: {
-    label: 'dipole: F = ∇(x/r²)',
+    label: 'dipole: F = −∇(x/r²)  (E of a line dipole along +x)',
     F: (x, y) => { const r2 = x * x + y * y || 1e-30; return [(x * x - y * y) / (r2 * r2), (2 * x * y) / (r2 * r2)]; },
     div: () => 0,
     curl: () => 0,
