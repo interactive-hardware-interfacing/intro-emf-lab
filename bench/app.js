@@ -509,6 +509,23 @@ export async function run(check) {
     check('tline-waves fromTlTab: unvisited tab gives a reason', tab.fromTlTab.call(stub).err ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5m. Plane waves tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'plane-waves');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults, iface: true, m2: 'copper', e2: 1, u2: 1, s2: 5.8e7 }; stub.t = 0; stub.speed = 0.1; stub.resultsEl = null;
+    const st = stub.getState();
+    check('plane-waves state: interface flag as 1', st.pw_iface, 1, 0);
+    tab.compute.call(stub);
+    check('plane-waves compute: air→copper Γ ≈ −1', stub.res.inc.G[0], -1, 1e-4);
+    const [z0, z1] = tab.zRange.call(stub);
+    check('plane-waves zRange: medium 2 keeps at least 15 % of the width even when its skin depth is microns', z1 >= 0.15 * -z0 - 1e-12 ? 1 : 0, 1, 0);
+    check('plane-waves zRange: medium 1 span is a few wavelengths', -z0 > 0.5 && -z0 < 1 ? 1 : 0, 1, 0);
+    const rows = tab.csv.call(stub).split('\n');
+    check('plane-waves csv: 401 rows + header', rows.length, 402, 0);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

@@ -10,6 +10,7 @@ import { filterChecks } from './filters.js';
 import { faradayChecks } from './faraday.js';
 import { lorentzChecks } from './lorentz.js';
 import { tlineChecks } from './tline.js';
+import { planeWaveChecks } from './planewave.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -22,4 +23,5 @@ mark('filters'); filterChecks(check);
 mark('faraday'); faradayChecks(check);
 mark('lorentz'); lorentzChecks(check);
 mark('tline-waves'); tlineChecks(check);
+mark('planewave'); planeWaveChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }

@@ -126,6 +126,9 @@ control that changes the picture must be in `getState()`, so the share link repr
 - `core/tline.js`: `gamma`, `vswr`, `zin`, `steadyState` (V+, Γ_L, Z_in, V(d), I(d), powers), `instantaneous`
   (forward / reflected / total at d, t), `extrema`, and the step transient (`stepSetup`, `bounces`, `stepV`, `stepI`).
   The Line waves tab imports `lineParams` from the Transmission lines tab to pull Z₀ and v.
+- `core/planewave.js`: `medium` (γ = α + jβ and η from f, εr, μr, σ, with λ, v_p, δ, loss tangent and the
+  good-conductor α), `normalIncidence` (Γ, τ, R, T, SWR), `phasors` / `instantaneous` (two-media fields),
+  `poynting`, `polarization` (type, IEEE handedness, axial ratio, tilt) and `polarizationTrace`.
 - `AxisymMag`: magnetostatics for ψ = rA_φ with coefficient 1/(μ r) on faces, `B()`,
   flux-linkage and energy inductance, and an optional saturating μ(B) updated between sweeps
   from the H side. Builder: `solenoidWithObject`.

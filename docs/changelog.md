@@ -329,3 +329,15 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   envelopes against |V⁺|(1 ± |Γ|), quarter- and half-wave transformers, power bookkeeping,
   the bounce sums against hand values), bench app checks, smoke round trip. 608 checks,
   smoke on 22 tabs.
+
+## Plane waves tab (patch 7k)
+- New field-less tab in the Waves group: E_x and η₀H_y along z animated (one medium, or
+  normal incidence on a second with the incident and reflected parts shown), the amplitude
+  along z (flat, decaying with δ marked, or the partial standing wave), and the polarization
+  ellipse with the two components against time. Media presets include seawater and copper
+  so the skin depth is seen at both ends of its range. `core/planewave.js` (em-core).
+- Polarization handedness follows IEEE: φ < 0 (E_y lagging) turns E from x toward y, a
+  right-handed screw along the propagation direction; the first draft had the two labels
+  swapped and the test now pins the convention.
+- Tests: `core/test/planewave.js` (38 checks), bench app checks, smoke round trip. 651
+  checks, smoke on 23 tabs.

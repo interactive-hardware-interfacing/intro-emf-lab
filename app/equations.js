@@ -171,6 +171,19 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\beta = \frac{\omega}{v}, \qquad \lambda = \frac{v}{f}`, note: 'Lossless line, closed form. The transient sums the step waves of the bounce diagram.' },
   },
 
+  'plane-waves': {
+    governing: [
+      { title: 'Wave equation and the plane wave', tex: String.raw`\nabla^2\mathbf{E} = \mu\varepsilon\frac{\partial^2\mathbf{E}}{\partial t^2}, \qquad E_x = E_0 e^{-\alpha z}\cos(\omega t - \beta z), \quad H_y = \frac{E_x}{\eta}` },
+      { title: 'Propagation constant and impedance', tex: String.raw`\gamma = \alpha + j\beta = j\omega\sqrt{\mu\left(\varepsilon - j\tfrac{\sigma}{\omega}\right)}, \qquad \eta = \sqrt{\frac{\mu}{\varepsilon - j\sigma/\omega}}` },
+      { title: 'Lossless and good-conductor limits', tex: String.raw`v = \frac{1}{\sqrt{\mu\varepsilon}},\ \eta = \sqrt{\frac{\mu}{\varepsilon}}; \qquad \alpha = \beta = \sqrt{\pi f \mu\sigma},\ \delta = \frac{1}{\alpha}` },
+      { title: 'Normal incidence', tex: String.raw`\Gamma = \frac{\eta_2 - \eta_1}{\eta_2 + \eta_1}, \qquad \tau = 1 + \Gamma, \qquad \text{SWR} = \frac{1+|\Gamma|}{1-|\Gamma|}` },
+      { title: 'Power', tex: String.raw`\langle\mathbf{S}\rangle = \tfrac{1}{2}\,\mathrm{Re}\,(\mathbf{E}\times\mathbf{H}^*) = \frac{|E_0|^2}{2}\,\mathrm{Re}\frac{1}{\eta}\,\hat{\mathbf{z}}` },
+      { title: 'Maxwell, full', tex: MAXWELL.faraday },
+    ],
+    layers: {},
+    solver: { tex: String.raw`E(z) = E_0\left(e^{-\gamma_1 z} + \Gamma e^{\gamma_1 z}\right)\ (z<0), \qquad E(z) = \tau E_0 e^{-\gamma_2 z}\ (z>0)`, note: 'Closed form; the Time-varying tab is the same problem by FDTD.' },
+  },
+
   conduction: {
     governing: [
       { title: 'Steady current: charge conservation', tex: String.raw`\nabla \cdot \mathbf{J} = 0 \;\Rightarrow\; \nabla \cdot (\sigma \nabla V) = 0` },
