@@ -146,6 +146,19 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\varepsilon(t) = -\frac{d\Phi}{dt} \text{ in closed form}`, note: 'Each setting has Φ(t) in closed form and the EMF is its exact derivative; the bench checks it against a numerical one.' },
   },
 
+  'charges-in-fields': {
+    governing: [
+      { title: 'Lorentz force', tex: String.raw`\mathbf{F} = q(\mathbf{E} + \mathbf{v}\times\mathbf{B})` },
+      { title: 'Cyclotron motion', tex: String.raw`r = \frac{m v_\perp}{|q| B}, \qquad T = \frac{2\pi m}{|q| B}, \qquad \mathbf{v}_{E\times B} = \frac{\mathbf{E}\times\mathbf{B}}{B^2}` },
+      { title: 'Velocity selector and spectrometer', tex: String.raw`v = \frac{E}{B}, \qquad r = \frac{m v}{|q| B'}` },
+      { title: 'Hall effect', tex: String.raw`v_d = \frac{I}{n q w t}, \qquad V_H = \frac{I B}{n q t}` },
+      { title: 'Force on a current, parallel wires', tex: String.raw`\mathbf{F} = I\,\mathbf{L}\times\mathbf{B}, \qquad \frac{F}{L} = \frac{\mu_0 I_1 I_2}{2\pi d}` },
+      { title: 'Torque on a loop', tex: String.raw`\mathbf{m} = N I A\,\hat{\mathbf{n}}, \qquad \boldsymbol{\tau} = \mathbf{m}\times\mathbf{B}, \qquad U = -\mathbf{m}\cdot\mathbf{B}` },
+    ],
+    layers: {},
+    solver: { tex: String.raw`\mathbf{v}^{-} = \mathbf{v} + \tfrac{q\Delta t}{2m}\mathbf{E},\quad \mathbf{v}^{+} = \text{rotate}(\mathbf{v}^{-}, \mathbf{B}),\quad \mathbf{v}' = \mathbf{v}^{+} + \tfrac{q\Delta t}{2m}\mathbf{E}`, note: 'The Boris pusher: half an electric kick, an exact rotation by B, half a kick. Energy is conserved exactly in a pure magnetic field; 400 steps per cyclotron period.' },
+  },
+
   conduction: {
     governing: [
       { title: 'Steady current: charge conservation', tex: String.raw`\nabla \cdot \mathbf{J} = 0 \;\Rightarrow\; \nabla \cdot (\sigma \nabla V) = 0` },

@@ -302,3 +302,17 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   periods; `destroy()` cancels the frame loop.
 - Tests: `core/test/faraday.js` (37 checks), bench app checks, smoke round trip. 516 checks,
   smoke on 20 tabs.
+
+## Charges in fields tab (patch 7i)
+- New field-less tab in the Magnetostatics group: a particle tracer (up to three particles,
+  one or two field regions with E in the plane and B along z, a plate with a slit and a
+  detector at x = 0 in two-region mode), the Hall effect in a strip, the force between
+  parallel wires and the torque on a loop. `core/lorentz.js` (em-core) holds the Boris
+  pusher and the closed forms.
+- The tracer uses the leapfrog-staggered Boris scheme with the velocity kicked back by half
+  a Boris step at the start and synchronised forward by half a step for output; the first
+  draft reported the staggered velocity and read the cyclotron centre 0.8 % off and the
+  parabola 1 % off (one step's worth of drift). With the exact half-rotation the kinetic
+  energy in a pure B is conserved to 1e-15 and the orbit closes to 1e-4 of r.
+- Tests: `core/test/lorentz.js` (28 checks), bench app checks (state, traces, detector,
+  m/q, CSV, Hall), smoke round trip. 551 checks, smoke on 21 tabs.

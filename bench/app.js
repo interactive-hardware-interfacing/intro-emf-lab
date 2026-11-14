@@ -471,6 +471,26 @@ export async function run(check) {
     check('faraday csv: loop columns include x and F', rows[0].split(',').length, 6, 0);
   }
 
+  // ------------------------------------------------------------ 5k. Charges in fields tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'charges-in-fields');
+    const stub = Object.create(tab);
+    stub.mode = 'particle'; stub.p = JSON.parse(JSON.stringify(tab.defaults)); stub.t = 0; stub.speed = 0.3;
+    Object.assign(stub.p.particle, { parts: [{ sp: 'proton', v: 1e5, ang: 0, y0: 0, qc: 1, mc: 1 }, { sp: 'custom', v: 1e5, ang: 0, y0: 0, qc: 2, mc: 4 }], split: true, E1y: 5e4, B1: 0.5, B2: 0.5, x0: -6, dur: 0.3 });
+    const st = stub.getState();
+    check('charges state: particle list flattens to 5 fields each', st.parts.length, 10, 0);
+    check('charges state: custom q/m encoded', st.parts[9] === '2/4' ? 1 : 0, 1, 0);
+    check('charges state: booleans as 0/1', st.particle_split, 1, 0);
+    tab.compute.call(stub);
+    check('charges traces: both selected particles reach the detector', stub.traces.every((T) => T.tr.detector) ? 1 : 0, 1, 0);
+    check('charges traces: custom (2e, 4 m_p) lands at the same radius as a deuteron would (m/q = 2)', stub.traces[1].r2 / stub.traces[0].r2, 2, 1e-12);
+    const rows = tab.csv.call(stub).split('\n');
+    check('charges csv: header + one row per sample per particle', rows.length, 1 + stub.traces.reduce((a, T) => a + T.tr.t.length, 0), 0);
+    stub.mode = 'hall'; stub.res = null; tab.compute.call(stub);
+    check('charges hall stub: copper default gives −73 nV at 1 A, 1 T, 1 mm', stub.res.VH, -7.343e-8, 1e-3);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

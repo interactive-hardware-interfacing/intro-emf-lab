@@ -17,6 +17,7 @@ build step. The solvers never touch the DOM, so everything runs under node as we
 | `solenoid.js` | Exact circular-loop field and A_φ (elliptic integrals), a solenoid as N turns or an ideal sheet, the finite-sheet axis formula, Helmholtz pairs, Nagaoka's L, the axis profile |
 | `filters.js` | RC and series-RLC filters: transfer functions, resonance numbers, steady state with element energies, step response in closed form, real-capacitor impedance |
 | `faraday.js` | Faraday's law settings as functions of time: sliding bar (driven or coasting), loop through a field region, loop in B(t), rotating-loop generator; Φ, ε, I, force/torque, powers |
+| `lorentz.js` | Boris pusher and tracer for charged particles in E and B; cyclotron, E×B drift, velocity selector, spectrometer radius, Hall effect, force between wires, loop torque |
 | `eddy.js` | `AxisymEddy`: frequency-domain eddy currents (complex ψ), skin depth, J_eddy, power, coil impedance; the long-cylinder Bessel reference |
 | `fdtd2d.js` | `FDTD2D`: 2-D TMz Yee FDTD with per-cell ε_r/σ/PEC, point and line sources, CPML or Mur open walls |
 | `render.js` | Canvas drawing: colour maps, scalar fields, quiver, streamlines, marching-squares contours, colour bar, `Viewport` |
@@ -58,7 +59,8 @@ interface; `test/ampere.js` checks every current distribution against its textbo
 turn sum against the finite-sheet formula, and the Helmholtz values; `test/filters.js` checks the
 handout's Examples 6.1–6.3, the sum rule H_LP + H_BP + H_HP = 1, and the step-response identities;
 `test/faraday.js` checks ε against a numerical −dΦ/dt in every setting, Lenz, the power balance and the
-exponential braking of the coasting bar.
+exponential braking of the coasting bar; `test/lorentz.js` checks the Boris pusher against cyclotron motion
+(closure, exact energy), the cycloid's E×B mean velocity, the parabola, the selector and the closed forms.
 
 ## In intro-EMF-lab
 

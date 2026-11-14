@@ -8,6 +8,7 @@ import { ampereChecks } from './ampere.js';
 import { solenoidChecks } from './solenoid.js';
 import { filterChecks } from './filters.js';
 import { faradayChecks } from './faraday.js';
+import { lorentzChecks } from './lorentz.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -18,4 +19,5 @@ mark('ampere'); ampereChecks(check);
 mark('solenoid'); solenoidChecks(check);
 mark('filters'); filterChecks(check);
 mark('faraday'); faradayChecks(check);
+mark('lorentz'); lorentzChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }

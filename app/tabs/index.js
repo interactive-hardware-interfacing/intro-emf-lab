@@ -15,6 +15,7 @@ import ampere from './ampere.js';
 import solenoids from './solenoids.js';
 import filters from './filters.js';
 import faraday from './faraday.js';
+import chargesInFields from './charges-in-fields.js';
 import interfaceTab from './interface.js';
 import transmissionLines from './transmission-lines.js';
 import fdtd from './fdtd.js';
@@ -25,7 +26,7 @@ export const GROUPS = [
   { label: '', tabs: [about] },
   { label: 'Electrostatics', tabs: [pointCharges, pointCharges3d, makeRingLine('ring'), makeRingLine('rods'), gaussLaw, interfaceTab, capacitors, dielectrics] },
   { label: 'Currents & circuits', tabs: [conduction, filters] },
-  { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, inductors] },
+  { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, chargesInFields, inductors] },
   { label: 'Induction', tabs: [faraday, eddy] },
   { label: 'Waves', tabs: [transmissionLines, fdtd] },
   { label: 'Tools', tabs: [sandbox] },
