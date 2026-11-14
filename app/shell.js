@@ -54,14 +54,22 @@ export class Shell {
   buildTabBar() {
     const nav = this.$('tabs');
     nav.innerHTML = '';
+    let groupEl = null, groupLabel = null;
     for (const t of this.tabs) {
+      if (!groupEl || t.group !== groupLabel) {
+        groupLabel = t.group;
+        groupEl = document.createElement('div');
+        groupEl.className = 'tab-group';
+        if (groupLabel) { const l = document.createElement('span'); l.className = 'tab-group-label'; l.textContent = groupLabel; groupEl.appendChild(l); }
+        nav.appendChild(groupEl);
+      }
       const b = document.createElement('button');
       b.className = 'tab';
       b.setAttribute('role', 'tab');
       b.dataset.id = t.id;
       b.innerHTML = `${t.title}${t.available === false ? `<span class="phase">P${t.phase}</span>` : ''}`;
       b.addEventListener('click', () => { this.state = { tab: t.id }; this.selectTab(t.id, { push: true }); });
-      nav.appendChild(b);
+      groupEl.appendChild(b);
     }
   }
 
@@ -94,7 +102,7 @@ export class Shell {
     if (this.tab?.destroy) this.tab.destroy();
     if (this.tab && this.tab !== tab) this.probeLog = []; // a log belongs to one tab (its CSV is named after it)
     this.tab = tab;
-    for (const b of this.$('tabs').children) b.setAttribute('aria-selected', String(b.dataset.id === tab.id));
+    for (const b of this.$('tabs').querySelectorAll('.tab')) b.setAttribute('aria-selected', String(b.dataset.id === tab.id));
     document.title = `${tab.title} · Intro EMF Lab`;
     this.$('foot-phase').textContent = tab.available === false ? 'This tab is not finished yet.' : '';
 

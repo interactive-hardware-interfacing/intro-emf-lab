@@ -52,9 +52,12 @@ input[type=range] { width: 100%; }
 .brand { display: flex; flex-direction: column; line-height: 1.1; min-width: 150px; }
 .brand-title { font-weight: 700; font-size: 15px; }
 .brand-sub { font-size: 11px; color: var(--ink-2); }
-.tabs { display: flex; flex-wrap: wrap; gap: 2px; flex: 1; }
+.tabs { display: flex; flex-wrap: wrap; gap: 2px 10px; flex: 1; align-items: flex-end; }
+.tab-group { display: flex; align-items: flex-end; gap: 2px; padding-right: 10px; border-right: 1px solid var(--line); }
+.tab-group:last-child { border-right: 0; }
+.tab-group-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); padding: 0 4px 8px 0; white-space: nowrap; }
 .tab {
-  font: inherit; font-size: 13px; padding: 6px 9px; border: 0; border-bottom: 2px solid transparent;
+  font: inherit; font-size: 12.5px; padding: 5px 7px; border: 0; border-bottom: 2px solid transparent;
   background: transparent; color: var(--ink-2); cursor: pointer; white-space: nowrap;
 }
 .tab:hover { color: var(--ink); }

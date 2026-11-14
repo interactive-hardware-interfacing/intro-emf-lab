@@ -1,4 +1,7 @@
-# Phase 6 notes (review fixes, About page, mu(B), four new tabs)
+# Changelog
+
+Notes per patch, oldest first, from the review of the first release onward. Earlier
+construction notes are in `phase-0-notes.md` … `phase-4-notes.md`.
 
 ## Review fixes (patch 6a)
 1. Layered dielectrics in `diskCapacitor` were one cell thin on the centre layer because
@@ -279,3 +282,11 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   same guard in `build()`.
 - Tests: `core/test/filters.js` (62 checks), bench app checks for state, cross-tab pulls,
   compute and CSV, smoke round trip. 471 checks, smoke on 19 tabs.
+
+## Tab bar grouped by topic; changelog (patch 7g)
+- The registry (`app/tabs/index.js`) is now a list of groups (Electrostatics, Currents &
+  circuits, Magnetostatics, Induction, Waves, Tools, with About alone at the front); each tab
+  carries its group label and the shell renders the bar as labelled clusters that wrap as
+  units. The bench checks every tab is in exactly one group. Tab ids and URLs are unchanged.
+- `docs/phase-6-notes.md` was the running log for everything after the first release; it is
+  now `docs/changelog.md`.

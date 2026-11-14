@@ -19,24 +19,15 @@ import transmissionLines from './transmission-lines.js';
 import fdtd from './fdtd.js';
 import eddy from './eddy.js';
 
-export const TABS = [
-  about,
-  pointCharges,
-  pointCharges3d,
-  makeRingLine('ring'),
-  makeRingLine('rods'),
-  capacitors,
-  dielectrics,
-  conduction,
-  magneticFields,
-  ampere,
-  solenoids,
-  inductors,
-  sandbox,
-  gaussLaw,
-  interfaceTab,
-  transmissionLines,
-  eddy,
-  filters,
-  fdtd,
+/** Topic groups, in tab-bar order. A tab belongs to exactly one group; the bench checks that. */
+export const GROUPS = [
+  { label: '', tabs: [about] },
+  { label: 'Electrostatics', tabs: [pointCharges, pointCharges3d, makeRingLine('ring'), makeRingLine('rods'), gaussLaw, interfaceTab, capacitors, dielectrics] },
+  { label: 'Currents & circuits', tabs: [conduction, filters] },
+  { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, inductors] },
+  { label: 'Induction', tabs: [eddy] },
+  { label: 'Waves', tabs: [transmissionLines, fdtd] },
+  { label: 'Tools', tabs: [sandbox] },
 ];
+
+export const TABS = GROUPS.flatMap((g) => g.tabs.map((tab) => { tab.group = g.label; return tab; }));

@@ -154,6 +154,9 @@ export async function run(check) {
     check('contracts: every tab has an equation set', missingEq, 0, 0);
     check('contracts: every scalar/vector layer maps to an equation', badLayerEq, 0, 0);
     check('contracts: tab ids are unique', dupIds, 0, 0);
+    const { GROUPS } = await import('../app/tabs/index.js');
+    check('contracts: every tab is in exactly one group', GROUPS.flatMap((g) => g.tabs).length === TABS.length && new Set(GROUPS.flatMap((g) => g.tabs)).size === TABS.length ? 1 : 0, 1, 0);
+    check('contracts: every tab carries its group label', TABS.every((x) => typeof x.group === 'string') ? 1 : 0, 1, 0);
     const html = readFileSync(join(ROOT, 'index.html'), 'utf8');
     const domIds = new Set([...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1]));
     const shell = readFileSync(join(ROOT, 'app', 'shell.js'), 'utf8');
