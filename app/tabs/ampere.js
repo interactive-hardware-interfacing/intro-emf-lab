@@ -236,7 +236,7 @@ export default {
   drawLoopPlot(ctx, W, H) {
     if (!this.segs) this.compute();
     const segs = this.segs, r = this.results;
-    const L = 84, T = 50, B = 52, Rm = 20;
+    const L = 92, T = 62, B = 52, Rm = 20;
     const total = r.length;
     const vals = segs.map((g) => g.Bt).filter(Number.isFinite);
     let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals); if (!(hi > lo)) { hi = lo + 1; }
@@ -244,10 +244,10 @@ export default {
     const px = (s) => L + (s / total) * (W - L - Rm), py = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
     ctx.font = '12px system-ui'; ctx.fillStyle = '#5a5955';
     ctx.strokeStyle = '#ccc'; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - Rm, H - B); ctx.stroke();
-    for (let k = 0; k <= 4; k++) { const v = lo + (k / 4) * (hi - lo); ctx.fillText(sci(v, 3), 4, py(v) + 4); ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(L, py(v)); ctx.lineTo(W - Rm, py(v)); ctx.stroke(); }
+    for (let k = 0; k <= 4; k++) { const v = lo + (k / 4) * (hi - lo); ctx.fillText(sci(v, 3), 24, py(v) + 4); ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(L, py(v)); ctx.lineTo(W - Rm, py(v)); ctx.stroke(); }
     for (let k = 0; k <= 5; k++) { const s = (k / 5) * total; ctx.fillText((s * 1e3).toFixed(1), px(s) - 10, H - B + 16); }
     ctx.fillText('distance along the loop s (mm), counter-clockwise from the start', W / 2 - 170, H - 8);
-    ctx.save(); ctx.translate(12, T + 0.5 * (H - T - B)); ctx.rotate(-PI / 2); ctx.textAlign = 'center'; ctx.fillText('B·t̂ (T)', 0, 0); ctx.restore(); ctx.textAlign = 'left';
+    ctx.save(); ctx.translate(10, T + 0.5 * (H - T - B)); ctx.rotate(-PI / 2); ctx.textAlign = 'center'; ctx.fillText('B·t̂ (T)', 0, 0); ctx.restore(); ctx.textAlign = 'left';
     ctx.strokeStyle = '#bbb'; ctx.beginPath(); ctx.moveTo(L, py(0)); ctx.lineTo(W - Rm, py(0)); ctx.stroke();
     // rectangle: side boundaries
     if (this.loop.shape === 'rect') { let s = 0; for (const [i, len] of [this.loop.w, this.loop.h, this.loop.w, this.loop.h].entries()) { const name = ['bottom', 'right', 'top', 'left'][i]; ctx.fillStyle = 'rgba(0,0,0,0.06)'; if (i % 2) ctx.fillRect(px(s), T, px(s + len) - px(s), H - T - B); ctx.fillStyle = '#5a5955'; ctx.fillText(name, px(s) + 4, T + 14); s += len; } }
@@ -259,8 +259,9 @@ export default {
     ctx.strokeStyle = '#1f5fbf'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath();
     pts.forEach(([x, v], i) => { const y = T + (1 - (0.5 + 0.45 * v / cm)) * (H - T - B); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke(); ctx.setLineDash([]);
     ctx.fillStyle = '#5a5955';
-    ctx.fillText(`bars: B·t̂ on each of ${segs.length} segments; their area is ∮B·dl = ${sci(r.circ, 4)} T·m, against μ₀I_enc = ${sci(r.expect, 4)} T·m`, L, 20);
-    ctx.fillText(`dashed: the running integral (own scale), ending at ${sci(acc, 4)} T·m · loop length ${(total * 1e3).toFixed(2)} mm · mean B·t̂ = ${sci(r.meanBt, 4)} T`, L, 36);
+    const wrap = (text, y0) => { const words = text.split(' '); let lineTxt = '', y = y0; for (const wd of words) { const trial = lineTxt ? `${lineTxt} ${wd}` : wd; if (ctx.measureText(trial).width > W - L - Rm && lineTxt) { ctx.fillText(lineTxt, L, y); y += 14; lineTxt = wd; } else lineTxt = trial; } if (lineTxt) ctx.fillText(lineTxt, L, y); return y + 14; };
+    const y1 = wrap(`bars: B·t̂ on each of ${segs.length} segments; their area is ∮B·dl = ${sci(r.circ, 4)} T·m, against μ₀I_enc = ${sci(r.expect, 4)} T·m`, 20);
+    wrap(`dashed: the running integral (own scale), ending at ${sci(acc, 4)} T·m · loop length ${(total * 1e3).toFixed(2)} mm · mean B·t̂ = ${sci(r.meanBt, 4)} T`, y1);
   },
 
   // ------------------------------------------------------------ shell hooks

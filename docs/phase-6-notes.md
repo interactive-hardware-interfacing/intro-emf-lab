@@ -241,3 +241,21 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   right-handed (X, Y, Z) = (−x, z, y), checked against a 4000-wire sum.
 - Tests: `core/test/ampere.js` (50 checks), bench app checks for state and CSV, smoke
   round trip. 361 checks, smoke on 17 tabs.
+
+## Solenoids tab (patch 7e)
+- New tab between Ampère's law and Inductors: a solenoid built from its turns, each the exact
+  circular-loop field by complete elliptic integrals (`core/solenoid.js`, em-core), shown in
+  the plane through the axis with the field lines as contours of ψ = ρA_φ (exact). Kinds: N
+  turns, the ideal current sheet (400 filaments carrying NI), a single loop, and a pair
+  (Helmholtz when d = a, anti-Helmholtz with the second reversed). Presets include the
+  Inductors default coil without its rod, so the two tabs share a reference (Nagaoka's L).
+- Readouts: B at the centre against μ₀nI and the (cos θ₁ + cos θ₂)/2 sheet formula, B at
+  the end (→ half), B halfway to the wall, the axis length within 1 % of the centre, Nagaoka
+  and long-solenoid L; for the loop the μ₀I/2a and dipole checks; for the pair the Helmholtz
+  flatness at z = a/10 or the gradient against 48μ₀I/(25√5a²). Plots along the axis
+  (turns, sheet formula, μ₀nI) and across the coil at the centre and at the end.
+- Compute cost: 161×121 grid with the x ≥ 0 half mirrored; 200 turns ~0.35 s, the 400-
+  filament sheet ~0.75 s.
+- Tests: `core/test/solenoid.js` (36 checks: loop field vs brute-force Biot–Savart to 1e-8
+  at four points, ψ derivatives, 400 turns vs the sheet formula to 2e-5, Helmholtz values to
+  1e-12 and 1e-5), bench app checks, smoke round trip. 402 checks, smoke on 18 tabs.

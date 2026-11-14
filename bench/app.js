@@ -412,6 +412,25 @@ export async function run(check) {
     check('ampere csv: dl column sums to the perimeter', rows.slice(1, 65).reduce((a, r) => a + parseFloat(r.split(',')[6]), 0), 0.14, 1e-9);
   }
 
+  // ------------------------------------------------------------ 5h. Solenoids tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const { turnsB } = await import('../core/solenoid.js');
+    const tab = TABS.find((t) => t.id === 'solenoids');
+    const stub = Object.create(tab);
+    stub.kind = 'pair'; stub.p = { N: 7, I: 2, L: 30, a: 25, d: 20, sign: -1 };
+    const st = stub.getState();
+    check('solenoids state: kind and every parameter', st.kind === 'pair' && st.s_N === 7 && st.s_d === 20 && st.s_sign === -1 ? 1 : 0, 1, 0);
+    stub.T = tab.turns.call(stub);
+    check('solenoids stub: pair has two loops, second reversed', stub.T.length === 2 && stub.T[1].I === -2 ? 1 : 0, 1, 0);
+    stub.kind = 'sheet'; stub.T = tab.turns.call(stub);
+    check('solenoids stub: ideal sheet carries N I over its filaments', stub.T.reduce((a, t) => a + t.I, 0), 14, 1e-12);
+    stub.kind = 'solenoid'; stub.T = tab.turns.call(stub);
+    const [bz, bx] = tab.B.call(stub, 0.004, -0.006), [br] = turnsB(stub.T, 0.006, 0.004);
+    check('solenoids B(z, x): transverse component is sign(x) B_rho', bx, -br, 1e-15);
+    check('solenoids B(z, x): axial component', bz, turnsB(stub.T, 0.006, 0.004)[1], 1e-15);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

@@ -109,6 +109,9 @@ control that changes the picture must be in `getState()`, so the share link repr
   turns), `loopSegments` for a circle or rectangle, `circulation` (midpoint ∮B·dl) and
   `enclosedCurrent` by geometry (point-in-loop for turns, strip length for the sheet, a radial
   integral of J r θ_in(r) for round conductors so a loop around a whole conductor reads exactly).
+- `core/solenoid.js`: `loopB` and `loopAphi` (the exact circular-loop field and vector potential by
+  complete elliptic integrals), `solenoidTurns` / `pairTurns`, `turnsB` / `turnsPsi` (ψ = ρA_φ, whose
+  contours are the field lines), `sheetAxisBz` (the (cos θ₁ + cos θ₂) formula), `nagaokaL`, `axisProfile`.
 - `AxisymMag`: magnetostatics for ψ = rA_φ with coefficient 1/(μ r) on faces, `B()`,
   flux-linkage and energy inductance, and an optional saturating μ(B) updated between sweeps
   from the H side. Builder: `solenoidWithObject`.

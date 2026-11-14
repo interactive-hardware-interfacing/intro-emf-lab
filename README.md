@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, sixteen tabs organized by physics process, plus an About page that explains each tab
+page, seventeen tabs organized by physics process, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -23,6 +23,7 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Transmission lines | C′, L′, Z₀, v of coax, twin-lead, parallel plates, with a numeric check | Closed form + Gauss–Seidel |
 | Magnetic fields | Line currents and a sheet current; a Randomize puzzle mode | Biot–Savart closed forms |
 | Ampère's law | A draggable Amperian loop with B·t̂ painted segment by segment and summed against μ₀ I_enc; wires, thick wire, coax, sheet, solenoid and toroid cross-sections | Closed forms + midpoint sum |
+| Solenoids | A solenoid built from its turns: B along the axis vs μ₀nI and the finite-sheet formula, the ends, discrete turns vs the ideal sheet, a single loop, Helmholtz and anti-Helmholtz pairs; exact field lines | Biot–Savart loop field (elliptic integrals) |
 | Inductors | Solenoid or ring sensor with a permeable object; optional saturating core μ(B); L from flux linkage and energy | Gauss–Seidel for ψ = rA_φ |
 | Sandbox | Paint conductors, dielectrics and charge; watch the neighbour average converge; Gauss paths | Gauss–Seidel (Laplace / Poisson) |
 | Eddy currents | A conductor in an AC coil: skin depth, induced currents, field phase, coil R + jωL vs frequency, animated cycle | Complex Gauss–Seidel for ψ = rA_φ (quasi-static) |
@@ -57,10 +58,11 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   relax2d.js            plain neighbour-averaging Laplace/Poisson solver + Lab 2 presets
   dielectrics.js        parallel plates with up to four dielectric regions on Relax2D; plate/bound charges, region table, slab force
   ampere.js             closed-form current distributions, the Amperian loop, ∮B·dl by midpoint sum, I_enc by geometry
+  solenoid.js           exact loop field and A_phi (elliptic integrals), solenoid as N turns, finite-sheet axis formula, Helmholtz pair, Nagaoka L
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files
@@ -96,7 +98,8 @@ with known answers (including the exact layered capacitor, the saturating rod, N
 resolutions, the thick-winding filament sum, FDTD reflection coefficients and wall
 absorption, the eddy-current Bessel solution, the two-dielectric series and parallel shares and
 the slab-force slope, every Ampère source against its textbook field and ∮B·dl against μ₀I_enc
-for loops off the symmetry), discrete identities, the worker protocol, URL
+for loops off the symmetry, the loop field against brute-force Biot–Savart and the solenoid
+against the finite-sheet formula), discrete identities, the worker protocol, URL
 state, the Sandbox geometry encoding, mirroring, CSV alignment, tab/equation/DOM contracts,
 a KaTeX render of every equation, a parse of every module, and golden files:
 `bench/golden.json` freezes the numbers quoted in the handouts to 0.5%. If a solver change

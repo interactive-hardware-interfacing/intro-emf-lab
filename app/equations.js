@@ -104,6 +104,22 @@ export const EQUATIONS = {
     solver: { tex: String.raw`I_{enc} = \sum_{\text{wires inside}} I_k + \int_{\text{inside}} J_z\, dA`, note: 'Closed-form fields; the enclosed current is found from the geometry, not from the field.' },
   },
 
+  solenoids: {
+    governing: [
+      { title: 'Biot–Savart', tex: String.raw`\mathbf{B}(\mathbf{r}) = \frac{\mu_0 I}{4\pi}\oint \frac{d\mathbf{l}' \times (\mathbf{r}-\mathbf{r}')}{|\mathbf{r}-\mathbf{r}'|^3}` },
+      { title: 'One loop, on the axis', tex: String.raw`B_z = \frac{\mu_0 I a^2}{2(a^2+z^2)^{3/2}}` },
+      { title: 'Finite current sheet, on the axis', tex: String.raw`B_z = \frac{\mu_0 n I}{2}(\cos\theta_1 + \cos\theta_2)` },
+      { title: 'Long solenoid', tex: String.raw`B = \mu_0 n I = \mu_0 \frac{N}{L} I` },
+      { title: 'Helmholtz pair (d = a)', tex: String.raw`B_0 = \left(\tfrac{4}{5}\right)^{3/2}\frac{\mu_0 I}{a}, \qquad \frac{d^2B_z}{dz^2}\Big|_0 = 0` },
+      { title: 'Gauss for B', tex: MAXWELL.gaussB, zero: true },
+    ],
+    layers: {
+      B: { tex: String.raw`\mathbf{B} = \sum_{\text{turns}} \mathbf{B}_{loop}(\rho, z)`, note: 'Each turn is the exact loop field (complete elliptic integrals K, E).' },
+      psi: { tex: String.raw`\psi = \rho A_\phi, \qquad B_\rho = -\frac{1}{\rho}\frac{\partial\psi}{\partial z},\quad B_z = \frac{1}{\rho}\frac{\partial\psi}{\partial\rho}`, note: 'ψ is constant along field lines, so its contours are the lines exactly.' },
+    },
+    solver: { tex: String.raw`B_z^{loop} = \frac{\mu_0 I}{2\pi\sqrt{(a+\rho)^2+z^2}}\left[K(k) + \frac{a^2-\rho^2-z^2}{(a-\rho)^2+z^2}E(k)\right], \quad k^2 = \frac{4a\rho}{(a+\rho)^2+z^2}`, note: 'Closed form; nothing is relaxed. Summed over N turns, or 400 filaments for the ideal sheet.' },
+  },
+
   conduction: {
     governing: [
       { title: 'Steady current: charge conservation', tex: String.raw`\nabla \cdot \mathbf{J} = 0 \;\Rightarrow\; \nabla \cdot (\sigma \nabla V) = 0` },
