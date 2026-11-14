@@ -542,6 +542,22 @@ export async function run(check) {
     check('operators probe: closed-form curl at the probe is 0 off the origin', stub.probeRes.curl, 0, 0);
   }
 
+  // ------------------------------------------------------------ 5o. Coupled coils tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'coupled-coils');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults, open: false, R: 22, d: 25 }; stub.resultsEl = null; stub.shell = { setExtent() {} };
+    const st = stub.getState();
+    check('coupled-coils state: open flag as 0/1 and all parameters', st.cc_open === 0 && st.cc_R === 22 && Object.keys(st).length === Object.keys(tab.pDefaults).length ? 1 : 0, 1, 0);
+    tab.build.call(stub); tab.finish.call(stub);
+    check('coupled-coils finish: k between 0 and 1', stub.results.k > 0 && stub.results.k < 1 ? 1 : 0, 1, 0);
+    check('coupled-coils finish: loaded power balance', stub.results.loaded.Pin, stub.results.loaded.Pload, 1e-9);
+    const rows = tab.csv.call(stub).split('\n');
+    check('coupled-coils csv: 101 offsets + header', rows.length, 102, 0);
+    check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

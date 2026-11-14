@@ -12,6 +12,7 @@ import { lorentzChecks } from './lorentz.js';
 import { tlineChecks } from './tline.js';
 import { planeWaveChecks } from './planewave.js';
 import { operatorChecks } from './operators.js';
+import { coupledChecks } from './coupled.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -26,4 +27,5 @@ mark('lorentz'); lorentzChecks(check);
 mark('tline-waves'); tlineChecks(check);
 mark('planewave'); planeWaveChecks(check);
 mark('operators'); operatorChecks(check);
+mark('coupled'); coupledChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }

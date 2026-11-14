@@ -131,6 +131,10 @@ control that changes the picture must be in `getState()`, so the share link repr
   `poynting`, `polarization` (type, IEEE handedness, axial ratio, tilt) and `polarizationTrace`.
 - `core/operators.js`: `FIELDS` (F, div, curl in closed form), `boxFlux`, `loopCirculation`, `numericDivCurl`.
   The Div and curl tab recomputes the box and loop at every probe move (`probe()` calls `updateProbe`).
+- `core/coupled.js`: `coilTurns`, `mutualInductance` (filament sum), `selfInductance` (Nagaoka, or the ring
+  formula for one turn), `coupling`, `transformer` (phasor solution with an open or resistive secondary),
+  `fluxFraction`. The Coupled coils tab draws coil 1's field with `core/solenoid.js` and marks the ψ contour
+  through coil 2's winding.
 - `AxisymMag`: magnetostatics for ψ = rA_φ with coefficient 1/(μ r) on faces, `B()`,
   flux-linkage and energy inductance, and an optional saturating μ(B) updated between sweeps
   from the H side. Builder: `solenoidWithObject`.

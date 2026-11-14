@@ -19,6 +19,7 @@ import chargesInFields from './charges-in-fields.js';
 import tlineWaves from './tline-waves.js';
 import planeWaves from './plane-waves.js';
 import operators from './operators.js';
+import coupledCoils from './coupled-coils.js';
 import interfaceTab from './interface.js';
 import transmissionLines from './transmission-lines.js';
 import fdtd from './fdtd.js';
@@ -30,7 +31,7 @@ export const GROUPS = [
   { label: 'Electrostatics', tabs: [pointCharges, pointCharges3d, makeRingLine('ring'), makeRingLine('rods'), gaussLaw, interfaceTab, capacitors, dielectrics] },
   { label: 'Currents & circuits', tabs: [conduction, filters] },
   { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, chargesInFields, inductors] },
-  { label: 'Induction', tabs: [faraday, eddy] },
+  { label: 'Induction', tabs: [faraday, coupledCoils, eddy] },
   { label: 'Waves', tabs: [transmissionLines, tlineWaves, planeWaves, fdtd] },
   { label: 'Tools', tabs: [operators, sandbox] },
 ];

@@ -351,3 +351,13 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   the fields are singular there.
 - Tests: `core/test/operators.js` (33 checks), bench app checks, smoke round trip. 689
   checks, smoke on 24 tabs.
+
+## Coupled coils tab (patch 7m)
+- New tab in the Induction group between Faraday's law and Eddy currents: two coaxial
+  air-core coils with M from the filament sum over turn pairs, L₁ and L₂ from Nagaoka (ring
+  formula for a single turn), k, the field of coil 1 with the ψ contour through coil 2's
+  winding marked in red (the shared flux), k against offset, and the transformer in phasors
+  with an open or loaded secondary (reflected impedance, power balance). A preset pairs the
+  Inductors coil with its ring sensor. `core/coupled.js` (em-core).
+- Tests: `core/test/coupled.js` (21 checks), bench app checks, smoke round trip. 715
+  checks, smoke on 25 tabs.

@@ -200,6 +200,22 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed forms for } \mathbf{F}, \nabla\cdot\mathbf{F}, \nabla\times\mathbf{F}`, note: 'Nothing is solved; the point is the definitions.' },
   },
 
+  'coupled-coils': {
+    governing: [
+      { title: 'Mutual inductance', tex: String.raw`M = \frac{N_2\Phi_{21}}{I_1} = \frac{N_1\Phi_{12}}{I_2}, \qquad k = \frac{M}{\sqrt{L_1 L_2}} \le 1` },
+      { title: 'Coupled coils', tex: String.raw`v_1 = L_1\frac{di_1}{dt} + M\frac{di_2}{dt}, \qquad v_2 = M\frac{di_1}{dt} + L_2\frac{di_2}{dt}` },
+      { title: 'Open secondary', tex: String.raw`\frac{v_2}{v_1} = \frac{M}{L_1} = k\sqrt{\frac{L_2}{L_1}} \to \frac{N_2}{N_1}\ (k \to 1)` },
+      { title: 'Loaded secondary', tex: String.raw`Z_{in} = j\omega L_1 + \frac{\omega^2 M^2}{R + j\omega L_2}` },
+      { title: 'Maxwell filaments', tex: String.raw`M_{12} = \mu_0\sqrt{ab}\left[\left(\tfrac{2}{\kappa} - \kappa\right)K(\kappa) - \tfrac{2}{\kappa}E(\kappa)\right], \quad \kappa^2 = \frac{4ab}{(a+b)^2 + d^2}` },
+    ],
+    layers: {
+      B: { tex: String.raw`\mathbf{B}_1 \text{ per ampere in coil 1}` },
+      psi: { tex: String.raw`\psi = \rho A_\phi`, note: 'Contours are the field lines of coil 1.' },
+      M: { tex: String.raw`\psi = \psi(a_2, z_2)`, note: 'The line through coil 2\'s winding: the flux inside it is what links coil 2.' },
+    },
+    solver: { tex: String.raw`M = \sum_{i\in 1}\sum_{j\in 2} M_{ij}`, note: 'Filament sum over turn pairs; L by Nagaoka. Closed form.' },
+  },
+
   conduction: {
     governing: [
       { title: 'Steady current: charge conservation', tex: String.raw`\nabla \cdot \mathbf{J} = 0 \;\Rightarrow\; \nabla \cdot (\sigma \nabla V) = 0` },
