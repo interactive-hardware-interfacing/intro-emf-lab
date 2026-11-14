@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, seventeen tabs organized by physics process, plus an About page that explains each tab
+page, eighteen tabs organized by physics process, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -27,6 +27,7 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Inductors | Solenoid or ring sensor with a permeable object; optional saturating core μ(B); L from flux linkage and energy | Gauss–Seidel for ψ = rA_φ |
 | Sandbox | Paint conductors, dielectrics and charge; watch the neighbour average converge; Gauss paths | Gauss–Seidel (Laplace / Poisson) |
 | Eddy currents | A conductor in an AC coil: skin depth, induced currents, field phase, coil R + jωL vs frequency, animated cycle | Complex Gauss–Seidel for ψ = rA_φ (quasi-static) |
+| Filters | RC and series-RLC filters as impedance dividers: Bode plots, waveforms and energy exchange at a drive frequency, step response, the real capacitor (ESR, ESL, f_SR); C and L pulled from the field tabs; Q·V_in against breakdown | Closed form (handout §6) |
 | Time-varying | 2-D FDTD with ∂D/∂t on: pulse, slab, slit, lens, waveguide; paint; Ez(t) at the probe; PML or Mur walls | Yee FDTD (TMz) |
 | About | Per-tab descriptions, how the numbers are computed, every equation | — |
 
@@ -59,10 +60,11 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   dielectrics.js        parallel plates with up to four dielectric regions on Relax2D; plate/bound charges, region table, slab force
   ampere.js             closed-form current distributions, the Amperian loop, ∮B·dl by midpoint sum, I_enc by geometry
   solenoid.js           exact loop field and A_phi (elliptic integrals), solenoid as N turns, finite-sheet axis formula, Helmholtz pair, Nagaoka L
+  filters.js            RC / series-RLC transfer functions, resonance numbers, steady state with energies, step response, real-capacitor impedance
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files
@@ -99,7 +101,7 @@ resolutions, the thick-winding filament sum, FDTD reflection coefficients and wa
 absorption, the eddy-current Bessel solution, the two-dielectric series and parallel shares and
 the slab-force slope, every Ampère source against its textbook field and ∮B·dl against μ₀I_enc
 for loops off the symmetry, the loop field against brute-force Biot–Savart and the solenoid
-against the finite-sheet formula), discrete identities, the worker protocol, URL
+against the finite-sheet formula, the filter numbers of handout Examples 6.1–6.3), discrete identities, the worker protocol, URL
 state, the Sandbox geometry encoding, mirroring, CSV alignment, tab/equation/DOM contracts,
 a KaTeX render of every equation, a parse of every module, and golden files:
 `bench/golden.json` freezes the numbers quoted in the handouts to 0.5%. If a solver change

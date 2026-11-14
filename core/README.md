@@ -15,6 +15,7 @@ build step. The solvers never touch the DOM, so everything runs under node as we
 | `dielectrics.js` | Parallel plates with up to four dielectric regions on `Relax2D`: builder with grid-snapped fractions, plate and bound charges face by face, per-region table, series/parallel/Wiener references, slab force |
 | `ampere.js` | Ampère's law: closed-form current distributions (wires, thick wire, coax, sheet, solenoid and toroid cross-sections), Amperian loop segments, ∮B·dl by midpoint sum, enclosed current by geometry |
 | `solenoid.js` | Exact circular-loop field and A_φ (elliptic integrals), a solenoid as N turns or an ideal sheet, the finite-sheet axis formula, Helmholtz pairs, Nagaoka's L, the axis profile |
+| `filters.js` | RC and series-RLC filters: transfer functions, resonance numbers, steady state with element energies, step response in closed form, real-capacitor impedance |
 | `eddy.js` | `AxisymEddy`: frequency-domain eddy currents (complex ψ), skin depth, J_eddy, power, coil impedance; the long-cylinder Bessel reference |
 | `fdtd2d.js` | `FDTD2D`: 2-D TMz Yee FDTD with per-cell ε_r/σ/PEC, point and line sources, CPML or Mur open walls |
 | `render.js` | Canvas drawing: colour maps, scalar fields, quiver, streamlines, marching-squares contours, colour bar, `Viewport` |
@@ -53,7 +54,8 @@ gap taking 20.8 % of V, dC/dx against the slab-force formula, and the Wiener bou
 interface; `test/ampere.js` checks every current distribution against its textbook field and
 ∮B·dl against μ₀ I_enc for loops on and off the symmetry, including the enclosed-current geometry;
 `test/solenoid.js` checks the loop field against brute-force Biot–Savart, ψ as a stream function, the
-turn sum against the finite-sheet formula, and the Helmholtz values.
+turn sum against the finite-sheet formula, and the Helmholtz values; `test/filters.js` checks the
+handout's Examples 6.1–6.3, the sum rule H_LP + H_BP + H_HP = 1, and the step-response identities.
 
 ## In intro-EMF-lab
 

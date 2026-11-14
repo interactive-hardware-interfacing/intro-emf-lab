@@ -75,6 +75,7 @@ export default {
 
   build() {
     this.T = this.turns();
+    this.results = null;
     const { L, a } = this.dims();
     const span = Math.max(L / 2, a) * 1.6 + 0.004;
     this.extent = [-span, span, -0.72 * span, 0.72 * span];

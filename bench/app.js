@@ -431,6 +431,26 @@ export async function run(check) {
     check('solenoids B(z, x): axial component', bz, turnsB(stub.T, 0.006, 0.004)[1], 1e-15);
   }
 
+  // ------------------------------------------------------------ 5i. Filters tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'filters');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults, circuit: 'rc', output: 'R', C: 0.0885, R: 1000, f: 1.8e6 }; stub.src = { C: 'x', L: '' }; stub.resultsEl = null;
+    const st = stub.getState();
+    check('filters state: circuit, output and numbers', st.f_circuit === 'rc' && st.f_output === 'R' && st.f_C === 0.0885 && st.f_csrc === 'x' ? 1 : 0, 1, 0);
+    // cross-tab pulls read the other tabs' last results through the shell
+    stub.shell = { tabs: [{ id: 'dielectrics', title: 'Dielectrics', results: { C: 1.3e-11 }, p: { d: 5, depth: 100 } }, { id: 'inductors', title: 'Inductors', results: null }, { id: 'solenoids', title: 'Solenoids', results: { Lnag: 2.04e-4 } }] };
+    check('filters fromTab: C from Dielectrics with its gap', (() => { const v = tab.fromTab.call(stub, 'dielectrics'); return v.C === 1.3e-11 && v.gap === 5 ? 1 : 0; })(), 1, 0);
+    check('filters fromTab: an unsolved tab gives a reason, not a value', tab.fromTab.call(stub, 'inductors').err ? 1 : 0, 1, 0);
+    check('filters fromTab: L from Solenoids (Nagaoka)', tab.fromTab.call(stub, 'solenoids').L, 2.04e-4, 0);
+    tab.compute.call(stub);
+    check('filters stub compute: RC high-pass at f_c is −3.01 dB', stub.results.db, -20 * Math.log10(Math.SQRT2), 2e-3);
+    const rows = tab.csv.call(stub).split('\n');
+    check('filters csv: 300 frequency rows + header', rows.length, 301, 0);
+    check('filters csv: gain column is finite', rows.slice(1).every((r) => Number.isFinite(parseFloat(r.split(',')[1]))) ? 1 : 0, 1, 0);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

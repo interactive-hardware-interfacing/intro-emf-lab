@@ -120,6 +120,19 @@ export const EQUATIONS = {
     solver: { tex: String.raw`B_z^{loop} = \frac{\mu_0 I}{2\pi\sqrt{(a+\rho)^2+z^2}}\left[K(k) + \frac{a^2-\rho^2-z^2}{(a-\rho)^2+z^2}E(k)\right], \quad k^2 = \frac{4a\rho}{(a+\rho)^2+z^2}`, note: 'Closed form; nothing is relaxed. Summed over N turns, or 400 filaments for the ideal sheet.' },
   },
 
+  filters: {
+    governing: [
+      { title: 'The two elements', tex: String.raw`i = C\frac{dv}{dt}, \qquad v = L\frac{di}{dt}` },
+      { title: 'Impedances', tex: String.raw`Z_R = R, \qquad Z_L = j\omega L, \qquad Z_C = \frac{1}{j\omega C}` },
+      { title: 'First-order RC', tex: String.raw`H_{LP} = \frac{1}{1 + j\omega RC}, \qquad H_{HP} = \frac{j\omega RC}{1 + j\omega RC}, \qquad \omega_c = \frac{1}{RC}` },
+      { title: 'Series RLC', tex: String.raw`\omega_0 = \frac{1}{\sqrt{LC}}, \qquad Q = \frac{\omega_0 L}{R} = \frac{1}{R}\sqrt{\frac{L}{C}}, \qquad B = \frac{\omega_0}{Q}` },
+      { title: 'Four filters from one circuit', tex: String.raw`D(s) = s^2 + \frac{\omega_0}{Q}s + \omega_0^2: \quad H_{LP} = \frac{\omega_0^2}{D}, \; H_{BP} = \frac{(\omega_0/Q)s}{D}, \; H_{HP} = \frac{s^2}{D}, \; H_{BS} = \frac{s^2+\omega_0^2}{D}` },
+      { title: 'Resonant magnification and the real part', tex: String.raw`|V_C| = Q|V_{in}|, \qquad f_{SR} = \frac{1}{2\pi\sqrt{ESL\cdot C}}` },
+    ],
+    layers: {},
+    solver: { tex: String.raw`H(j\omega) = \frac{Z_{out}}{Z_R + Z_L + Z_C}`, note: 'Closed form: a voltage divider of impedances. The step response is the textbook second-order solution for each damping case.' },
+  },
+
   conduction: {
     governing: [
       { title: 'Steady current: charge conservation', tex: String.raw`\nabla \cdot \mathbf{J} = 0 \;\Rightarrow\; \nabla \cdot (\sigma \nabla V) = 0` },

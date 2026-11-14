@@ -112,6 +112,10 @@ control that changes the picture must be in `getState()`, so the share link repr
 - `core/solenoid.js`: `loopB` and `loopAphi` (the exact circular-loop field and vector potential by
   complete elliptic integrals), `solenoidTurns` / `pairTurns`, `turnsB` / `turnsPsi` (ψ = ρA_φ, whose
   contours are the field lines), `sheetAxisBz` (the (cos θ₁ + cos θ₂) formula), `nagaokaL`, `axisProfile`.
+- `core/filters.js`: RC and series-RLC circuits as impedance dividers: `transfer`, `characteristics`
+  (τ, f_c; ω₀, Q, B, f₁, f₂, ζ), `steadyState` (phasors, waveforms, ½Cv² and ½Li²), `stepResponse`
+  (closed form for all three damping cases), `realCapacitorZ` / `selfResonance`. The Filters tab is
+  field-less (`hideField`, no layers) and reads C and L from the other tabs' last results via `shell.tabs`.
 - `AxisymMag`: magnetostatics for ψ = rA_φ with coefficient 1/(μ r) on faces, `B()`,
   flux-linkage and energy inductance, and an optional saturating μ(B) updated between sweeps
   from the H side. Builder: `solenoidWithObject`.

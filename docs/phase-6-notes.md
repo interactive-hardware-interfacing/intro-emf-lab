@@ -259,3 +259,23 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
 - Tests: `core/test/solenoid.js` (36 checks: loop field vs brute-force Biot–Savart to 1e-8
   at four points, ψ derivatives, 400 turns vs the sheet formula to 2e-5, Helmholtz values to
   1e-12 and 1e-5), bench app checks, smoke round trip. 402 checks, smoke on 18 tabs.
+
+## Filters tab (patch 7f)
+- New field-less tab before Time-varying (handout §6): RC or series RLC with the output across
+  one element, as an impedance divider. Views: Bode magnitude and phase (f_c / f₀, f₁, f₂,
+  −3 dB, drive marked), waveforms at the drive frequency with ½Cv_C² and ½Li² exchanging,
+  step response (closed form for all three damping cases, with ringing frequency, overshoot
+  and decay), and the real capacitor's |Z| (ESR, ESL, f_SR). Presets reproduce Examples
+  6.1–6.3 to the printed digits; the About entry lists them.
+- Cross-tab components: "C from Capacitors / Dielectrics" and "L from Inductors /
+  Solenoids" read the other tab's last `results` through `shell.tabs` (the tab objects
+  persist for the session), and the pulled gap sets V_max = E_bd·d for the breakdown row,
+  which compares Q·V_in at resonance against it. An unsolved tab gives a reason, not a value.
+- `core/filters.js` (em-core): `transfer`, `characteristics`, `steadyState`, `stepResponse`,
+  `realCapacitorZ`, `selfResonance`, `rlcLimits`.
+- Found while wiring: a field-less tab re-initialised on a second visit kept its previous
+  `results` while its parameters were re-read from the (now default) URL, and the panel
+  tried to render RLC rows from RC results. `init()` now clears `results`; Solenoids got the
+  same guard in `build()`.
+- Tests: `core/test/filters.js` (62 checks), bench app checks for state, cross-tab pulls,
+  compute and CSV, smoke round trip. 471 checks, smoke on 19 tabs.

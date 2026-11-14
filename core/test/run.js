@@ -6,6 +6,7 @@ import { eddyChecks } from './eddy.js';
 import { dielectricsChecks } from './dielectrics.js';
 import { ampereChecks } from './ampere.js';
 import { solenoidChecks } from './solenoid.js';
+import { filterChecks } from './filters.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -14,4 +15,5 @@ mark('eddy'); eddyChecks(check);
 mark('dielectrics'); dielectricsChecks(check);
 mark('ampere'); ampereChecks(check);
 mark('solenoid'); solenoidChecks(check);
+mark('filters'); filterChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }
