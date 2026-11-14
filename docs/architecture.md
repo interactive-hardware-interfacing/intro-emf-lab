@@ -123,6 +123,9 @@ control that changes the picture must be in `getState()`, so the share link repr
   reported v and KE sit at the same time as x), `cyclotron`, `exbDrift`, `selectorSpeed`, `spectrometerRadius`,
   `hall`, `wireForcePerLength`, `loopTorque`. The Charges in fields tab adds a plate with a slit at x = 0 in
   two-region mode and stops a particle at the plate or, coming back from region 2, at the detector.
+- `core/tline.js`: `gamma`, `vswr`, `zin`, `steadyState` (V+, Γ_L, Z_in, V(d), I(d), powers), `instantaneous`
+  (forward / reflected / total at d, t), `extrema`, and the step transient (`stepSetup`, `bounces`, `stepV`, `stepI`).
+  The Line waves tab imports `lineParams` from the Transmission lines tab to pull Z₀ and v.
 - `AxisymMag`: magnetostatics for ψ = rA_φ with coefficient 1/(μ r) on faces, `B()`,
   flux-linkage and energy inductance, and an optional saturating μ(B) updated between sweeps
   from the H side. Builder: `solenoidWithObject`.

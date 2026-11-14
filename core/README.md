@@ -18,6 +18,7 @@ build step. The solvers never touch the DOM, so everything runs under node as we
 | `filters.js` | RC and series-RLC filters: transfer functions, resonance numbers, steady state with element energies, step response in closed form, real-capacitor impedance |
 | `faraday.js` | Faraday's law settings as functions of time: sliding bar (driven or coasting), loop through a field region, loop in B(t), rotating-loop generator; Φ, ε, I, force/torque, powers |
 | `lorentz.js` | Boris pusher and tracer for charged particles in E and B; cyclotron, E×B drift, velocity selector, spectrometer radius, Hall effect, force between wires, loop torque |
+| `tline.js` | Waves on a lossless transmission line: Γ, VSWR, Z_in(d), the sinusoidal steady state with envelopes and instantaneous forward/reflected parts, the step bounce diagram and V(z, t) |
 | `eddy.js` | `AxisymEddy`: frequency-domain eddy currents (complex ψ), skin depth, J_eddy, power, coil impedance; the long-cylinder Bessel reference |
 | `fdtd2d.js` | `FDTD2D`: 2-D TMz Yee FDTD with per-cell ε_r/σ/PEC, point and line sources, CPML or Mur open walls |
 | `render.js` | Canvas drawing: colour maps, scalar fields, quiver, streamlines, marching-squares contours, colour bar, `Viewport` |
@@ -60,7 +61,9 @@ turn sum against the finite-sheet formula, and the Helmholtz values; `test/filte
 handout's Examples 6.1–6.3, the sum rule H_LP + H_BP + H_HP = 1, and the step-response identities;
 `test/faraday.js` checks ε against a numerical −dΦ/dt in every setting, Lenz, the power balance and the
 exponential braking of the coasting bar; `test/lorentz.js` checks the Boris pusher against cyclotron motion
-(closure, exact energy), the cycloid's E×B mean velocity, the parabola, the selector and the closed forms.
+(closure, exact energy), the cycloid's E×B mean velocity, the parabola, the selector and the closed forms;
+`test/tline.js` checks Γ, VSWR and Z_in for the textbook loads, the envelopes, the quarter-wave transformer,
+power bookkeeping and the bounce-diagram sums.
 
 ## In intro-EMF-lab
 

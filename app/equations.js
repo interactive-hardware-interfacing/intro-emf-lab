@@ -159,6 +159,18 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\mathbf{v}^{-} = \mathbf{v} + \tfrac{q\Delta t}{2m}\mathbf{E},\quad \mathbf{v}^{+} = \text{rotate}(\mathbf{v}^{-}, \mathbf{B}),\quad \mathbf{v}' = \mathbf{v}^{+} + \tfrac{q\Delta t}{2m}\mathbf{E}`, note: 'The Boris pusher: half an electric kick, an exact rotation by B, half a kick. Energy is conserved exactly in a pure magnetic field; 400 steps per cyclotron period.' },
   },
 
+  'tline-waves': {
+    governing: [
+      { title: 'Waves on the line', tex: String.raw`V(d) = V^{+}\left(e^{j\beta d} + \Gamma_L e^{-j\beta d}\right), \qquad I(d) = \frac{V^{+}}{Z_0}\left(e^{j\beta d} - \Gamma_L e^{-j\beta d}\right)` },
+      { title: 'Reflection and standing-wave ratio', tex: String.raw`\Gamma_L = \frac{Z_L - Z_0}{Z_L + Z_0}, \qquad \text{VSWR} = \frac{1+|\Gamma_L|}{1-|\Gamma_L|} = \frac{V_{max}}{V_{min}}` },
+      { title: 'Input impedance', tex: String.raw`Z_{in}(d) = Z_0\,\frac{Z_L + jZ_0\tan\beta d}{Z_0 + jZ_L\tan\beta d}, \qquad Z_{in}(\lambda/4) = \frac{Z_0^2}{Z_L}` },
+      { title: 'Power', tex: String.raw`P_{L} = \frac{|V^{+}|^2}{2Z_0}\left(1 - |\Gamma_L|^2\right)` },
+      { title: 'Step transient', tex: String.raw`V_1^{+} = \frac{V_s Z_0}{R_s + Z_0}, \qquad \Gamma_s = \frac{R_s - Z_0}{R_s + Z_0}, \qquad T = \frac{l}{v}` },
+    ],
+    layers: {},
+    solver: { tex: String.raw`\beta = \frac{\omega}{v}, \qquad \lambda = \frac{v}{f}`, note: 'Lossless line, closed form. The transient sums the step waves of the bounce diagram.' },
+  },
+
   conduction: {
     governing: [
       { title: 'Steady current: charge conservation', tex: String.raw`\nabla \cdot \mathbf{J} = 0 \;\Rightarrow\; \nabla \cdot (\sigma \nabla V) = 0` },

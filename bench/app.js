@@ -491,6 +491,24 @@ export async function run(check) {
     check('charges hall stub: copper default gives −73 nV at 1 A, 1 T, 1 mm', stub.res.VH, -7.343e-8, 1e-3);
   }
 
+  // ------------------------------------------------------------ 5l. Line waves tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'tline-waves');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults, load: 'RL', RL: 25, Lload: 4, len: 0.25 }; stub.t = 0; stub.speed = 0.05; stub.src = ''; stub.resultsEl = null;
+    const st = stub.getState();
+    check('tline-waves state: every parameter under tw_', Object.keys(st).filter((k) => k.startsWith('tw_')).length, Object.keys(tab.pDefaults).length, 0);
+    const L = tab.line.call(stub);
+    check('tline-waves line(): λ = v/f and l = len λ', L.l, 0.25 * (0.667 * 299792458 / 1e9), 1e-9);
+    tab.compute.call(stub);
+    check('tline-waves compute: Z_L is 25 + jωL', stub.res.ZL[1], 2 * Math.PI * 1e9 * 4e-9, 1e-12);
+    const rows = tab.csv.call(stub).split('\n');
+    check('tline-waves csv: 401 rows + header', rows.length, 402, 0);
+    stub.shell = { tabs: [{ id: 'transmission-lines' }] };
+    check('tline-waves fromTlTab: unvisited tab gives a reason', tab.fromTlTab.call(stub).err ? 1 : 0, 1, 0);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

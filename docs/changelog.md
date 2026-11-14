@@ -316,3 +316,16 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   energy in a pure B is conserved to 1e-15 and the orbit closes to 1e-4 of r.
 - Tests: `core/test/lorentz.js` (28 checks), bench app checks (state, traces, detector,
   m/q, CSV, Hall), smoke round trip. 551 checks, smoke on 21 tabs.
+
+## Line waves tab (patch 7j)
+- New field-less tab in the Waves group, after Transmission lines: the sinusoidal steady
+  state on a terminated lossless line (Γ_L, VSWR, return loss, the V and I envelopes with
+  the forward, reflected and total waves animated, Z_in along the line with λ/4 and λ/2
+  marked) and the step transient (bounce diagram with every wave labelled and the running
+  voltage at each end; V(z, t) snapshots; V at the load and generator against time; a pulse
+  option). Loads: R, matched, open, short, R + jωL, R + 1/jωC; the transient uses the
+  resistive part. "Z₀, v from the Transmission lines tab" pulls that tab's cross-section.
+- `core/tline.js` (em-core). Tests: `core/test/tline.js` (52 checks: textbook loads,
+  envelopes against |V⁺|(1 ± |Γ|), quarter- and half-wave transformers, power bookkeeping,
+  the bounce sums against hand values), bench app checks, smoke round trip. 608 checks,
+  smoke on 22 tabs.
