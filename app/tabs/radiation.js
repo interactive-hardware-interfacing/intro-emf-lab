@@ -20,7 +20,7 @@ export default {
   phase: 7,
   available: true,
   summary: 'The Hertzian dipole: exact fields animated with the detaching field lines, near vs far field along a radius, the sin²θ pattern, radiation resistance and power.',
-  extent: [-1.5, 1.5, -1.5, 1.5],
+  extent: [-2, 2, -1.5, 1.5],
   axes: ['x', 'z'],
   layers: [
     { id: 'Emag', label: '|E| (snapshot)', kind: 'scalar', unit: 'V/m', log: true, default: true, eq: 'E' },
@@ -49,7 +49,7 @@ export default {
 
   f() { return this.p.f * 1e6; },
   dl() { return this.p.dl * 1e-3; },
-  build() { const { lambda } = wavenumber(this.f()); this.lambda = lambda; const L = this.p.span * lambda; this.extent = [-L, L, -L, L]; this.shell.setExtent(this.extent, ['x', 'z']); this.rmin = 0.03 * lambda; this.results = null; },
+  build() { const { lambda } = wavenumber(this.f()); this.lambda = lambda; const L = this.p.span * lambda; this.extent = [-(4 / 3) * L, (4 / 3) * L, -L, L]; this.shell.setExtent(this.extent, ['x', 'z']); this.rmin = 0.03 * lambda; this.results = null; },
 
   fieldsAt(x, z, t) {
     const r = Math.max(Math.hypot(x, z), this.rmin), th = Math.atan2(Math.abs(x), z);
@@ -181,7 +181,7 @@ export default {
     const row = (...els) => { const r = ui.el('div', 'row'); r.append(...els); box.appendChild(r); };
     box.appendChild(ui.el('h2', '', 'Dipole'));
     row(pf('f', 'Frequency f (MHz)', 0.01, 1e5), pf('dl', 'Length dl (mm, ≪ λ)', 0.01, 1e4), pf('I0', 'Current amplitude I₀ (A)', 1e-6, 1e4));
-    row(pf('span', 'Picture half-width (wavelengths)', 0.3, 6));
+    row(pf('span', 'Picture half-height (wavelengths; 4:3 picture)', 0.3, 6));
     box.appendChild(ui.el('p', 'hint', `λ = ${sci(this.lambda, 4)} m; dl/λ = ${(this.dl() / this.lambda).toExponential(2)}${this.dl() / this.lambda > 0.1 ? ' (the short-dipole formulas assume dl ≪ λ; this is getting long)' : ''}. The fields near the element are clipped inside r = 0.03 λ for display.`));
     box.appendChild(ui.el('h2', '', 'Animation'));
     const ar = ui.el('div', 'row');

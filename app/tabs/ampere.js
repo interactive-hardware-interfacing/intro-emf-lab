@@ -38,7 +38,7 @@ export default {
   phase: 7,
   available: true,
   summary: '∮B·dl around a loop you can move, segment by segment, against μ₀ I_enc; wires, thick wire, coax, sheet, solenoid and toroid cross-sections.',
-  extent: [-0.03, 0.03, -0.03, 0.03],
+  extent: [-0.04, 0.04, -0.03, 0.03],
   axes: ['x', 'y'],
   layers: [
     { id: 'Bmag', label: '|B|', kind: 'scalar', unit: 'T', log: true, default: true, eq: 'B' },
@@ -81,7 +81,7 @@ export default {
 
   applySource() {
     const H = HALF[this.src];
-    this.extent = [-H, H, -H, H];
+    this.extent = [-(4 / 3) * H, (4 / 3) * H, -H, H]; // 4:3 picture
     this.shell.setExtent(this.extent, ['x', 'y']);
     const L = (id) => this.layers.find((l) => l.id === id);
     const hasA = ['wires', 'solenoid', 'toroid'].includes(this.src), hasJ = ['thick', 'coax'].includes(this.src);

@@ -60,6 +60,7 @@ export class Shell {
         groupLabel = t.group;
         groupEl = document.createElement('div');
         groupEl.className = 'tab-group';
+        groupEl.dataset.group = groupLabel || '';
         if (groupLabel) { const l = document.createElement('span'); l.className = 'tab-group-label'; l.textContent = groupLabel; groupEl.appendChild(l); }
         nav.appendChild(groupEl);
       }
@@ -114,7 +115,7 @@ export class Shell {
     const ext0 = tab.extent ?? [0, 1, 0, 1];
     const [cw, ch] = Shell.canvasSize(ext0);
     this.view = new Viewport(ext0, cw, ch);
-    this.stackEl.style.aspectRatio = `${cw} / ${ch}`;
+    this.setAspect(cw, ch);
     for (const L of tab.layers ?? []) {
       if (L.kind === 'info') continue;
       const c = document.createElement('canvas');
@@ -202,6 +203,7 @@ export class Shell {
     host.hidden = isField;
     host.classList.toggle('page', !!v.page);
     document.querySelector('.stage-footer').style.visibility = isField || v.footer ? 'visible' : 'hidden';
+    this.$('stage').style.setProperty('--war', isField ? 'var(--ar)' : 'var(--par)');
     if (!isField) {
       let inst = this.stageInstances.get(v.id);
       if (!inst) {
@@ -237,10 +239,17 @@ export class Shell {
     return aspect >= 1 ? [CANVAS_PX, Math.round(CANVAS_PX / aspect)] : [Math.round(CANVAS_PX * aspect), CANVAS_PX];
   }
 
+  /** Tell the CSS the field canvas's aspect (and so the plots' and the footer's widths). */
+  setAspect(w, h) {
+    const stage = this.$('stage');
+    stage.style.setProperty('--ar', String(w / h));
+    stage.style.setProperty('--war', this.stageView && this.stageView !== 'field' ? 'var(--par)' : 'var(--ar)');
+  }
+
   /** Resize every canvas in the stack to match the extent's aspect ratio. */
   fitCanvases(extent) {
     const [w, h] = Shell.canvasSize(extent);
-    this.stackEl.style.aspectRatio = `${w} / ${h}`;
+    this.setAspect(w, h);
     for (const c of this.canvases.values()) { if (c.width !== w || c.height !== h) { c.width = w; c.height = h; } }
     return [w, h];
   }

@@ -568,7 +568,8 @@ export async function run(check) {
     check('radiation state: all parameters plus t and speed', Object.keys(st).length, Object.keys(tab.pDefaults).length + 2, 0);
     check('radiation state: f carried as MHz', st.rd_f, 100, 0);
     tab.build.call(stub);
-    check('radiation build: extent is ±span wavelengths', stub.extent[1], 1.5 * 2.99792458, 1e-3);
+    check('radiation build: extent is ±span wavelengths tall', stub.extent[3], 1.5 * 2.99792458, 1e-3);
+    check('radiation build: 4:3 picture', stub.extent[1] / stub.extent[3], 4 / 3, 1e-12);
     tab.compute.call(stub);
     check('radiation compute: R_rad for 20 mm at 100 MHz ≈ 80π²(0.02/3)²', stub.results.Rrad, 80 * Math.PI ** 2 * (0.02 / 2.99792458) ** 2, 1e-3);
     check('radiation compute: |E| grid symmetric in x', stub.gridE.get(20, 80), stub.gridE.get(140, 80), 1e-9);

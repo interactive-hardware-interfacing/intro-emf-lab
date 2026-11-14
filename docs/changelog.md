@@ -398,3 +398,15 @@ regression test:
 - Coast-mode window on the Faraday tab used the braking time only for B > 0; now for B ≠ 0.
 - 599 em-core checks, 772 in the bench, smoke on 26 tabs. No defects found in lorentz,
   planewave, coupled, filters, ampere or solenoid; their forms were re-derived and agree.
+
+## Tinted tab groups and wider stage (patch 7p)
+- Each topic group in the tab bar has a faint tint (blue electrostatics, amber currents, green
+  magnetostatics, purple induction, teal waves, grey tools) with its label in a darker shade of
+  the same hue, so the groups read at a glance. `data-group` on `.tab-group`, colours in CSS.
+- The stage box is as tall as the window allows and as wide as its aspect ratio wants: a 2:1
+  capacitor extent now fills the width of a wide screen instead of a square, and plot views are
+  at least 3:2. The shell publishes `--ar` (field aspect) and `--war` (whichever view is
+  showing) on `#stage`; `.canvas-stack`, `.stage-view`, `.stage-tabs` and `.stage-footer`
+  size from them. The stage height allowance is 100vh − 240px to clear the three-row tab bar.
+- Ampère's law, Radiation and Div and curl now use 4:3 extents (same half-height as before,
+  wider in x). Circles still draw as circles; the grids are 4:3 in metres.

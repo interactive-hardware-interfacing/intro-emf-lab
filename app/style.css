@@ -53,9 +53,15 @@ input[type=range] { width: 100%; }
 .brand-title { font-weight: 700; font-size: 15px; }
 .brand-sub { font-size: 11px; color: var(--ink-2); }
 .tabs { display: flex; flex-wrap: wrap; gap: 2px 10px; flex: 1; align-items: flex-end; }
-.tab-group { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 2px; padding-right: 10px; border-right: 1px solid var(--line); max-width: 100%; min-width: 0; }
-.tab-group:last-child { border-right: 0; }
-.tab-group-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); padding: 0 4px 8px 0; white-space: nowrap; }
+.tab-group { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 2px; padding: 2px 6px 0 6px; border-radius: 7px 7px 0 0; max-width: 100%; min-width: 0; --tint: transparent; --tint-ink: var(--ink-2); background: var(--tint); }
+/* one faint tint per topic so the groups read at a glance; the label takes a darker shade of the same hue */
+.tab-group[data-group="Electrostatics"] { --tint: #eaf1fb; --tint-ink: #2f5fa8; }
+.tab-group[data-group="Currents & circuits"] { --tint: #fdf3e2; --tint-ink: #9a6410; }
+.tab-group[data-group="Magnetostatics"] { --tint: #e8f5ea; --tint-ink: #2d7a3a; }
+.tab-group[data-group="Induction"] { --tint: #f0ecfa; --tint-ink: #6344b8; }
+.tab-group[data-group="Waves"] { --tint: #e4f4f3; --tint-ink: #1f7a78; }
+.tab-group[data-group="Tools"] { --tint: #f0efec; --tint-ink: #5a5955; }
+.tab-group-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tint-ink); padding: 0 4px 8px 0; white-space: nowrap; }
 .tab {
   font: inherit; font-size: 12.5px; padding: 5px 7px; border: 0; border-bottom: 2px solid transparent;
   background: transparent; color: var(--ink-2); cursor: pointer; white-space: nowrap;
@@ -92,12 +98,16 @@ body.locked .workspace { grid-template-columns: 1fr 6px var(--right-w); }
 .panel h1 { font-size: 16px; margin: 0 0 4px; }
 .panel .lead { font-size: 12.5px; color: var(--ink-2); margin: 0 0 10px; }
 
-.stage { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; min-width: 0; }
-.stage-tabs { display: flex; gap: 2px; width: min(100%, calc(100vh - 200px)); margin-bottom: 6px; }
+.stage { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 14px; min-width: 0;
+  /* --ar: aspect of the field canvas (set by the shell from the tab's extent); --par: aspect of the plot views, at least 3:2;
+     --war: whichever is showing. The box is as tall as the window allows and as wide as its aspect wants, so wide extents and
+     plots use the width of a wide screen instead of sitting in a square. */
+  --ar: 1; --par: max(var(--ar), 1.5); --war: var(--ar); --stage-h: calc(100vh - 240px); }
+.stage-tabs { display: flex; gap: 2px; width: min(100%, calc(var(--stage-h) * var(--war))); margin-bottom: 6px; }
 .stage-tabs:empty { display: none; }
 .stage-tabs .stab { font: inherit; font-size: 12.5px; padding: 5px 10px; border: 1px solid var(--line); border-bottom: 0; border-radius: 6px 6px 0 0; background: #f1f0ec; color: var(--ink-2); cursor: pointer; }
 .stage-tabs .stab[aria-selected=true] { background: var(--panel); color: var(--accent); font-weight: 600; }
-.stage-view { width: min(100%, calc(100vh - 200px)); aspect-ratio: 1 / 1; max-height: calc(100vh - 200px); background: var(--panel); border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); overflow: hidden; display: flex; flex-direction: column; }
+.stage-view { width: min(100%, calc(var(--stage-h) * var(--par))); aspect-ratio: var(--par); max-height: var(--stage-h); background: var(--panel); border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.15); overflow: hidden; display: flex; flex-direction: column; }
 .stage-view[hidden] { display: none; }
 .stage-view.page { aspect-ratio: auto; width: 100%; max-width: 980px; height: calc(100vh - 150px); max-height: none; }
 .stage-view canvas { width: 100%; height: 100%; display: block; }
@@ -107,7 +117,7 @@ body.locked .workspace { grid-template-columns: 1fr 6px var(--right-w); }
 .stage-view .view-controls input[type=range] { width: 120px; }
 .stage-view .view-body { flex: 1; min-height: 0; position: relative; }
 .canvas-stack {
-  position: relative; width: min(100%, calc(100vh - 200px)); aspect-ratio: 1 / 1; max-height: calc(100vh - 200px);
+  position: relative; width: min(100%, calc(var(--stage-h) * var(--ar))); aspect-ratio: var(--ar); max-height: var(--stage-h);
   background: #111; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
 }
 .canvas-stack canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -116,7 +126,7 @@ body.locked .workspace { grid-template-columns: 1fr 6px var(--right-w); }
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   color: #ccc; font-size: 14px; text-align: center; padding: 24px; pointer-events: none;
 }
-.stage-footer { display: flex; align-items: center; gap: 16px; width: min(100%, calc(100vh - 200px)); margin-top: 8px; }
+.stage-footer { display: flex; align-items: center; gap: 16px; width: min(100%, calc(var(--stage-h) * var(--war))); margin-top: 8px; }
 .colorbar { display: flex; flex-direction: column; gap: 3px; width: 220px; }
 .colorbar canvas { width: 220px; height: 12px; border-radius: 3px; border: 1px solid var(--line); }
 .colorbar-labels { display: flex; flex-direction: row-reverse; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--ink-2); }

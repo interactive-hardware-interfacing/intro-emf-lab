@@ -11,7 +11,7 @@ import { FIELDS, fieldAt, divAt, curlAt, boxFlux, loopCirculation, numericDivCur
 import { getNum } from '../state.js';
 import { ui, sci } from '../shell.js';
 
-const EXTENT = [-1.5, 1.5, -1.5, 1.5], GRID_N = 151;
+const EXTENT = [-2, 2, -1.5, 1.5], GRID_N = 151; // 4:3, so the field uses the width of a wide screen
 const PRESETS = [
   { label: 'Radial: div 2, curl 0', kind: 'linear', k: { a: 1, b: 0, c: 0, d: 0, e: 1, f: 0 } },
   { label: 'Rotation: div 0, curl 2', kind: 'linear', k: { a: 0, b: -1, c: 0, d: 1, e: 0, f: 0 } },
