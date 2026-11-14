@@ -85,6 +85,25 @@ export const EQUATIONS = {
     solver: { tex: String.raw`V_{i,j} \leftarrow \frac{\varepsilon_E V_{i+1,j} + \varepsilon_W V_{i-1,j} + \varepsilon_N V_{i,j+1} + \varepsilon_S V_{i,j-1}}{\varepsilon_E+\varepsilon_W+\varepsilon_N+\varepsilon_S}`, note: 'Neighbour average at 1 V, repeated until max |dV| < 2e-8; the result is scaled to the held V or Q.' },
   },
 
+  ampere: {
+    governing: [
+      { title: "Ampère's law (integral form)", tex: String.raw`\oint_C \mathbf{B}\cdot d\mathbf{l} = \mu_0 I_{enc} = \mu_0 \int_S \mathbf{J}\cdot d\mathbf{S}` },
+      { title: 'Differential form', tex: String.raw`\nabla \times \mathbf{B} = \mu_0 \mathbf{J}` },
+      { title: 'Infinite wire', tex: String.raw`B_\phi = \frac{\mu_0 I}{2\pi r}` },
+      { title: 'Thick wire, uniform J', tex: String.raw`B_\phi = \frac{\mu_0 I r}{2\pi a^2}\ (r<a), \qquad \frac{\mu_0 I}{2\pi r}\ (r>a)` },
+      { title: 'Sheet, solenoid, toroid', tex: String.raw`B = \frac{\mu_0 K}{2}, \qquad B = \mu_0 n I, \qquad B_\phi = \frac{\mu_0 N I}{2\pi r}` },
+      { title: 'Gauss for B', tex: MAXWELL.gaussB, zero: true },
+      { title: 'Faraday, static', tex: MAXWELL_STATIC.faraday, zero: true },
+    ],
+    layers: {
+      B: { tex: String.raw`\mathbf{B} = \nabla\times\mathbf{A}` },
+      A: { tex: String.raw`A_z = -\frac{\mu_0 I}{2\pi}\ln\frac{r}{r_{ref}}`, note: 'Contours of A_z are the B field lines.' },
+      J: { tex: String.raw`J_z = \frac{I}{\pi a^2}`, note: 'Uniform over each conductor cross-section.' },
+      Bt: { tex: String.raw`\oint \mathbf{B}\cdot d\mathbf{l} \approx \sum_k (\mathbf{B}_k\cdot\hat{\mathbf{t}}_k)\,\Delta l_k`, note: 'Midpoint rule on the loop segments; the bars are the summands.' },
+    },
+    solver: { tex: String.raw`I_{enc} = \sum_{\text{wires inside}} I_k + \int_{\text{inside}} J_z\, dA`, note: 'Closed-form fields; the enclosed current is found from the geometry, not from the field.' },
+  },
+
   conduction: {
     governing: [
       { title: 'Steady current: charge conservation', tex: String.raw`\nabla \cdot \mathbf{J} = 0 \;\Rightarrow\; \nabla \cdot (\sigma \nabla V) = 0` },

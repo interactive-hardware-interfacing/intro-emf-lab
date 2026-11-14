@@ -392,6 +392,26 @@ export async function run(check) {
     check('dielectrics scale(): V itself when V is held', tab.scale.call(stub), 7, 0);
   }
 
+  // ------------------------------------------------------------ 5g. Ampère tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'ampere');
+    const stub = Object.create(tab);
+    stub.src = 'coax'; stub.p = { I: 3, a: 0.004, b: 0.01, c: 0.013, K: 100, w: 0.03, N: 40, L: 0.05, sa: 0.01, R1: 0.02, R2: 0.03 };
+    stub.loop = { shape: 'rect', cx: 0.001, cy: -0.002, R: 0.012, w: 0.04, h: 0.03 }; stub.ccw = false; stub.nseg = 64; stub.n = 2; stub.wires = [];
+    const st = stub.getState();
+    check('ampere state: source params for coax only', Object.keys(st).filter((k) => ['I', 'a', 'b', 'c', 'K', 'N'].includes(k)).sort().join(',') === 'I,a,b,c' ? 1 : 0, 1, 0);
+    check('ampere state: clockwise flag', st.cw, 1, 0);
+    check('ampere state: loop geometry', `${st.ls}/${st.lx}/${st.ly}/${st.lw}/${st.lh}` === 'rect/0.001/-0.002/0.04/0.03' ? 1 : 0, 1, 0);
+    // loop computation without a shell: computeLoop() needs only src/loop; renderResults is a no-op without an element
+    stub.srcObj = tab.source.call(stub); stub.resultsEl = null; stub.shell = { layerOn: new Map() };
+    tab.computeLoop.call(stub);
+    check('ampere stub: clockwise loop around the whole coax reads zero on both sides', Math.abs(stub.results.circ) + Math.abs(stub.results.expect), 0, 1e-12);
+    const rows = tab.csv.call(stub).split('\n');
+    check('ampere csv: one row per segment + header + totals', rows.length, 64 + 1 + 4, 0);
+    check('ampere csv: dl column sums to the perimeter', rows.slice(1, 65).reduce((a, r) => a + parseFloat(r.split(',')[6]), 0), 0.14, 1e-9);
+  }
+
   // ------------------------------------------------------------ 6. golden files (handout numbers)
   {
     const cases = {};

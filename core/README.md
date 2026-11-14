@@ -13,6 +13,7 @@ build step. The solvers never touch the DOM, so everything runs under node as we
 | `relax2d.js` | `Relax2D`: Cartesian Gauss–Seidel for ∇·(ε∇V) = −ρ, Gauss-box charge, energy, Lab 2 presets |
 | `axisym.js` | `Axisym` (electrostatics/conduction in (r, z) with explicit face permittivities) and `AxisymMag` (magnetostatics for ψ = rA_φ, optional saturating μ(B)); disk-capacitor and solenoid builders |
 | `dielectrics.js` | Parallel plates with up to four dielectric regions on `Relax2D`: builder with grid-snapped fractions, plate and bound charges face by face, per-region table, series/parallel/Wiener references, slab force |
+| `ampere.js` | Ampère's law: closed-form current distributions (wires, thick wire, coax, sheet, solenoid and toroid cross-sections), Amperian loop segments, ∮B·dl by midpoint sum, enclosed current by geometry |
 | `eddy.js` | `AxisymEddy`: frequency-domain eddy currents (complex ψ), skin depth, J_eddy, power, coil impedance; the long-cylinder Bessel reference |
 | `fdtd2d.js` | `FDTD2D`: 2-D TMz Yee FDTD with per-cell ε_r/σ/PEC, point and line sources, CPML or Mur open walls |
 | `render.js` | Canvas drawing: colour maps, scalar fields, quiver, streamlines, marching-squares contours, colour bar, `Viewport` |
@@ -48,7 +49,8 @@ against the Bessel solution for a long cylinder and the power identity P = ½RI�
 checks the parallel-plate builder: same D in a layered stack and same E side by side, drops adding
 to V and charges to Q, energy = Gauss = plate charge, free + bound = Q/εr at the plate, the 5 % air
 gap taking 20.8 % of V, dC/dx against the slab-force formula, and the Wiener bounds for a tilted
-interface.
+interface; `test/ampere.js` checks every current distribution against its textbook field and
+∮B·dl against μ₀ I_enc for loops on and off the symmetry, including the enclosed-current geometry.
 
 ## In intro-EMF-lab
 

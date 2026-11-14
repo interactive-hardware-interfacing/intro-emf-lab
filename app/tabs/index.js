@@ -11,6 +11,7 @@ import magneticFields from './magnetic-fields.js';
 import inductors from './inductors.js';
 import sandbox from './sandbox.js';
 import gaussLaw from './gauss-law.js';
+import ampere from './ampere.js';
 import interfaceTab from './interface.js';
 import transmissionLines from './transmission-lines.js';
 import fdtd from './fdtd.js';
@@ -26,6 +27,7 @@ export const TABS = [
   dielectrics,
   conduction,
   magneticFields,
+  ampere,
   inductors,
   sandbox,
   gaussLaw,

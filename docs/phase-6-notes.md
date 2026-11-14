@@ -219,3 +219,25 @@ Four independent reviewers re-derived the math and tested numerically. Fixed:
   refraction direction for the tilted case, a slab that fills only the gap raising C by less
   than εr); bench app checks for URL state, CSV, `scale()`; a golden case for the default C;
   the smoke round trip. 305 checks, smoke on 16 tabs.
+
+## Ampère's law tab (patch 7d)
+- New tab after Magnetic fields: closed-form current distributions along z (up to four line
+  currents, a thick wire with uniform J, a coax, a finite sheet, a solenoid winding in
+  cross-section as two rows of turns, a toroid as two rings) and an Amperian loop (circle or
+  rectangle) dragged on the canvas or set by sliders. B·t̂ is drawn as a bar on each segment
+  and summed by the midpoint rule; I_enc comes from geometry (turns inside, strip length
+  inside, J × area inside). Nine presets walk the textbook argument; an "Along the loop" view
+  plots B·t̂ against distance with the running integral.
+- `core/ampere.js` (em-core). The enclosed current for round conductors is a radial integral
+  of J r θ_in(r), with θ_in analytic for a circular loop and sampled on 1440 angles for a
+  rectangle; a first draft summed J on a 400² grid over the bounding box and read −0.004 A
+  for the coax "loop outside" preset, which is exactly the residue the preset is meant to
+  show is zero. A rectangle wholly inside the inner conductor is exact (J w h).
+- The "solenoid" here is a winding very wide in z (two sheets of turns), so the Ampère
+  rectangle is the textbook one but the centre field is μ₀nI·(2/π)atan(L/2a), not the round
+  solenoid's; the About text and panel say so and the round solenoid is the next tab.
+- Sign conventions: I > 0 along +z (out of the page), loop counter-clockwise; the
+  "Clockwise" option flips both sides. The sheet along z maps analytic.sheetB through the
+  right-handed (X, Y, Z) = (−x, z, y), checked against a 4000-wire sum.
+- Tests: `core/test/ampere.js` (50 checks), bench app checks for state and CSV, smoke
+  round trip. 361 checks, smoke on 17 tabs.
