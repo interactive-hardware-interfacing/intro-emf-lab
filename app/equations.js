@@ -296,6 +296,19 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid}`, note: 'Uniform-field models (no fringing, ideal leads).' },
   },
 
+  'magnetic-circuits': {
+    governing: [
+      { title: 'Ampère around the core', tex: String.raw`\oint \mathbf{H}\cdot d\mathbf{l} = NI = H_c l_c + H_g g` },
+      { title: 'Reluctance', tex: String.raw`\mathcal{R} = \frac{l}{\mu A}, \qquad NI = \Phi\,(\mathcal{R}_c + \mathcal{R}_g), \qquad B = \Phi/A` },
+      { title: 'Inductance and energy', tex: String.raw`L = \frac{N\Phi}{I} = \frac{N^2}{\mathcal{R}_c + \mathcal{R}_g}, \qquad W = \tfrac{1}{2}LI^2, \qquad \frac{W_g}{W} = \frac{\mathcal{R}_g}{\mathcal{R}_c + \mathcal{R}_g}` },
+      { title: 'Force on the pole faces', tex: String.raw`F = \frac{B_g^2 A_g}{2\mu_0} = \left.\frac{\partial W}{\partial g}\right|_\Phi` },
+      { title: 'Fringing (simple rule)', tex: String.raw`A_g \approx (w + g)(d + g)` },
+      { title: 'Saturating core', tex: String.raw`B = \mu_0 H + \frac{2B_{\text{sat}}}{\pi}\arctan\frac{\pi(\mu_i - 1)\mu_0 H}{2B_{\text{sat}}}` },
+    ],
+    layers: {},
+    solver: { tex: String.raw`\text{closed form; bisection on } H_c \text{ when saturating}`, note: 'Leakage flux ignored.' },
+  },
+
   smith: {
     governing: [
       { title: 'The chart is the Γ plane', tex: String.raw`\Gamma = \frac{z - 1}{z + 1}, \qquad z = \frac{Z}{Z_0} = \frac{1 + \Gamma}{1 - \Gamma}, \qquad |\Gamma| \le 1` },

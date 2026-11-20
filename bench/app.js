@@ -560,6 +560,18 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5y. Magnetic circuits tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'magnetic-circuits'), st = Object.create(tab);
+    st.p = { ...tab.pDefaults }; st.resultsEl = null; st.shell = {};
+    tab.compute.call(st);
+    check('magcircuit tab: state has every parameter', Object.keys(tab.getState.call(st)).length, Object.keys(tab.pDefaults).length, 0);
+    check('magcircuit tab: default L = 0.020 H', st.results.L, 0.01997, 2e-3);
+    check('magcircuit tab: 90 % of NI across the gap', st.results.gapShare, 0.9007, 2e-3);
+    check('magcircuit tab: csv 50 rows + header', tab.csv.call(st).split('\n').length, 51, 0);
+  }
+
   // ------------------------------------------------------------ 5x. Energy flow tab (app layer, no DOM)
   {
     const { TABS } = await import('../app/tabs/index.js');

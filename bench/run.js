@@ -25,6 +25,7 @@ import { imagesChecks } from '../core/test/images.js';
 import { dipoleChecks } from '../core/test/dipole.js';
 import { lossyChecks } from '../core/test/lossy-waveguide.js';
 import { poyntingChecks } from '../core/test/poynting.js';
+import { magcircuitChecks } from '../core/test/magcircuit.js';
 
 const { check, mark, report } = makeRunner();
 
@@ -50,6 +51,7 @@ mark('images'); imagesChecks(check);
 mark('dipole'); dipoleChecks(check);
 mark('lossy-waveguide'); lossyChecks(check);
 mark('poynting'); poyntingChecks(check);
+mark('magcircuit'); magcircuitChecks(check);
 
 // ---------------------------------------------------------------- syntax of every browser module
 // The tabs and shell never run under node, so at least parse them: a dropped comma must fail CI.

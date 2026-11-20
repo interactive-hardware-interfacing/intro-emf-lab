@@ -27,6 +27,7 @@ import dipole from './dipole.js';
 import lossyLines from './lossy-lines.js';
 import waveguides from './waveguides.js';
 import energyFlow from './energy-flow.js';
+import magneticCircuits from './magnetic-circuits.js';
 import operators from './operators.js';
 import coupledCoils from './coupled-coils.js';
 import interfaceTab from './interface.js';
@@ -38,7 +39,7 @@ import eddy from './eddy.js';
 export const GROUPS = [
   { label: 'Electrostatics', tabs: [pointCharges, pointCharges3d, dipole, makeRingLine('ring'), makeRingLine('rods'), gaussLaw, chargedBodies, images, interfaceTab, capacitors, dielectrics] },
   { label: 'Currents & circuits', tabs: [conduction, energyFlow, filters] },
-  { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, chargesInFields, inductors] },
+  { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, chargesInFields, inductors, magneticCircuits] },
   { label: 'Induction', tabs: [faraday, coupledCoils, eddy] },
   { label: 'Waves', tabs: [transmissionLines, tlineWaves, lossyLines, smith, planeWaves, oblique, waveguides, radiation, fdtd] },
   { label: 'Tools', tabs: [operators, sandbox, about] },

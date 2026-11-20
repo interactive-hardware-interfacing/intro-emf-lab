@@ -494,3 +494,7 @@ tightened 10⁴×). Fixes:
 ## Energy flow tab (patch 8g)
 - New Currents & circuits tab between Conduction and Filters: Poynting's vector in a DC resistor and in a charging capacitor on the (r, z) plane, with |S|, E_z, H_φ, S and E arrows, the body outline and a coaxial Poynting surface on a slider; the flux through the side equals I²R, through the rim equals d(½CV²)/dt; power within radius r as a plot. `core/poynting.js`.
 - Tests: `core/test/poynting.js` (17 checks: R, side flux = I²R, inward S, H continuity, J = σE, r² growth; C, rim flux = C V dV/dt, I_d = C dV/dt, Ampère–Maxwell on a loop, ½CV²), bench app checks, smoke entry.
+
+## Magnetic circuits tab (patch 8h)
+- New Magnetostatics tab after Inductors: a core with an air gap and a winding drawn with its flux and the equivalent circuit of two reluctances; B against NI with and without the gap (saturation optional); L against gap length; numbers for ℛ, Φ, B, H, the MMF drops, L, the energy share in the gap and the pull on the pole faces. `core/magcircuit.js`.
+- Tests: `core/test/magcircuit.js` (26 checks: reluctances, NI = H_c l_c + H_g g, L two ways, energy share, force by virtual work, fringing, saturation limits and monotonic L, the sweeps), bench app checks, smoke entry.

@@ -141,6 +141,7 @@ control that changes the picture must be in `getState()`, so the share link repr
 - `core/lossyline.js`: `lineConstants`, `approximations`, `groupVelocity`, `sweep`, `steadyStateLossy` (V⁺ from the source loop with complex γ), `matchedLoss`.
 - `core/waveguide.js`: `cutoff`, `modeList`, `propagation`, `singleModeBand`, `te10Fields` (E_y, H_x, H_z; e^{−αz} below cutoff), `te10Power`, `dispersion`, `STANDARD`.
 - `core/poynting.js`: `resistor`/`resistorFields`, `capacitor`/`capacitorFields`, `powerWithin`.
+- `core/magcircuit.js`: `coreB`, `solve` (NI = H_c l_c + H_g g, bisection when saturating), `sweepNI`, `sweepGap`.
 - `core/smith.js`: `gammaOf`, `zOf`, `yOf`, `swrOf`, `moveToward`, `zinAt`, `extremaOf`, `quarterWave`, `singleStub` (the g = 1 crossing solved in closed form: cos φ = |Γ_y|), `rCircle`/`xCircle` for drawing.
 - `core/oblique.js`: `snell`, `fresnel` (both polarisations, cos θt = −j√(…) past critical so the transmitted wave decays), `specialAngles`, `sweep`, `evanescentDepth`, `fieldAt` (E_y for ⊥, H_y for ∥, with H_r = −Γ∥ H_i), `wavelengths`.
 - `core/radiation.js`: `wavenumber`, `hertzFields` (exact phasors), `farFields`, `instantaneous`, `streamPsi`
