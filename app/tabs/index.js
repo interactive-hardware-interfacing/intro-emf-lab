@@ -24,6 +24,8 @@ import smith from './smith.js';
 import chargedBodies from './charged-bodies.js';
 import images from './images.js';
 import dipole from './dipole.js';
+import lossyLines from './lossy-lines.js';
+import waveguides from './waveguides.js';
 import operators from './operators.js';
 import coupledCoils from './coupled-coils.js';
 import interfaceTab from './interface.js';
@@ -37,7 +39,7 @@ export const GROUPS = [
   { label: 'Currents & circuits', tabs: [conduction, filters] },
   { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, chargesInFields, inductors] },
   { label: 'Induction', tabs: [faraday, coupledCoils, eddy] },
-  { label: 'Waves', tabs: [transmissionLines, tlineWaves, smith, planeWaves, oblique, radiation, fdtd] },
+  { label: 'Waves', tabs: [transmissionLines, tlineWaves, lossyLines, smith, planeWaves, oblique, waveguides, radiation, fdtd] },
   { label: 'Tools', tabs: [operators, sandbox, about] },
 ];
 

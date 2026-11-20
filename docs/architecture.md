@@ -138,6 +138,8 @@ control that changes the picture must be in `getState()`, so the share link repr
 - `core/charged-bodies.js`: `enclosed`, `fieldMag`, `gaussArea`, `potential`, `fieldAt`, `potentialAt` (sphere/shell: equatorial cut; cylinders: cross-section; slab: normal along x), `numericDiv`, `densities`.
 - `core/dipole.js`: `exactField`/`exactPotential`, `idealField`/`idealPotential`, `idealAxisBroadside`, `inUniformField` (τ = −pE sinθ, U = −pE cosθ, F = p cosθ dE/dx), `idealError`, `totalField`/`totalPotential` (pair + E₀x̂), `torqueNumeric`.
 - `core/images.js`: `imageSet`, `inRegion`, `fieldAt`, `potentialAt`, `inducedSigma`, `inducedTotal`, `inducedTotalNumeric` (s = d tan u substitution over the infinite plane), `force`, `closedForms`.
+- `core/lossyline.js`: `lineConstants`, `approximations`, `groupVelocity`, `sweep`, `steadyStateLossy` (V⁺ from the source loop with complex γ), `matchedLoss`.
+- `core/waveguide.js`: `cutoff`, `modeList`, `propagation`, `singleModeBand`, `te10Fields` (E_y, H_x, H_z; e^{−αz} below cutoff), `te10Power`, `dispersion`, `STANDARD`.
 - `core/smith.js`: `gammaOf`, `zOf`, `yOf`, `swrOf`, `moveToward`, `zinAt`, `extremaOf`, `quarterWave`, `singleStub` (the g = 1 crossing solved in closed form: cos φ = |Γ_y|), `rCircle`/`xCircle` for drawing.
 - `core/oblique.js`: `snell`, `fresnel` (both polarisations, cos θt = −j√(…) past critical so the transmitted wave decays), `specialAngles`, `sweep`, `evanescentDepth`, `fieldAt` (E_y for ⊥, H_y for ∥, with H_r = −Γ∥ H_i), `wavelengths`.
 - `core/radiation.js`: `wavenumber`, `hertzFields` (exact phasors), `farFields`, `instantaneous`, `streamPsi`

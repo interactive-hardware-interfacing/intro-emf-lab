@@ -249,6 +249,36 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid}`, note: '' },
   },
 
+  'lossy-lines': {
+    governing: [
+      { title: 'Telegrapher’s equations with loss', tex: String.raw`\gamma = \alpha + j\beta = \sqrt{(R' + j\omega L')(G' + j\omega C')}, \qquad Z_0 = \sqrt{\frac{R' + j\omega L'}{G' + j\omega C'}}` },
+      { title: 'Attenuation', tex: String.raw`V(z) \propto e^{-\alpha z}, \qquad \alpha_{\text{dB/m}} = 8.686\,\alpha, \qquad P(l)/P(0) = e^{-2\alpha l}` },
+      { title: 'Low loss', tex: String.raw`\alpha \approx \frac{R'}{2Z_0} + \frac{G' Z_0}{2}, \qquad \beta \approx \omega\sqrt{L'C'}` },
+      { title: 'Distortionless (Heaviside)', tex: String.raw`\frac{R'}{L'} = \frac{G'}{C'} \ \Rightarrow\ \alpha = \sqrt{R'G'},\ \beta = \omega\sqrt{L'C'},\ Z_0 = \sqrt{L'/C'} \text{ real}` },
+      { title: 'Terminated lossy line', tex: String.raw`V(d) = V^+\left(e^{\gamma d} + \Gamma_L e^{-\gamma d}\right), \qquad \Gamma(d) = \Gamma_L e^{-2\gamma d}, \qquad |\Gamma_{\text{in}}| = |\Gamma_L| e^{-2\alpha l}` },
+      { title: 'Velocities', tex: String.raw`v_p = \omega/\beta, \qquad v_g = d\omega/d\beta` },
+    ],
+    layers: {},
+    solver: { tex: String.raw`\text{closed form}`, note: 'v_g by a numeric derivative of β(ω).' },
+  },
+
+  waveguides: {
+    governing: [
+      { title: 'Cutoff', tex: String.raw`k_c = \sqrt{\left(\tfrac{m\pi}{a}\right)^2 + \left(\tfrac{n\pi}{b}\right)^2}, \qquad f_c = \frac{c\,k_c}{2\pi}, \qquad f_{c,10} = \frac{c}{2a}` },
+      { title: 'Propagation', tex: String.raw`\beta = \sqrt{k^2 - k_c^2} = k\sqrt{1 - (f_c/f)^2}, \qquad \lambda_g = \frac{2\pi}{\beta} = \frac{\lambda_0}{\sqrt{1 - (f_c/f)^2}}` },
+      { title: 'Velocities and impedance', tex: String.raw`v_p = \frac{\omega}{\beta} > c, \qquad v_g = \frac{d\omega}{d\beta} = \frac{c^2}{v_p} < c, \qquad Z_{TE} = \eta\frac{k}{\beta}, \quad Z_{TM} = \eta\frac{\beta}{k}` },
+      { title: 'Below cutoff', tex: String.raw`\beta = -j\alpha, \quad \alpha = \sqrt{k_c^2 - k^2}: \quad \text{fields decay as } e^{-\alpha z}` },
+      { title: 'TE10 fields', tex: String.raw`E_y = E_0\sin\frac{\pi x}{a}e^{-j\beta z}, \qquad H_x = -\frac{\beta}{\omega\mu}E_y, \qquad H_z = \frac{j\pi}{\omega\mu a}E_0\cos\frac{\pi x}{a}e^{-j\beta z}` },
+      { title: 'Two plane waves', tex: String.raw`\cos\theta = \beta/k: \quad \text{TE10 is a pair of plane waves bouncing at } \pm\theta \text{ to the axis}` },
+    ],
+    layers: {
+      Ey: { tex: String.raw`E_y(x, z, t) = \sin\frac{\pi x}{a}\cos(\omega t - \beta z)`, note: 'Zero on both side walls, maximum in the middle; the pattern slides at v_p.' },
+      H: { tex: String.raw`\mathbf{H} = (H_x, H_z) \text{ in the plane}`, note: 'Closed loops of H around the E_y maxima, lying in the x–z plane.' },
+      rays: { tex: String.raw`\theta = \arccos(\beta/k)`, note: 'The rays steepen toward 90° as f → f_c: the wave then just bounces across and gets nowhere (v_g → 0).' },
+    },
+    solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid}`, note: 'Air-filled, perfectly conducting walls.' },
+  },
+
   smith: {
     governing: [
       { title: 'The chart is the Γ plane', tex: String.raw`\Gamma = \frac{z - 1}{z + 1}, \qquad z = \frac{Z}{Z_0} = \frac{1 + \Gamma}{1 - \Gamma}, \qquad |\Gamma| \le 1` },

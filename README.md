@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, thirty tabs grouped by topic, plus an About page that explains each tab
+page, thirty-two tabs grouped by topic, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -25,6 +25,8 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Conduction (J) | Steady current between electrodes, J = σE, current through a cut, R | Gauss–Seidel in (r, z) |
 | Transmission lines | C′, L′, Z₀, v of coax, twin-lead, parallel plates, with a numeric check | Closed form + Gauss–Seidel |
 | Line waves | A terminated line: Γ, VSWR, standing-wave envelopes with the forward and reflected waves animated, Z_in along the line, the step bounce diagram and V(z, t); Z₀ and v from the Transmission lines tab | Closed form (lossless line) |
+| Lossy lines | R′, L′, G′, C′ to γ = α + jβ and complex Z₀; attenuation; the distortionless condition; dispersion of v_p and v_g; the standing wave on a lossy terminated line and the power lost along it | Closed form |
+| Waveguides | Rectangular guide: TE10 fields animated with the bouncing-wave picture, the cutoff of every mode, the dispersion diagram with v_p > c > v_g, λ_g and Z_TE | Closed form |
 | Smith chart | The chart drawn live: Γ ↔ z, the SWR circle, moving toward the generator, admittance, quarter-wave and single-stub matching worked on the chart | Closed form |
 | Plane waves | The uniform plane wave in closed form: E and H along z animated, lossy media and skin depth, normal incidence on a second medium (Γ, τ, standing wave, decay), polarization | Closed form |
 | Oblique incidence | A plane wave on a boundary at an angle: Snell, Fresnel for both polarisations against angle, Brewster, critical angle, total internal reflection with the evanescent tail; the field animated | Closed form |
@@ -79,6 +81,8 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   planewave.js          medium parameters (γ, η, δ, loss tangent), normal-incidence Fresnel, E and H along z, Poynting flux, polarization
   operators.js          2-D field library with closed-form div and curl; box flux and loop circulation; central differences
   coupled.js            coil turns, mutual inductance by the filament sum, Nagaoka/ring self-inductance, coupling, the transformer in phasors
+  lossyline.js          lossy line: γ, complex Z₀, dB, distortionless, v_g, lossy steady state and power bookkeeping
+  waveguide.js          rectangular waveguide: cutoffs, mode list, β, λ_g, v_p, v_g, Z, bounce angle, TE10 fields, dispersion
   dipole.js             electric dipole: exact pair, ideal dipole, torque, energy, the pair in a uniform field
   images.js             method of images: image sets, field and V outside the conductor, induced σ, totals, force
   charged-bodies.js     Gauss's law for sphere, shell, cylinder, cylindrical shell, slab: Q_enc, E, V, flux
@@ -88,7 +92,7 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith, charged-bodies, images, dipole) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith, charged-bodies, images, dipole, lossy-waveguide) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files

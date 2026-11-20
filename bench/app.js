@@ -560,6 +560,25 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5w. Lossy lines and Waveguides tabs (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const ll = TABS.find((t) => t.id === 'lossy-lines'), s1 = Object.create(ll);
+    s1.p = { ...ll.pDefaults }; s1.resultsEl = null; s1.shell = {};
+    ll.compute.call(s1);
+    check('lossy tab: state has every parameter', Object.keys(ll.getState.call(s1)).length, Object.keys(ll.pDefaults).length, 0);
+    check('lossy tab: P_in = P_L + P_lost', s1.results.ss.Pin, s1.results.ss.PL + s1.results.ss.Plost, 1e-12);
+    check('lossy tab: csv 201 rows + header', ll.csv.call(s1).split('\n').length, 202, 0);
+    const wg = TABS.find((t) => t.id === 'waveguides'), s2 = Object.create(wg);
+    s2.p = { ...wg.pDefaults }; s2.kind = 'TE'; s2.t = 0; s2.speed = 0.1; s2.resultsEl = null; s2.shell = { setExtent() {}, layerOn: new Map() };
+    wg.build.call(s2); wg.compute.call(s2);
+    check('waveguide tab: WR-90 at 10 GHz λ_g = 39.7 mm', s2.results.pr10.lamG, 39.71e-3, 1e-3);
+    check('waveguide tab: E_y zero on the walls (grid rows 0 and 160)', Math.abs(s2.grid.get(50, 0)) + Math.abs(s2.grid.get(50, 160)) < 1e-12 ? 1 : 0, 1, 0);
+    check('waveguide tab: E_y largest in the middle row', Math.abs(s2.grid.get(50, 80)) >= Math.abs(s2.grid.get(50, 40)) ? 1 : 0, 1, 0);
+    s2.p.f = 5; wg.build.call(s2); wg.compute.call(s2);
+    check('waveguide tab: below cutoff the field decays along z', Math.abs(s2.grid.get(150, 80)) < Math.abs(s2.grid.get(10, 80)) ? 1 : 0, 1, 0);
+  }
+
   // ------------------------------------------------------------ 5v. Electric dipole tab (app layer, no DOM)
   {
     const { TABS } = await import('../app/tabs/index.js');

@@ -485,3 +485,8 @@ tightened 10⁴×). Fixes:
 - New Electrostatics tab after 3D point charges: the ±q pair with its V, |E|, arrows and equipotentials, the ideal dipole's equipotentials as a dashed overlay for comparison, |E| against distance on log axes (pair, ideal, single charge), and the pair in a uniform field with the torque arc, τ and U against angle. `core/dipole.js`.
 - Tests: `core/test/dipole.js` (19 checks: ideal forms, E = −∇V for both, the +½(s/r)² and −⅜(s/r)² errors and their 1/r² scaling, torque from p × E against the two forces, τ = −dU/dθ), bench app checks, smoke entry.
 - The About tab moves to the end of the Tools group so the tab bar packs into four rows.
+
+## Lossy lines and Waveguides tabs (patch 8f)
+- Lossy lines (Waves, after Line waves): R′, L′, G′, C′ → α, β, complex Z₀, dB/m, the low-loss estimate, the distortionless test, v_p and v_g; the standing wave on a lossy terminated line with its envelope and the power flowing past each point; α, v_p, v_g against frequency. Presets for RG-58, lossless, distortionless and a telephone pair; a button pulls L′ and C′ from the Transmission lines tab. `core/lossyline.js`.
+- Waveguides (Waves, after Oblique incidence): rectangular guide with standard sizes; TE10 E_y and in-plane H animated with the bouncing-plane-wave rays; the mode chart and dispersion diagram (β against f for the first six modes, the light line, the single-mode band); numbers for any TE/TM mode. `core/waveguide.js`.
+- Tests: `core/test/lossy-waveguide.js` (36 checks: lossless and distortionless limits, low-loss α, matched-line dB, P_in = P_L + P_lost, |Γ_in| = |Γ_L|e^{−2αl}; WR-90 cutoffs, β, λ_g, v_p v_g = c², Z_TE, the bounce angle, Faraday's law on the TE10 field grid, the power formula), bench app checks, smoke entries.
