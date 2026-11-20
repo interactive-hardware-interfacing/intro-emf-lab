@@ -340,6 +340,20 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed form}`, note: 'Lossless line; lengths in wavelengths.' },
   },
 
+  antennas: {
+    governing: [
+      { title: 'Finite dipole: current and pattern', tex: String.raw`I(z) = I_m \sin\!\left[k\!\left(\tfrac{L}{2} - |z|\right)\right], \qquad F(\theta) = \frac{\cos\!\left(\tfrac{kL}{2}\cos\theta\right) - \cos\tfrac{kL}{2}}{\sin\theta}, \qquad E_\theta = \frac{j\eta I_m}{2\pi r}\,e^{-jkr}\,F(\theta)` },
+      { title: 'Radiated power and directivity', tex: String.raw`U(\theta) = \frac{\eta I_m^2}{8\pi^2}\,F^2, \qquad P = 2\pi\!\int_0^\pi U\sin\theta\,d\theta, \qquad D = \frac{4\pi U_{\max}}{P}` },
+      { title: 'Radiation and input resistance', tex: String.raw`R_{\text{rad}} = \frac{2P}{I_m^2}, \qquad R_{\text{in}} = \frac{R_{\text{rad}}}{\sin^2(kL/2)} \quad (\text{feed current } I_m\sin\tfrac{kL}{2})` },
+      { title: 'Half-wave dipole', tex: String.raw`F = \frac{\cos(\tfrac{\pi}{2}\cos\theta)}{\sin\theta}, \qquad R_{\text{rad}} = 73.1\ \Omega, \qquad D = 1.64 = 2.15\ \text{dBi}, \qquad \text{HPBW} = 78^\circ` },
+      { title: 'Short dipole limit', tex: String.raw`L \ll \lambda:\ \ D \to 1.5, \qquad R_{\text{in}} \to 20\pi^2 (L/\lambda)^2 \ \ (\text{a quarter of the Hertzian } 80\pi^2(L/\lambda)^2 \text{ because the triangular current carries half the moment})` },
+      { title: 'Two-element array factor', tex: String.raw`\text{AF} = \left|1 + e^{j\psi}\right| = 2\left|\cos\tfrac{\psi}{2}\right|, \qquad \psi = kd\sin\theta\cos\phi + \delta` },
+      { title: 'Pattern multiplication', tex: String.raw`F_{\text{total}}(\theta,\phi) = |F_{\text{element}}(\theta)| \cdot \text{AF}(\theta,\phi), \qquad D_{\text{array}} = \frac{4\pi F_{\max}^2}{\oint F^2\, d\Omega}` },
+    ],
+    layers: {},
+    solver: { tex: String.raw`\text{closed-form pattern; Simpson quadrature over } \theta \text{ (and } \phi \text{ for the array)}`, note: 'Thin-wire sinusoidal current; far field only; no mutual coupling between the elements (the array directivity integrates the pattern, so it is exact for the assumed currents).' },
+  },
+
   oblique: {
     governing: [
       { title: 'Snell', tex: String.raw`n_1\sin\theta_i = n_2\sin\theta_t, \qquad n = \sqrt{\varepsilon_r\mu_r}, \qquad \theta_r = \theta_i` },

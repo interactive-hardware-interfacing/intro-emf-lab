@@ -149,14 +149,14 @@ function drawIso(ctx, w, h, source, state, shell) {
  * a legend, a wrapped caption and a vertical marker. Shared by the plot views of the newer
  * tabs. px()/py() map data to pixels; lines leave the frame where the data leaves [lo, hi].
  */
-export function axesFrame(ctx, W, H, { lo, hi, a0, a1, xlabel = '', ylabel = '', logx = false, logy = false, top = 70, bottom = 48, left = 90, right = 20, xticks = 4, yticks = 4, fmt = (v) => sci(v, 3) } = {}) {
+export function axesFrame(ctx, W, H, { lo, hi, a0, a1, xlabel = '', ylabel = '', logx = false, logy = false, top = 70, bottom = 48, left = 90, right = 20, xticks = 4, yticks = 4, fmt = (v) => sci(v, 3), yfmt = fmt } = {}) {
   const L = left, T = top, B = bottom, Rm = right;
   const fx = (v) => (logx ? Math.log10(v) : v), fy = (v) => (logy ? Math.log10(v) : v), X0 = fx(a0), X1 = fx(a1), Y0 = fy(lo), Y1 = fy(hi);
   const px = (v) => L + ((fx(v) - X0) / (X1 - X0 || 1)) * (W - L - Rm), py = (v) => T + (1 - (fy(v) - Y0) / (Y1 - Y0 || 1)) * (H - T - B);
   ctx.font = '12px system-ui'; ctx.fillStyle = '#5a5955'; ctx.textAlign = 'left';
   ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, H - B); ctx.lineTo(W - Rm, H - B); ctx.stroke();
   if (logy) for (let e = Math.ceil(Y0); e <= Math.floor(Y1); e++) { const y = py(10 ** e); ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - Rm, y); ctx.stroke(); ctx.fillStyle = '#5a5955'; ctx.fillText(`1e${e}`, 30, y + 4); }
-  else for (let k = 0; k <= yticks; k++) { const v = lo + (k / yticks) * (hi - lo); const y = py(v); ctx.strokeStyle = '#f0f0f0'; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - Rm, y); ctx.stroke(); ctx.fillStyle = '#5a5955'; ctx.textAlign = 'right'; ctx.fillText(fmt(v), L - 6, y + 4); ctx.textAlign = 'left'; }
+  else for (let k = 0; k <= yticks; k++) { const v = lo + (k / yticks) * (hi - lo); const y = py(v); ctx.strokeStyle = '#f0f0f0'; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - Rm, y); ctx.stroke(); ctx.fillStyle = '#5a5955'; ctx.textAlign = 'right'; ctx.fillText(yfmt(v), L - 6, y + 4); ctx.textAlign = 'left'; }
   if (logx) for (let e = Math.ceil(X0); e <= Math.floor(X1); e++) { const x = px(10 ** e); ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, H - B); ctx.stroke(); ctx.fillStyle = '#5a5955'; ctx.fillText(`${10 ** e}`, x - 10, H - B + 16); }
   else for (let k = 0; k <= xticks; k++) { const v = a0 + (k / xticks) * (a1 - a0); const x = px(v); ctx.fillStyle = '#5a5955'; ctx.textAlign = 'center'; ctx.fillText(fmt(v), x, H - B + 16); ctx.textAlign = 'left'; }
   ctx.textAlign = 'center'; ctx.fillText(xlabel, L + 0.5 * (W - L - Rm), H - 6); ctx.save(); ctx.translate(12, T + 0.5 * (H - T - B)); ctx.rotate(-Math.PI / 2); ctx.fillText(ylabel, 0, 0); ctx.restore(); ctx.textAlign = 'left';

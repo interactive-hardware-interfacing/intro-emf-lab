@@ -143,6 +143,8 @@ control that changes the picture must be in `getState()`, so the share link repr
 - `core/poynting.js`: `resistor`/`resistorFields`, `capacitor`/`capacitorFields`, `powerWithin`.
 - `core/magcircuit.js`: `coreB`, `solve` (NI = H_c l_c + H_g g, bisection when saturating), `sweepNI`, `sweepGap`.
 - `core/vectorcalc.js`: `SCALARS`, `VECTORS`, `lineIntegral`, `pathLength`, `circulationCircle`, `numericGrad`, `unitVectors`, `toPolar`.
+- `core/antennas.js`: finite dipole and two-element array, far field only, Simpson quadrature over θ (and φ for the array). The tab (`app/tabs/antennas.js`) has no field grid: polar cuts, figures-against-length and array-factor plots.
+
 - `core/smith.js`: `gammaOf`, `zOf`, `yOf`, `swrOf`, `moveToward`, `zinAt`, `extremaOf`, `quarterWave`, `singleStub` (the g = 1 crossing solved in closed form: cos φ = |Γ_y|), `rCircle`/`xCircle` for drawing.
 - `core/oblique.js`: `snell`, `fresnel` (both polarisations, cos θt = −j√(…) past critical so the transmitted wave decays), `specialAngles`, `sweep`, `evanescentDepth`, `fieldAt` (E_y for ⊥, H_y for ∥, with H_r = −Γ∥ H_i), `wavelengths`.
 - `core/radiation.js`: `wavenumber`, `hertzFields` (exact phasors), `farFields`, `instantaneous`, `streamPsi`

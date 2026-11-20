@@ -502,3 +502,11 @@ tightened 10⁴×). Fixes:
 ## Gradient and line integrals tab (patch 8i)
 - New Tools tab before Div and curl: six scalar fields with their gradients and three non-conservative fields (swirl, shear, the wire's B); click to draw a path, the running ∫F·dl is labelled at each vertex and compared with V(a) − V(b); a view of F·t̂, the running integral and V(a) − V(s) along the path; r̂ and φ̂ at the probe with F in that basis; the circulation around the unit circle and around a circle away from the origin in the numbers. `core/vectorcalc.js`.
 - Tests: `core/test/vectorcalc.js` (18 checks: analytic vs numeric gradients, path independence on two paths for every gradient field, closed-loop zero, Stokes for the swirl and shear, 2π around the wire and 0 away from it, the unit vectors), bench app checks, smoke entry.
+
+## Antennas tab (patch 8j)
+
+- New Waves tab **Antennas**: a centre-fed dipole of any length (0.02–2 λ) with the sinusoidal-current pattern, directivity, R_rad referred to I_max, R_in referred to the feed current, half-power beamwidth and main-lobe direction, all by Simpson quadrature; two dipoles on the x axis as an array with the array factor, pattern multiplication, array directivity (and the same array of isotropic sources for comparison) and presets for broadside, end-fire both ways, grating lobes and a single element.
+- Views: polar E- and H-plane cuts; D, R_rad, R_in and HPBW against length; array factor, element pattern and product around the H-plane.
+- `core/antennas.js` + 32 checks (λ/2: 73 Ω, 1.64, 78°; short dipole 20π²(L/λ)²; full wave 2.41; 1.5 λ lobe tilt; array factor limits; broadside/end-fire pair directivities; isotropic pairs exactly 2).
+- `axesFrame` gains a `yfmt` option.
+

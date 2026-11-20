@@ -672,6 +672,25 @@ export async function run(check) {
     check('bodies pointer: far from the surface is ignored', tab.onPointer.call(stub, 'down', 0.29, 0) ? 0 : 1, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5t. Antennas tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'antennas');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults }; stub.mode = 'dipole'; stub.resultsEl = null; stub.shell = {};
+    check('antennas state: parameters + mode', Object.keys(tab.getState.call(stub)).length, Object.keys(tab.pDefaults).length + 1, 0);
+    tab.compute.call(stub);
+    check('antennas compute: λ/2 dipole R_in 73.1 Ω', stub.results.fig.Rin, 73.13, 2e-3);
+    check('antennas compute: no array results in dipole mode', stub.results.arr ? 1 : 0, 0, 0);
+    check('antennas compute: H-plane cut of a lone dipole is a circle', Math.min(...stub.results.cuts.H), 1, 1e-9);
+    stub.mode = 'array'; stub.p.d = 0.25; stub.p.delta = -90; tab.compute.call(stub);
+    check('antennas compute: end-fire pair D ≈ 3.28', stub.results.arr.D, 3.28, 2e-2);
+    check('antennas compute: end-fire H cut has a null toward −x (φ = 180°)', stub.results.cuts.H[180], 0, 1e-6);
+    check('antennas compute: end-fire H cut is maximal toward +x (φ = 0)', stub.results.cuts.H[0], 1, 1e-9);
+    check('antennas csv: 361 rows + header', tab.csv.call(stub).split('\n').length, 362, 0);
+    check('antennas status mentions dBi', tab.statusText.call(stub).includes('dBi') ? 1 : 0, 1, 0);
+  }
+
   // ------------------------------------------------------------ 5s. Smith chart tab (app layer, no DOM)
   {
     const { TABS } = await import('../app/tabs/index.js');

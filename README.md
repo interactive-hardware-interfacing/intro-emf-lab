@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, thirty-five tabs grouped by topic, plus an About page that explains each tab
+page, thirty-six tabs grouped by topic, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -45,6 +45,8 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Eddy currents | A conductor in an AC coil: skin depth, induced currents, field phase, coil R + jωL vs frequency, animated cycle | Complex Gauss–Seidel for ψ = rA_φ (quasi-static) |
 | Energy flow | Poynting's vector in a DC resistor (flux I²R through its side) and in a charging capacitor (flux d(½CV²)/dt through its rim, carried by the displacement current's H); a coaxial surface you slide | Closed form |
 | Filters | RC and series-RLC filters as impedance dividers: Bode plots, waveforms and energy exchange at a drive frequency, step response, the real capacitor (ESR, ESL, f_SR); C and L pulled from the field tabs; Q·V_in against breakdown | Closed form (handout §6) |
+| Antennas | Finite dipole of any length: pattern, directivity, R_rad, R_in, beamwidth and main-lobe direction, all by quadrature; two dipoles as an array with the array factor, pattern multiplication, broadside, end-fire and grating-lobe presets. | closed form + quadrature |
+
 | Time-varying | 2-D FDTD with ∂D/∂t on: pulse, slab, slit, lens, waveguide; paint; Ez(t) at the probe; PML or Mur walls | Yee FDTD (TMz) |
 | About | Per-tab descriptions, how the numbers are computed, every equation | — |
 
@@ -84,6 +86,8 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   planewave.js          medium parameters (γ, η, δ, loss tangent), normal-incidence Fresnel, E and H along z, Poynting flux, polarization
   operators.js          2-D field library with closed-form div and curl; box flux and loop circulation; central differences
   coupled.js            coil turns, mutual inductance by the filament sum, Nagaoka/ring self-inductance, coupling, the transformer in phasors
+  antennas.js        finite-dipole pattern/figures, two-element array factor and directivity (closed form + Simpson)
+
   vectorcalc.js         scalar/vector field library, gradients, line integrals along polylines, circulation, polar unit vectors
   magcircuit.js         magnetic circuit: reluctances, flux, B, H, L, energy split, gap force, saturation by bisection, sweeps
   poynting.js           energy flow: resistor and charging-capacitor fields, S, power through coaxial surfaces
@@ -98,7 +102,7 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith, charged-bodies, images, dipole, lossy-waveguide, poynting, magcircuit, vectorcalc) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith, charged-bodies, images, dipole, lossy-waveguide, poynting, magcircuit, vectorcalc, antennas) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files

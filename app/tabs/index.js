@@ -21,6 +21,7 @@ import planeWaves from './plane-waves.js';
 import radiation from './radiation.js';
 import oblique from './oblique.js';
 import smith from './smith.js';
+import antennas from './antennas.js';
 import chargedBodies from './charged-bodies.js';
 import images from './images.js';
 import dipole from './dipole.js';
@@ -42,7 +43,7 @@ export const GROUPS = [
   { label: 'Currents & circuits', tabs: [conduction, energyFlow, filters] },
   { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, chargesInFields, inductors, magneticCircuits] },
   { label: 'Induction', tabs: [faraday, coupledCoils, eddy] },
-  { label: 'Waves', tabs: [transmissionLines, tlineWaves, lossyLines, smith, planeWaves, oblique, waveguides, radiation, fdtd] },
+  { label: 'Waves', tabs: [transmissionLines, tlineWaves, lossyLines, smith, planeWaves, oblique, waveguides, radiation, antennas, fdtd] },
   { label: 'Tools', tabs: [vectorCalculus, operators, sandbox, about] },
 ];
 
