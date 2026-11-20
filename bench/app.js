@@ -560,6 +560,22 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5z. Gradient and line integrals tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'vector-calculus'), st = Object.create(tab);
+    st.field = 'pointCharge'; st.path = [[-1.2, -0.8], [0.6, -0.9], [1.2, 0.9]]; st.resultsEl = null; st.shell = { layerOn: new Map(), probePt: [0.8, 0.6], redrawOverlay() {}, refreshStatus() {}, updateStageView() {}, syncUrl() {} };
+    tab.compute.call(st);
+    check('vectorcalc tab: ∫E·dl = V(a) − V(b) on the default path', st.results.I, st.results.dV, 1e-5);
+    check('vectorcalc tab: state round trip keeps the path', tab.getState.call(st).vc_path.split(',').length, 6, 0);
+    tab.onPointer.call(st, 'down', 0.3, 0.3, {});
+    check('vectorcalc tab: a click appends a point', st.path.length, 4, 0);
+    tab.onPointer.call(st, 'down', 0.1, 0.1, { shiftKey: true });
+    check('vectorcalc tab: shift-click starts over', st.path.length, 1, 0);
+    st.field = 'wire'; st.path = []; for (let k = 0; k <= 36; k++) st.path.push([Math.cos((2 * Math.PI * k) / 36), Math.sin((2 * Math.PI * k) / 36)]); tab.compute.call(st);
+    check('vectorcalc tab: the unit circle around the wire gives 2π (polyline, 1e-3)', st.results.I, 2 * Math.PI, 1e-3);
+  }
+
   // ------------------------------------------------------------ 5y. Magnetic circuits tab (app layer, no DOM)
   {
     const { TABS } = await import('../app/tabs/index.js');

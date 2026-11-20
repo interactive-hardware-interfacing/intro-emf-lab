@@ -498,3 +498,7 @@ tightened 10⁴×). Fixes:
 ## Magnetic circuits tab (patch 8h)
 - New Magnetostatics tab after Inductors: a core with an air gap and a winding drawn with its flux and the equivalent circuit of two reluctances; B against NI with and without the gap (saturation optional); L against gap length; numbers for ℛ, Φ, B, H, the MMF drops, L, the energy share in the gap and the pull on the pole faces. `core/magcircuit.js`.
 - Tests: `core/test/magcircuit.js` (26 checks: reluctances, NI = H_c l_c + H_g g, L two ways, energy share, force by virtual work, fringing, saturation limits and monotonic L, the sweeps), bench app checks, smoke entry.
+
+## Gradient and line integrals tab (patch 8i)
+- New Tools tab before Div and curl: six scalar fields with their gradients and three non-conservative fields (swirl, shear, the wire's B); click to draw a path, the running ∫F·dl is labelled at each vertex and compared with V(a) − V(b); a view of F·t̂, the running integral and V(a) − V(s) along the path; r̂ and φ̂ at the probe with F in that basis; the circulation around the unit circle and around a circle away from the origin in the numbers. `core/vectorcalc.js`.
+- Tests: `core/test/vectorcalc.js` (18 checks: analytic vs numeric gradients, path independence on two paths for every gradient field, closed-loop zero, Stokes for the swirl and shear, 2π around the wire and 0 away from it, the unit vectors), bench app checks, smoke entry.

@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, thirty-four tabs grouped by topic, plus an About page that explains each tab
+page, thirty-five tabs grouped by topic, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -36,6 +36,7 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Solenoids | A solenoid built from its turns: B along the axis vs μ₀nI and the finite-sheet formula, the ends, discrete turns vs the ideal sheet, a single loop, Helmholtz and anti-Helmholtz pairs; exact field lines | Biot–Savart loop field (elliptic integrals) |
 | Charges in fields | The Lorentz force: a particle tracer (cyclotron circles, E×B cycloid, velocity selector, mass spectrometer, parabola), the Hall effect, the force between wires, torque on a loop | Boris pusher + closed forms |
 | Inductors | Solenoid or ring sensor with a permeable object; optional saturating core μ(B); L from flux linkage and energy | Gauss–Seidel for ψ = rA_φ |
+| Gradient and line integrals | A scalar field and its gradient, a path you draw, the running ∫F·dl against V(a) − V(b) for gradient fields and the circulation for swirls and the wire field, the polar unit vectors at the probe | Closed form + quadrature |
 | Div and curl | Divergence as flux per area through a shrinking box and curl as circulation per area around a shrinking loop, at the probe, on a library of 2-D fields (linear with coefficients, line source, vortex, dipole, swirl, bump) | Closed forms + midpoint sums |
 | Magnetic circuits | A core with an air gap as a circuit of reluctances: NI = Φ Σℛ, B in core and gap, L = N²/ℛ, energy and force in the gap, fringing, saturation, L against gap | Closed form |
 | Sandbox | Paint conductors, dielectrics and charge; watch the neighbour average converge; Gauss paths | Gauss–Seidel (Laplace / Poisson) |
@@ -83,6 +84,7 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   planewave.js          medium parameters (γ, η, δ, loss tangent), normal-incidence Fresnel, E and H along z, Poynting flux, polarization
   operators.js          2-D field library with closed-form div and curl; box flux and loop circulation; central differences
   coupled.js            coil turns, mutual inductance by the filament sum, Nagaoka/ring self-inductance, coupling, the transformer in phasors
+  vectorcalc.js         scalar/vector field library, gradients, line integrals along polylines, circulation, polar unit vectors
   magcircuit.js         magnetic circuit: reluctances, flux, B, H, L, energy split, gap force, saturation by bisection, sweeps
   poynting.js           energy flow: resistor and charging-capacitor fields, S, power through coaxial surfaces
   lossyline.js          lossy line: γ, complex Z₀, dB, distortionless, v_g, lossy steady state and power bookkeeping
@@ -96,7 +98,7 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith, charged-bodies, images, dipole, lossy-waveguide, poynting, magcircuit) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith, charged-bodies, images, dipole, lossy-waveguide, poynting, magcircuit, vectorcalc) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files

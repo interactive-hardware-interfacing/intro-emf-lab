@@ -28,6 +28,7 @@ import lossyLines from './lossy-lines.js';
 import waveguides from './waveguides.js';
 import energyFlow from './energy-flow.js';
 import magneticCircuits from './magnetic-circuits.js';
+import vectorCalculus from './vector-calculus.js';
 import operators from './operators.js';
 import coupledCoils from './coupled-coils.js';
 import interfaceTab from './interface.js';
@@ -42,7 +43,7 @@ export const GROUPS = [
   { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, chargesInFields, inductors, magneticCircuits] },
   { label: 'Induction', tabs: [faraday, coupledCoils, eddy] },
   { label: 'Waves', tabs: [transmissionLines, tlineWaves, lossyLines, smith, planeWaves, oblique, waveguides, radiation, fdtd] },
-  { label: 'Tools', tabs: [operators, sandbox, about] },
+  { label: 'Tools', tabs: [vectorCalculus, operators, sandbox, about] },
 ];
 
 export const TABS = GROUPS.flatMap((g) => g.tabs.map((tab) => { tab.group = g.label; return tab; }));

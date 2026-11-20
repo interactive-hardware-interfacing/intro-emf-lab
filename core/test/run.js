@@ -22,6 +22,7 @@ import { dipoleChecks } from './dipole.js';
 import { lossyChecks } from './lossy-waveguide.js';
 import { poyntingChecks } from './poynting.js';
 import { magcircuitChecks } from './magcircuit.js';
+import { vectorcalcChecks } from './vectorcalc.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -46,4 +47,5 @@ mark('dipole'); dipoleChecks(check);
 mark('lossy-waveguide'); lossyChecks(check);
 mark('poynting'); poyntingChecks(check);
 mark('magcircuit'); magcircuitChecks(check);
+mark('vectorcalc'); vectorcalcChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }

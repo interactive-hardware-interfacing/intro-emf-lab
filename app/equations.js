@@ -309,6 +309,24 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed form; bisection on } H_c \text{ when saturating}`, note: 'Leakage flux ignored.' },
   },
 
+  'vector-calculus': {
+    governing: [
+      { title: 'Gradient', tex: String.raw`\nabla V = \frac{\partial V}{\partial x}\hat{\mathbf{x}} + \frac{\partial V}{\partial y}\hat{\mathbf{y}}, \qquad \mathbf{E} = -\nabla V \ \text{points downhill and is normal to the level curves}` },
+      { title: 'Line integral', tex: String.raw`\int_a^b \mathbf{F}\cdot d\mathbf{l} = \int_a^b (F_x\,dx + F_y\,dy) = \int_0^L (\mathbf{F}\cdot\hat{\mathbf{t}})\,ds` },
+      { title: 'Gradient fields are conservative', tex: String.raw`\int_a^b (-\nabla V)\cdot d\mathbf{l} = V(a) - V(b), \qquad \oint \nabla V\cdot d\mathbf{l} = 0, \qquad \nabla\times\nabla V = 0` },
+      { title: 'Stokes', tex: String.raw`\oint_C \mathbf{F}\cdot d\mathbf{l} = \iint_S (\nabla\times\mathbf{F})\cdot d\mathbf{S}` },
+      { title: 'The wire field', tex: String.raw`\mathbf{F} = \frac{-y\,\hat{\mathbf{x}} + x\,\hat{\mathbf{y}}}{r^2} = \frac{\hat{\boldsymbol\phi}}{r}: \quad \nabla\times\mathbf{F} = 0\ (r > 0), \quad \oint \mathbf{F}\cdot d\mathbf{l} = 2\pi \text{ around the origin}` },
+      { title: 'Polar unit vectors', tex: String.raw`\hat{\mathbf{r}} = \cos\phi\,\hat{\mathbf{x}} + \sin\phi\,\hat{\mathbf{y}}, \qquad \hat{\boldsymbol\phi} = -\sin\phi\,\hat{\mathbf{x}} + \cos\phi\,\hat{\mathbf{y}}, \qquad F_r = \mathbf{F}\cdot\hat{\mathbf{r}},\ F_\phi = \mathbf{F}\cdot\hat{\boldsymbol\phi}` },
+    ],
+    layers: {
+      V: { tex: String.raw`V(x, y)`, note: 'The scalar field; its level curves are drawn on request.' },
+      F: { tex: String.raw`\mathbf{F} = -\nabla V \ \text{or a chosen non-gradient field}`, note: 'Arrows normalised to show direction.' },
+      line: { tex: String.raw`\int \mathbf{F}\cdot d\mathbf{l} \ \text{by the midpoint rule, 400 steps per segment}`, note: 'The running value is written at each vertex.' },
+      basis: { tex: String.raw`\hat{\mathbf{r}},\ \hat{\boldsymbol\phi} \text{ at the probe}`, note: 'They turn with the point; a field that is “radial” has F_φ = 0 everywhere.' },
+    },
+    solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid; quadrature along the path}`, note: '' },
+  },
+
   smith: {
     governing: [
       { title: 'The chart is the Γ plane', tex: String.raw`\Gamma = \frac{z - 1}{z + 1}, \qquad z = \frac{Z}{Z_0} = \frac{1 + \Gamma}{1 - \Gamma}, \qquad |\Gamma| \le 1` },

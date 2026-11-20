@@ -26,6 +26,7 @@ import { dipoleChecks } from '../core/test/dipole.js';
 import { lossyChecks } from '../core/test/lossy-waveguide.js';
 import { poyntingChecks } from '../core/test/poynting.js';
 import { magcircuitChecks } from '../core/test/magcircuit.js';
+import { vectorcalcChecks } from '../core/test/vectorcalc.js';
 
 const { check, mark, report } = makeRunner();
 
@@ -52,6 +53,7 @@ mark('dipole'); dipoleChecks(check);
 mark('lossy-waveguide'); lossyChecks(check);
 mark('poynting'); poyntingChecks(check);
 mark('magcircuit'); magcircuitChecks(check);
+mark('vectorcalc'); vectorcalcChecks(check);
 
 // ---------------------------------------------------------------- syntax of every browser module
 // The tabs and shell never run under node, so at least parse them: a dropped comma must fail CI.
