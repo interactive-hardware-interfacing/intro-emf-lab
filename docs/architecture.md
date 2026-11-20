@@ -135,6 +135,7 @@ control that changes the picture must be in `getState()`, so the share link repr
   formula for one turn), `coupling`, `transformer` (phasor solution with an open or resistive secondary),
   `fluxFraction`. The Coupled coils tab draws coil 1's field with `core/solenoid.js` and marks the ψ contour
   through coil 2's winding.
+- `core/charged-bodies.js`: `enclosed`, `fieldMag`, `gaussArea`, `potential`, `fieldAt`, `potentialAt` (sphere/shell: equatorial cut; cylinders: cross-section; slab: normal along x), `numericDiv`, `densities`.
 - `core/smith.js`: `gammaOf`, `zOf`, `yOf`, `swrOf`, `moveToward`, `zinAt`, `extremaOf`, `quarterWave`, `singleStub` (the g = 1 crossing solved in closed form: cos φ = |Γ_y|), `rCircle`/`xCircle` for drawing.
 - `core/oblique.js`: `snell`, `fresnel` (both polarisations, cos θt = −j√(…) past critical so the transmitted wave decays), `specialAngles`, `sweep`, `evanescentDepth`, `fieldAt` (E_y for ⊥, H_y for ∥, with H_r = −Γ∥ H_i), `wavelengths`.
 - `core/radiation.js`: `wavenumber`, `hertzFields` (exact phasors), `farFields`, `instantaneous`, `streamPsi`

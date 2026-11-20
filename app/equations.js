@@ -200,6 +200,23 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed forms for } \mathbf{F}, \nabla\cdot\mathbf{F}, \nabla\times\mathbf{F}`, note: 'Nothing is solved; the point is the definitions.' },
   },
 
+  'charged-bodies': {
+    governing: [
+      { title: 'Gauss', tex: MAXWELL.gaussE },
+      { title: 'Integral form on a symmetric surface', tex: String.raw`\oint \mathbf{E}\cdot d\mathbf{S} = E(s)\,A(s) = \frac{Q_{\text{enc}}(s)}{\varepsilon_0}` },
+      { title: 'Uniform sphere', tex: String.raw`E = \frac{\rho r}{3\varepsilon_0} = \frac{Qr}{4\pi\varepsilon_0 a^3}\ (r<a), \quad \frac{Q}{4\pi\varepsilon_0 r^2}\ (r>a); \qquad V(0) = \tfrac{3}{2}\frac{Q}{4\pi\varepsilon_0 a}` },
+      { title: 'Spherical shell', tex: String.raw`E = 0\ (r<a), \quad \frac{Q}{4\pi\varepsilon_0 r^2}\ (r>a); \qquad \Delta E = \sigma/\varepsilon_0 \text{ at } a` },
+      { title: 'Infinite cylinder', tex: String.raw`E = \frac{\rho r}{2\varepsilon_0} = \frac{\lambda r}{2\pi\varepsilon_0 a^2}\ (r<a), \quad \frac{\lambda}{2\pi\varepsilon_0 r}\ (r>a)` },
+      { title: 'Slab', tex: String.raw`E = \frac{\rho x}{\varepsilon_0}\ (|x|<a), \quad \pm\frac{\rho a}{\varepsilon_0}\ (|x|>a)` },
+    ],
+    layers: {
+      E: { tex: String.raw`|\mathbf{E}|`, note: 'Log colour scale; the sphere and shell are shown on an equatorial cut, the cylinders in cross-section.' },
+      V: { tex: String.raw`V = -\int \mathbf{E}\cdot d\mathbf{l}`, note: 'Zero at infinity for the spheres; at 10a for the cylinders (a line charge has no V(∞)); at the mid-plane for the slab.' },
+      gauss: { tex: String.raw`\Phi = E(s)A(s), \qquad A = 4\pi s^2,\ 2\pi s \text{ (per m)},\ 2 \text{ (per m}^2\text{)}`, note: 'Drag the surface; the readout at the foot of the picture compares E·A with Q_enc/ε₀.' },
+    },
+    solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid}`, note: '' },
+  },
+
   smith: {
     governing: [
       { title: 'The chart is the Γ plane', tex: String.raw`\Gamma = \frac{z - 1}{z + 1}, \qquad z = \frac{Z}{Z_0} = \frac{1 + \Gamma}{1 - \Gamma}, \qquad |\Gamma| \le 1` },

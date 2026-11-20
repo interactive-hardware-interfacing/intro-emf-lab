@@ -22,6 +22,7 @@ build step. The solvers never touch the DOM, so everything runs under node as we
 | `planewave.js` | Uniform plane waves: medium parameters, normal-incidence Fresnel coefficients, E and H along z with an interface, Poynting flux, polarization |
 | `operators.js` | 2-D vector fields with closed-form divergence and curl; outward flux through a box and circulation around a loop by midpoint sums; central differences |
 | `coupled.js` | Two coaxial coils: mutual inductance by Maxwell's filament sum, Nagaoka or ring self-inductance, coupling coefficient, transformer in phasors |
+| `charged-bodies.js` | Gauss's law for the symmetric distributions: enclosed charge, field magnitude, Gaussian area, potential (V(∞) = 0, V(10a) = 0 for cylinders, V(0) = 0 for the slab), field and potential in a cut plane, numeric divergence, densities |
 | `smith.js` | Smith chart arithmetic: Γ ↔ z, y, SWR, rotation toward the generator, V max/min positions, quarter-wave transformer, single shunt stub (both solutions, open and short), chart circle geometry |
 | `oblique.js` | Oblique incidence on a plane boundary: Snell, Fresnel Γ and τ for both polarisations (complex past the critical angle), Brewster and critical angles, evanescent depth, the instantaneous out-of-plane field |
 | `radiation.js` | Hertzian dipole: exact phasors (E_r, E_θ, H_φ), far-field forms, instantaneous fields, the stream function r sinθ H_φ whose contours are the E lines, time-average Poynting, R_rad, P_rad, directivity |

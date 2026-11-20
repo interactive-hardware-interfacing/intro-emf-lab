@@ -21,6 +21,7 @@ import planeWaves from './plane-waves.js';
 import radiation from './radiation.js';
 import oblique from './oblique.js';
 import smith from './smith.js';
+import chargedBodies from './charged-bodies.js';
 import operators from './operators.js';
 import coupledCoils from './coupled-coils.js';
 import interfaceTab from './interface.js';
@@ -31,7 +32,7 @@ import eddy from './eddy.js';
 /** Topic groups, in tab-bar order. A tab belongs to exactly one group; the bench checks that. */
 export const GROUPS = [
   { label: '', tabs: [about] },
-  { label: 'Electrostatics', tabs: [pointCharges, pointCharges3d, makeRingLine('ring'), makeRingLine('rods'), gaussLaw, interfaceTab, capacitors, dielectrics] },
+  { label: 'Electrostatics', tabs: [pointCharges, pointCharges3d, makeRingLine('ring'), makeRingLine('rods'), gaussLaw, chargedBodies, interfaceTab, capacitors, dielectrics] },
   { label: 'Currents & circuits', tabs: [conduction, filters] },
   { label: 'Magnetostatics', tabs: [magneticFields, ampere, solenoids, chargesInFields, inductors] },
   { label: 'Induction', tabs: [faraday, coupledCoils, eddy] },

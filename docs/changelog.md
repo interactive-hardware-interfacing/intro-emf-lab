@@ -471,3 +471,7 @@ tightened 10⁴×). Fixes:
 - `ui.range` takes an `onChange` (URL sync on release). Tests: `core/test/smith.js` (26
   checks, including both stub solutions substituted back for five loads), bench app checks,
   smoke entry.
+
+## Charged bodies tab (patch 8c)
+- New Electrostatics tab after Gauss's law: the five textbook distributions with a draggable Gaussian surface (sphere, cylinder per metre, pillbox), the flux E·A against Q_enc/ε₀, |E| and V maps with equipotentials, and E, V, Q_enc against distance. `core/charged-bodies.js`.
+- Tests: `core/test/charged-bodies.js` (26 checks: every closed form, continuity of E and V at the surface, the σ/ε₀ jump at shells, E = −dV/ds for every body, E·A·ε₀ = Q_enc for every body at three sizes, in-plane divergence ρ/ε₀ for the cylinder and ⅔ρ/ε₀ for the sphere cut), bench app checks, smoke entry.

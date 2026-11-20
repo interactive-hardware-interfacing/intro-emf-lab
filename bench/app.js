@@ -560,6 +560,23 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5t. Charged bodies tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'charged-bodies');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults }; stub.kind = 'sphere'; stub.resultsEl = null; stub.shell = { setExtent() {}, layerOn: new Map() };
+    check('bodies state: parameters + kind', Object.keys(tab.getState.call(stub)).length, Object.keys(tab.pDefaults).length + 1, 0);
+    tab.build.call(stub); tab.compute.call(stub);
+    check('bodies compute: E at the surface of 1 nC, 0.1 m sphere = 899 V/m', stub.results.Ea, 898.76, 1e-3);
+    check('bodies compute: flux = Q_enc/ε₀', stub.results.flux, stub.results.fluxGauss, 1e-12);
+    check('bodies compute: |E| grid symmetric', stub.gridE.get(40, 80), stub.gridE.get(120, 80), 1e-12);
+    check('bodies extent: 4:3', stub.extent[1] / stub.extent[3], 4 / 3, 1e-12);
+    const okDrag = tab.onPointer.call(stub, 'down', 0.15, 0.001);
+    check('bodies pointer: grabbing near the surface moves it', okDrag && Math.abs(stub.p.s - 0.15) < 1e-4 ? 1 : 0, 1, 0);
+    check('bodies pointer: far from the surface is ignored', tab.onPointer.call(stub, 'down', 0.29, 0) ? 0 : 1, 1, 0);
+  }
+
   // ------------------------------------------------------------ 5s. Smith chart tab (app layer, no DOM)
   {
     const { TABS } = await import('../app/tabs/index.js');
