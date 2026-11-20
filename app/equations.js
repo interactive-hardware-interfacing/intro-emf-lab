@@ -200,6 +200,21 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed forms for } \mathbf{F}, \nabla\cdot\mathbf{F}, \nabla\times\mathbf{F}`, note: 'Nothing is solved; the point is the definitions.' },
   },
 
+  dipole: {
+    governing: [
+      { title: 'The ideal dipole p = qs (s → 0, qs fixed)', tex: String.raw`V = \frac{p\cos\theta}{4\pi\varepsilon_0 r^2}, \qquad \mathbf{E} = \frac{p}{4\pi\varepsilon_0 r^3}\left(2\cos\theta\,\hat{\mathbf{r}} + \sin\theta\,\hat{\boldsymbol\theta}\right)` },
+      { title: 'Axis and broadside', tex: String.raw`E_{\text{axis}} = \frac{2p}{4\pi\varepsilon_0 r^3}, \qquad E_{\text{broadside}} = \frac{p}{4\pi\varepsilon_0 r^3}` },
+      { title: 'The real pair', tex: String.raw`\mathbf{E} = \frac{q}{4\pi\varepsilon_0}\left(\frac{\mathbf{r} - \mathbf{s}/2}{|\mathbf{r} - \mathbf{s}/2|^3} - \frac{\mathbf{r} + \mathbf{s}/2}{|\mathbf{r} + \mathbf{s}/2|^3}\right) \approx \text{ideal} \times \left(1 + \tfrac{1}{2}(s/r)^2\right) \text{ on the axis}` },
+      { title: 'In a uniform field', tex: String.raw`\boldsymbol\tau = \mathbf{p}\times\mathbf{E}, \qquad U = -\mathbf{p}\cdot\mathbf{E}, \qquad \mathbf{F} = (\mathbf{p}\cdot\nabla)\mathbf{E} = 0 \text{ if uniform}` },
+    ],
+    layers: {
+      V: { tex: String.raw`V = \frac{q}{4\pi\varepsilon_0}\left(\frac{1}{r_+} - \frac{1}{r_-}\right)\ (- E_0 x)`, note: 'The exact pair; the background −E₀x is added in the uniform-field situation.' },
+      E: { tex: String.raw`\mathbf{E} = -\nabla V`, note: '' },
+      ideal: { tex: String.raw`V_{\text{ideal}} = \frac{p\cos\theta}{4\pi\varepsilon_0 r^2}`, note: 'Dashed contours at the same levels as the exact ones; they agree beyond a few s.' },
+    },
+    solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid}`, note: '' },
+  },
+
   images: {
     governing: [
       { title: 'Uniqueness', tex: String.raw`\nabla^2 V = -\rho/\varepsilon_0 \text{ in the region},\ V = 0 \text{ on the conductor} \ \Rightarrow\ V \text{ is unique there}` },

@@ -22,6 +22,7 @@ import { obliqueChecks } from '../core/test/oblique.js';
 import { smithChecks } from '../core/test/smith.js';
 import { chargedBodiesChecks } from '../core/test/charged-bodies.js';
 import { imagesChecks } from '../core/test/images.js';
+import { dipoleChecks } from '../core/test/dipole.js';
 
 const { check, mark, report } = makeRunner();
 
@@ -44,6 +45,7 @@ mark('oblique'); obliqueChecks(check);
 mark('smith'); smithChecks(check);
 mark('charged-bodies'); chargedBodiesChecks(check);
 mark('images'); imagesChecks(check);
+mark('dipole'); dipoleChecks(check);
 
 // ---------------------------------------------------------------- syntax of every browser module
 // The tabs and shell never run under node, so at least parse them: a dropped comma must fail CI.

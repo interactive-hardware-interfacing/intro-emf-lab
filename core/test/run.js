@@ -18,6 +18,7 @@ import { obliqueChecks } from './oblique.js';
 import { smithChecks } from './smith.js';
 import { chargedBodiesChecks } from './charged-bodies.js';
 import { imagesChecks } from './images.js';
+import { dipoleChecks } from './dipole.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -38,4 +39,5 @@ mark('oblique'); obliqueChecks(check);
 mark('smith'); smithChecks(check);
 mark('charged-bodies'); chargedBodiesChecks(check);
 mark('images'); imagesChecks(check);
+mark('dipole'); dipoleChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }

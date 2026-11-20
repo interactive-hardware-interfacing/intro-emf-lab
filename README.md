@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, twenty-nine tabs grouped by topic, plus an About page that explains each tab
+page, thirty tabs grouped by topic, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -13,6 +13,7 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | --- | --- | --- |
 | Point charges | V, E, field lines of up to four charges; a Randomize puzzle mode | Coulomb superposition |
 | 3D point charges | The same charges in a box: cut planes, 3D field lines, orbit | Coulomb superposition |
+| Electric dipole | The ±q pair against the ideal point dipole: the 1/r³ field with its 2:1 axis/broadside ratio, where the ideal picture fails, and a dipole in a uniform field with torque p × E and energy −p·E | Closed form |
 | Ring charge | A ring of N point charges against the continuous ring; remove charges one at a time; per-charge contributions at the probe | Closed form + quadrature |
 | Line charge | Two charged rods in cross-section, exact image solution, C′ | Closed form |
 | Gauss's law | A movable sphere or cube tiled into patches; E·n painted and summed against Q_enc/ε₀ | Coulomb + midpoint sum |
@@ -78,6 +79,7 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   planewave.js          medium parameters (γ, η, δ, loss tangent), normal-incidence Fresnel, E and H along z, Poynting flux, polarization
   operators.js          2-D field library with closed-form div and curl; box flux and loop circulation; central differences
   coupled.js            coil turns, mutual inductance by the filament sum, Nagaoka/ring self-inductance, coupling, the transformer in phasors
+  dipole.js             electric dipole: exact pair, ideal dipole, torque, energy, the pair in a uniform field
   images.js             method of images: image sets, field and V outside the conductor, induced σ, totals, force
   charged-bodies.js     Gauss's law for sphere, shell, cylinder, cylindrical shell, slab: Q_enc, E, V, flux
   smith.js              Smith chart: Γ ↔ z, rotation, extrema, quarter-wave transformer, single shunt stub
@@ -86,7 +88,7 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith, charged-bodies, images) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith, charged-bodies, images, dipole) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files

@@ -480,3 +480,8 @@ tightened 10⁴×). Fixes:
 - New Electrostatics tab after Charged bodies: the method of images for a point charge above a grounded plane, a line charge above a plane, a point charge near a grounded sphere and a charge in a 90° corner. V and |E| in the physical region with the conductor grey, an optional layer that shows the images and their (fictitious) field inside, induced σ as bars and as a plot, the total induced charge and the force. `core/images.js`.
 - Tests: `core/test/images.js` (23 checks: V = 0 on every conductor, E normal to it, σ = ε₀E_n, ∫σ = −q / −λ / −q a/D by quadrature, forces against the closed forms), bench app checks, smoke entry.
 - Tab bar: slightly smaller tabs (12 px, 4 × 5 px padding) so the growing bar stays at four rows at 1500 px.
+
+## Electric dipole tab (patch 8e)
+- New Electrostatics tab after 3D point charges: the ±q pair with its V, |E|, arrows and equipotentials, the ideal dipole's equipotentials as a dashed overlay for comparison, |E| against distance on log axes (pair, ideal, single charge), and the pair in a uniform field with the torque arc, τ and U against angle. `core/dipole.js`.
+- Tests: `core/test/dipole.js` (19 checks: ideal forms, E = −∇V for both, the +½(s/r)² and −⅜(s/r)² errors and their 1/r² scaling, torque from p × E against the two forces, τ = −dU/dθ), bench app checks, smoke entry.
+- The About tab moves to the end of the Tools group so the tab bar packs into four rows.

@@ -560,6 +560,22 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5v. Electric dipole tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'dipole');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults }; stub.mode = 'free'; stub.resultsEl = null; stub.shell = { setExtent() {}, layerOn: new Map() };
+    check('dipole state: parameters + mode', Object.keys(tab.getState.call(stub)).length, Object.keys(tab.pDefaults).length + 1, 0);
+    tab.build.call(stub); tab.compute.call(stub);
+    check('dipole compute: p = 1 nC × 20 mm', stub.results.p, 2e-11, 1e-15);
+    check('dipole compute: axis error at 5 s is +2 %', stub.results.err.axis, 0.0203, 1e-2);
+    check('dipole compute: V antisymmetric in y', stub.gridV.get(80, 40), -stub.gridV.get(80, 120), 1e-9);
+    stub.mode = 'field'; stub.p.E0 = 5000; stub.p.theta = 30; tab.build.call(stub); tab.compute.call(stub);
+    check('dipole compute: torque −pE sin30°', stub.results.uf.torque, -2e-11 * 5000 * 0.5, 1e-12);
+    check('dipole compute: far field is E₀ (grid corner |E| ≈ 5000)', stub.gridE.get(0, 0), 5000, 2e-2);
+  }
+
   // ------------------------------------------------------------ 5u. Images tab (app layer, no DOM)
   {
     const { TABS } = await import('../app/tabs/index.js');
