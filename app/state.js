@@ -68,7 +68,17 @@ export function taggedName(filename) {
   return filename.includes(`.${SEMESTER}.`) ? filename : filename.replace(/(\.[a-z0-9]+)$/i, `.${SEMESTER}$1`);
 }
 
+/**
+ * CSV hygiene: a field sampled exactly on a point charge or a line current is infinite or
+ * undefined at that node. Spreadsheets choke on "NaN"/"Infinity"; an empty cell is the
+ * convention for "no value", so those tokens are blanked (whole cells only).
+ */
+export function cleanCsv(text) {
+  return text.replace(/(^|,)(NaN|-?Infinity|undefined)(?=,|$)/gm, '$1');
+}
+
 export function downloadText(filename, text, mime = 'text/csv') {
+  if (mime === 'text/csv') text = cleanCsv(text);
   filename = taggedName(filename);
   const blob = new Blob([text], { type: mime });
   const a = document.createElement('a');

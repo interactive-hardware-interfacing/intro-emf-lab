@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { EPS0 } from '../core/constants.js';
+import { routeMessage } from '../app/solverclient.js';
 import { Grid2D } from '../core/grid.js';
 import { Relax2D, lab2Preset } from '../core/relax2d.js';
 import { diskCapacitor, solenoidWithObject, idealLayeredC } from '../core/axisym.js';
@@ -93,7 +94,8 @@ export async function run(check) {
   {
     globalThis.location = { pathname: '/x/', search: '', hash: '' };
     globalThis.history = { replaceState: (_, __, url) => { globalThis.location.search = url.slice(url.indexOf('?')); }, pushState: (_, __, url) => { globalThis.location.search = url.slice(url.indexOf('?')); } };
-    const { writeState, readState } = await import('../app/state.js');
+    const { writeState, readState, cleanCsv } = await import('../app/state.js');
+    check('csv hygiene: NaN, Infinity and undefined cells are blanked, numbers and names untouched', cleanCsv('x,V,name\n0,NaN,NaNcy\n1,-Infinity,ok\nundefined,2,Infinity') === 'x,V,name\n0,,NaNcy\n1,,ok\n,2,' ? 1 : 0, 1, 0);
     writeState({ tab: 'sandbox', color: 'none', ov: 'none', px: 0.123456789, q1: -2.5, list: ['a', 'b'], empty: '', undef: undefined });
     const back = readState();
     check('state: tab round-trips', back.tab === 'sandbox' ? 1 : 0, 1, 0);
@@ -558,6 +560,17 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5q. SolverClient message routing
+  {
+    const r = (st, m) => routeMessage(st, m).action;
+    check('solverclient: frames pass while idle', r({ initPending: false, pending: true }, { type: 'frame' }) === 'frame' ? 1 : 0, 1, 0);
+    check('solverclient: done resolves a pending run', r({ initPending: false, pending: true }, { type: 'done' }) === 'done' ? 1 : 0, 1, 0);
+    check('solverclient: a frame posted before the init was processed is dropped (old geometry)', r({ initPending: true, pending: false }, { type: 'frame' }) === 'drop' ? 1 : 0, 1, 0);
+    check('solverclient: a stale done during init is dropped', r({ initPending: true, pending: true }, { type: 'done' }) === 'drop' ? 1 : 0, 1, 0);
+    check('solverclient: ready always passes', r({ initPending: true, pending: false }, { type: 'ready' }) === 'ready' ? 1 : 0, 1, 0);
+    check('solverclient: a done with nothing pending is dropped', r({ initPending: false, pending: false }, { type: 'done' }) === 'drop' ? 1 : 0, 1, 0);
+  }
+
   // ------------------------------------------------------------ 5p. Radiation tab (app layer, no DOM)
   {
     const { TABS } = await import('../app/tabs/index.js');
@@ -576,6 +589,16 @@ export async function run(check) {
     check('radiation compute: H_φ antisymmetric in x', stub.gridH.get(20, 80), -stub.gridH.get(140, 80), 1e-9);
     check('radiation compute: S_r never negative, zero only on the axis', Array.from(stub.gridS.data).every((v) => v >= 0) && stub.gridS.get(80, 140) === 0 && stub.gridS.get(81, 140) > 0 ? 1 : 0, 1, 0);
     check('radiation compute: far-field power density matches 1.5 P_rad/4πr²', stub.results.Sfar, (1.5 * stub.results.Prad) / (4 * Math.PI * 1000 * 1000), 1e-3);
+    {
+      // the rotated phasor grid equals the direct closed form at a node, at a nonzero time
+      stub.t = 0.37e-9; tab.compute.call(stub);
+      const g = stub.gridE, i = 100, j = 120, x = g.x(i), z = g.y(j), d = tab.fieldsAt.call(stub, x, z, stub.t);
+      check('radiation compute: cached phasors rotated = closed form |E| at a node, t ≠ 0', g.get(i, j), d.Emag, 1e-10);
+      check('radiation compute: … and H_φ (signed)', stub.gridH.get(i, j), d.Hph, 1e-10);
+      const { streamPsi } = await import('../core/radiation.js');
+      check('radiation compute: … and the stream function', stub.gridPsi.get(i, j), streamPsi(stub.p.I0, stub.p.dl * 1e-3, stub.p.f * 1e6, Math.hypot(x, z), Math.atan2(Math.abs(x), z), stub.t), 1e-10);
+      stub.t = 0;
+    }
     const rows = tab.csv.call(stub).split('\n');
     check('radiation csv: 161² rows + header', rows.length, 161 * 161 + 1, 0);
   }

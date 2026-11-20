@@ -73,7 +73,7 @@ export default {
 
   finish() {
     const { c1, c2 } = this.coils(), p = this.p, rw = p.rw * 1e-3;
-    const L1 = selfInductance(c1, rw), L2 = selfInductance(c2, rw), M = mutualInductance(c1, c2), k = coupling(M, L1, L2);
+    const L1 = selfInductance(c1, rw), L2 = selfInductance(c2, rw), M = mutualInductance(c1, c2, rw), k = coupling(M, L1, L2);
     const w = 2 * PI * p.f;
     const open = transformer({ L1, L2, M, R: Infinity, w, V1: p.V1 }), loaded = transformer({ L1, L2, M, R: p.open ? Infinity : p.R, w, V1: p.V1 });
     // ψ at coil 2's winding (its flux per turn from coil 1 at unit current) for the linked-lines contour
@@ -127,9 +127,9 @@ export default {
 
   drawSweep(ctx, W, H) {
     if (!this.results) this.compute();
-    const { c1, c2 } = this.coils(), r = this.results, p = this.p;
+    const { c1, c2 } = this.coils(), r = this.results, p = this.p, rw = p.rw * 1e-3;
     const dmax = Math.max(0.12, 3 * Math.max(c1.l, c2.l, c1.a, c2.a)), n = 120, ds = [], Ms = [], ks = [];
-    for (let i = 0; i < n; i++) { const d = (dmax * i) / (n - 1); const M = mutualInductance(c1, { ...c2, zc: d }); ds.push(d * 1e3); Ms.push(M); ks.push(coupling(M, r.L1, r.L2)); }
+    for (let i = 0; i < n; i++) { const d = (dmax * i) / (n - 1); const M = mutualInductance(c1, { ...c2, zc: d }, rw); ds.push(d * 1e3); Ms.push(M); ks.push(coupling(M, r.L1, r.L2)); }
     const A = this.frame(ctx, W, H, { lo: Math.min(0, ...ks), hi: Math.max(...ks) * 1.1 || 1, a0: 0, a1: dmax * 1e3, xlabel: 'centre-to-centre offset d (mm)', ylabel: 'k = M/√(L₁L₂)', top: 84, fmtX: (v) => v.toFixed(0) });
     A.line(ds, ks, '#1f5fbf');
     ctx.fillStyle = '#e5484d'; ctx.beginPath(); ctx.arc(A.px(p.d), A.py(r.k), 5, 0, 2 * PI); ctx.fill();
@@ -164,7 +164,7 @@ export default {
   csv() {
     const { c1, c2 } = this.coils(); if (!this.results) this.finish();
     const lines = ['d_m,M_H,k'];
-    for (let i = 0; i <= 100; i++) { const d = (0.15 * i) / 100, M = mutualInductance(c1, { ...c2, zc: d }); lines.push(`${d},${M},${coupling(M, this.results.L1, this.results.L2)}`); }
+    for (let i = 0; i <= 100; i++) { const d = (0.15 * i) / 100, M = mutualInductance(c1, { ...c2, zc: d }, this.p.rw * 1e-3); lines.push(`${d},${M},${coupling(M, this.results.L1, this.results.L2)}`); }
     return lines.join('\n');
   },
 
@@ -187,8 +187,8 @@ export default {
     box.appendChild(ui.el('h2', '', 'Coil 2')); row(pf('N2', 'Turns N₂', 1, 2000), pf('a2', 'Radius a₂ (mm)', 1, 500), pf('l2', 'Length l₂ (mm)', 0, 1000));
     const lab = ui.el('div', 'hint', `centre-to-centre offset d: ${p.d} mm`); box.appendChild(lab);
     box.appendChild(ui.range(p.d, { min: 0, max: 200, step: 1, ariaLabel: 'offset of coil 2 (mm)', onInput: (v) => { p.d = v; lab.textContent = `centre-to-centre offset d: ${v} mm`; this.build(); this.finish(); shell.redraw(); shell.refreshStatus(); clearTimeout(this.urlT); this.urlT = setTimeout(() => shell.syncUrl(), 300); } }));
-    row(pf('rw', 'Wire radius for a single turn (mm)', 0.01, 10, light));
-    box.appendChild(ui.el('p', 'hint', 'M is Maxwell’s coaxial-filament formula summed over every pair of turns; L₁ and L₂ are Nagaoka’s single-layer formula (the ring formula for one turn). k = M/√(L₁L₂) ≤ 1: how much of one coil’s flux the other catches. The red field line of coil 1 grazes coil 2’s winding; the lines inside it are the shared flux.'));
+    row(pf('rw', 'Wire radius (mm)', 0.01, 10, light));
+    box.appendChild(ui.el('p', 'hint', 'M is Maxwell’s coaxial-filament formula summed over every pair of turns; L₁ and L₂ are Nagaoka’s single-layer formula (the ring formula for one turn). k = M/√(L₁L₂) ≤ 1: how much of one coil’s flux the other catches (it can read a little above 1 if you make the windings overlap in space, which real coils cannot). The wire radius enters the ring formula for a single turn, is the shortest a winding can be, and gives two coincident turns a finite mutual term. The red field line of coil 1 grazes coil 2’s winding; the lines inside it are the shared flux.'));
     box.appendChild(ui.el('h2', '', 'Transformer'));
     row(pf('f', 'Frequency f (Hz)', 0.1, 1e9, light), pf('V1', 'Primary voltage amplitude V₁ (V)', 1e-3, 1e5, light));
     row(ui.field('Secondary', ui.select([['1', 'open circuit'], ['0', 'resistive load R']], p.open ? '1' : '0', (v) => { p.open = v === '1'; light(); })));

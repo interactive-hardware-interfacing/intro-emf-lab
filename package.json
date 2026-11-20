@@ -11,7 +11,8 @@
     "serve": "python3 -m http.server 8000",
     "core:split": "git subtree split --prefix=core -b em-core-split",
     "core:push": "git subtree push --prefix=core https://github.com/interactive-hardware-interfacing/em-core.git main",
-    "core:pull": "git subtree pull --prefix=core https://github.com/interactive-hardware-interfacing/em-core.git main --squash"
+    "core:pull": "git subtree pull --prefix=core https://github.com/interactive-hardware-interfacing/em-core.git main --squash",
+    "fuzz": "node bench/fuzz.mjs"
   },
   "license": "MIT"
 }

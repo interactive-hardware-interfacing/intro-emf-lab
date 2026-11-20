@@ -127,6 +127,44 @@ console.log('ok  accessible names');
 }
 
 // ---- Narrow layout: nothing should overflow horizontally at 900 px
+// solver tabs under stress: change a control while a solve is running (the worker is still
+// posting frames for the old grid), and hop between solver tabs faster than they converge.
+// This is the path no node test reaches; it is where the stale-frame crash lived.
+{
+  const before = errors.length;
+  for (const id of ['capacitors', 'dielectrics', 'conduction', 'inductors', 'eddy', 'transmission-lines']) {
+    await page.goto(`${base}?tab=${id}`); await page.waitForTimeout(250);
+    // the first two geometry controls to their extremes, 150 ms apart: each one rebuilds the grid
+    // at a new size while the previous solve is still posting frames
+    for (const [k, which] of [[0, 'min'], [1, 'max'], [0, 'max']]) {
+      await page.evaluate(([k, which]) => { const el = document.querySelectorAll('#controls input[inputmode=decimal]')[k]; if (!el || el.dataset[which] === undefined) return; el.value = el.dataset[which]; el.dispatchEvent(new Event('change', { bubbles: true })); }, [k, which]);
+      await page.waitForTimeout(150);
+    }
+    await waitIdle();
+  }
+  for (let r = 0; r < 2; r++) for (const id of ['capacitors', 'inductors', 'dielectrics', 'eddy', 'conduction', 'sandbox', 'fdtd']) { await page.evaluate((id) => window.emf.selectTab(id), id); await page.waitForTimeout(100); }
+  await page.waitForTimeout(1500);
+  if (errors.length === before) console.log('ok  solver tabs under rebuild and tab hopping');
+}
+
+// pointer interaction: every tab with an onPointer handler gets a click, a drag across the
+// field and a hover, through the real pointer events (loop drag on Ampère, paint on Sandbox,
+// Conduction and FDTD, charge removal on Ring charge)
+{
+  const before = errors.length;
+  const withPointer = await page.evaluate(() => window.emf.tabs.filter((t) => t.onPointer).map((t) => t.id));
+  for (const id of withPointer) {
+    await page.goto(`${base}?tab=${id}`); await page.waitForTimeout(600);
+    const box = await page.$eval('.canvas-stack', (el) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
+    const at = (fx, fy) => [box.x + fx * box.w, box.y + fy * box.h];
+    await page.mouse.move(...at(0.5, 0.5)); await page.mouse.down(); await page.mouse.move(...at(0.6, 0.55), { steps: 6 }); await page.mouse.up();
+    await page.mouse.move(...at(0.3, 0.3)); await page.mouse.down(); await page.mouse.up();
+    await page.mouse.move(...at(0.7, 0.7), { steps: 4 });
+    await page.waitForTimeout(400); await waitIdle();
+  }
+  if (errors.length === before) console.log(`ok  pointer interaction (${withPointer.length} tabs)`);
+}
+
 await page.setViewportSize({ width: 900, height: 800 });
 for (const id of ['capacitors', 'fdtd', 'gauss-law', 'about']) {
   await page.goto(`${base}?tab=${id}`, { waitUntil: 'networkidle' }); await page.waitForTimeout(600);

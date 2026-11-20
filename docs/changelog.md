@@ -410,3 +410,44 @@ regression test:
   size from them. The stage height allowance is 100vh − 240px to clear the three-row tab bar.
 - Ampère's law, Radiation and Div and curl now use 4:3 extents (same half-height as before,
   wider in x). Circles still draw as circles; the grids are 4:3 in metres.
+
+## Whole-site audit (patch 7q)
+Independent re-derivation of every core module not covered by the 14 November audit
+(analytic closed forms, the (r, z) electrostatic and magnetostatic solvers and their energy
+and Gauss bookkeeping, the Cartesian solver, dielectrics bookkeeping, eddy currents, FDTD,
+transmission-line geometry, interface conditions) plus an implementation pass (worker
+protocol, URL state, test rig, CI) and a control-extremes fuzz over every tab in a headless
+browser (each numeric control set to its minimum and its maximum, page errors and NaN in
+the status/probe text recorded). Physics: no errors found; convergence at the tabs'
+tolerances was measured (charges and energies move < 0.03 % when the tolerance is
+tightened 10⁴×). Fixes:
+- **Stale solver frames (Dielectrics crashed; Capacitors, Conduction, Inductors, Eddy
+  exposed):** rebuilding a tab while a solve was running let a frame or `done` from the old
+  grid reach the new one (the worker had posted it before it processed the new `init`), and
+  `Float64Array.set` threw "offset is out of bounds". `SolverClient` now drops frames and
+  `done` messages that arrive while an `init` is pending and cancels the old run on `init`;
+  the routing is a pure function, `routeMessage`, with bench checks.
+- **Coupled coils:** two identical coils (every turn pair coincident) gave M = 3×10⁶ H and
+  k = 10¹⁰; a coincident pair now counts the ring self-term of a wire of radius rw, which
+  gives k = 0.98 for identical coils. A zero-length winding (the length field allows 0) gave
+  L = −∞; l is clamped to one wire diameter. Every other pair and every normal coil is
+  unchanged (tests pin that).
+- Dead "coming in Phase N" placeholder text in the shell reworded (no tab uses it).
+- 604 em-core checks, 784 in the bench, smoke on 26 tabs.
+
+## Second whole-site pass (patch 7r)
+- **Test rig gaps closed.** The smoke test now (a) sets the first two geometry controls of
+  every solver tab to their extremes 150 ms apart, so the worker is still posting frames for
+  the old grid when the new one is built (this reproduces the stale-frame crash fixed in 7q
+  when that fix is removed: 3 errors; clean with it), (b) hops between solver tabs faster
+  than they converge, and (c) drives real pointer events (click, drag, hover) through every
+  tab with an `onPointer` handler. `bench/fuzz.mjs` (`npm run fuzz`) is the control-extremes
+  fuzz from the audit as a standing script.
+- **CSV exports:** cells sampled exactly on a point charge or a line current came out as
+  `NaN`/`Infinity`; they are blanked on download (`cleanCsv`, with a check).
+- **Radiation animation:** the phasors on the grid are computed once per geometry and only
+  rotated by e^{jωt} per frame (28 ms per frame headless, was 67), with colour ranges fixed
+  over the cycle; three checks pin the rotated grid to the closed form at t ≠ 0.
+- Audited and left alone: every About/equation sentence that states a number or a direction
+  (recomputed by hand), the Randomize puzzle's URL (hidden values are kept out until Reveal),
+  animations stopped on leaving a tab (0 frame requests after switching), rapid tab switching.

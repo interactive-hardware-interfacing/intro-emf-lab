@@ -84,7 +84,8 @@ bench/
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files
   tline.js, fdtd.js     app-side tests for transmission lines and the FDTD presets
   golden.json           frozen handout numbers (see Semester releases)
-  smoke.mjs             headless-Chromium pass over every tab and view (`npm run smoke`)
+  smoke.mjs             headless-Chromium pass over every tab and view, URL round trips, solver tabs rebuilt mid-solve, pointer drags (`npm run smoke`)
+  fuzz.mjs              every numeric control at its min and max on every tab, page errors and NaN reported; slow, by hand (`npm run fuzz`)
 docs/                   architecture, instructor guide, build notes; docs/matlab has relax2d.m
 .github/workflows/deploy.yml   bench + smoke, then deploy to Pages
 ```
@@ -107,6 +108,7 @@ python3 -m http.server 8000
 ```
 npm test          # bench/run.js: the count is printed at the end
 npm run smoke     # headless Chromium; needs: npm install --no-save playwright && npx playwright install chromium
+npm run fuzz      # same setup; ~10 min; optional tab ids as arguments
 ```
 
 The bench covers every closed form against textbook results, each solver against problems

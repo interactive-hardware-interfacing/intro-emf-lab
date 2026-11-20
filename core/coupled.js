@@ -16,17 +16,31 @@ export function coilTurns({ N, a, l, zc = 0 }) {
   return out;
 }
 
-/** Mutual inductance of two coils: Σ over turn pairs of the coaxial-filament formula. */
-export function mutualInductance(c1, c2) {
+/**
+ * Mutual inductance of two coils: Σ over turn pairs of the coaxial-filament formula. A pair of
+ * coincident turns (identical coils, or two windings placed on top of each other) would make
+ * the filament formula infinite (it is logarithmic in the separation); such a pair counts the
+ * ring self-term μ0 R (ln(8R/rw) − 2) of a wire of radius rw instead, so the sum stays finite.
+ * Every other pair is the filament formula as it stands, however close.
+ */
+export function mutualInductance(c1, c2, rw = 0.5e-3) {
   let M = 0;
-  for (const t1 of coilTurns(c1)) for (const t2 of coilTurns(c2)) M += filamentM(t1.R, t2.R, Math.abs(t1.zc - t2.zc));
+  for (const t1 of coilTurns(c1)) for (const t2 of coilTurns(c2)) {
+    const d = Math.abs(t1.zc - t2.zc), s = Math.hypot(t1.R - t2.R, d);
+    M += s < 1e-9 * t1.R ? ringL(t1.R, rw) : filamentM(t1.R, t2.R, d);
+  }
   return M;
 }
 
-/** Self-inductance: Nagaoka for a winding, the ring formula (wire radius rw) for a single turn. */
+/**
+ * Self-inductance: Nagaoka for a winding, the ring formula (wire radius rw) for a single turn.
+ * A winding cannot be shorter than one wire diameter, so l is clamped to 2 rw: l = 0 would
+ * otherwise divide by zero (Nagaoka's form has l in the denominator).
+ */
 export function selfInductance({ N, a, l }, rw = 0.5e-3) {
   if (N === 1) return ringL(a, rw);
-  return nagaoka(2 * a, l) * (MU0 * N * N * PI * a * a) / l;
+  const lEff = Math.max(l, 2 * rw);
+  return nagaoka(2 * a, lEff) * (MU0 * N * N * PI * a * a) / lEff;
 }
 
 export function coupling(M, L1, L2) { return M / Math.sqrt(L1 * L2); }

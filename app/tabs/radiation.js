@@ -59,16 +59,44 @@ export default {
     return { Ex: sg * (i.Er * s + i.Eth * c), Ez: i.Er * c - i.Eth * s, Hph: sg * i.Hph, Emag: Math.hypot(i.Er, i.Eth), r, th };
   },
 
-  compute() {
-    const E = this.extent, t = this.t;
-    this.gridE = Grid2D.fromFunction(N, N, E, (x, z) => this.fieldsAt(x, z, t).Emag);
-    this.gridH = Grid2D.fromFunction(N, N, E, (x, z) => this.fieldsAt(x, z, t).Hph);
-    this.gridS = Grid2D.fromFunction(N, N, E, (x, z) => { const r = Math.max(Math.hypot(x, z), this.rmin); return poyntingAvg(this.p.I0, this.dl(), this.f(), r, Math.atan2(Math.abs(x), z)); });
-    this.gridPsi = Grid2D.fromFunction(N, N, E, (x, z) => { const r = Math.max(Math.hypot(x, z), this.rmin); return streamPsi(this.p.I0, this.dl(), this.f(), r, Math.atan2(Math.abs(x), z), t); });
-    const pct = (g, lo, hi) => { const a = Array.from(g.data).filter((v) => Number.isFinite(v) && v > 0).sort((p, q) => p - q); return [a[Math.floor(lo * (a.length - 1))] || 1e-12, a[Math.floor(hi * (a.length - 1))] || 1]; };
-    this.eRange = pct(this.gridE, 0.05, 0.97); this.sRange = pct(this.gridS, 0.05, 0.97);
-    const hm = Array.from(this.gridH.data).map(Math.abs).sort((p, q) => p - q)[Math.floor(0.95 * N * N)] || 1; this.hRange = [-hm, hm];
+  /**
+   * The phasors on the grid depend only on the geometry; time enters as the rotation e^{jωt}.
+   * So the phasors (E_r, E_θ, H_φ at every node), the time-average S and the colour ranges are
+   * computed once per geometry here, and compute() only rotates them: an animation frame
+   * costs a few milliseconds instead of four full closed-form sweeps.
+   */
+  phasorGrid() {
+    const E = this.extent, g = new Grid2D(N, N, E), n = N * N;
+    const ph = { Er: new Float64Array(2 * n), Eth: new Float64Array(2 * n), Hph: new Float64Array(2 * n), rs: new Float64Array(n), sg: new Float64Array(n), key: `${E.join(',')}|${this.p.I0}|${this.p.dl}|${this.p.f}` };
+    const I0 = this.p.I0, dl = this.dl(), f = this.f();
+    this.gridS = new Grid2D(N, N, E);
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const k = j * N + i, x = g.x(i), z = g.y(j), r = Math.max(Math.hypot(x, z), this.rmin), th = Math.atan2(Math.abs(x), z), F = hertzFields(I0, dl, f, r, th);
+      ph.Er[2 * k] = F.Er[0]; ph.Er[2 * k + 1] = F.Er[1]; ph.Eth[2 * k] = F.Eth[0]; ph.Eth[2 * k + 1] = F.Eth[1]; ph.Hph[2 * k] = F.Hph[0]; ph.Hph[2 * k + 1] = F.Hph[1];
+      ph.rs[k] = r * Math.sin(th); ph.sg[k] = x < 0 ? -1 : 1;
+      this.gridS.data[k] = poyntingAvg(I0, dl, f, r, th);
+    }
+    const pct = (arr, lo, hi) => { const a = Array.from(arr).filter((v) => Number.isFinite(v) && v > 0).sort((p, q) => p - q); return [a[Math.floor(lo * (a.length - 1))] || 1e-12, a[Math.floor(hi * (a.length - 1))] || 1]; };
+    // amplitude-based colour ranges, fixed over the cycle so the animation does not flicker
+    const eAmp = new Float64Array(n), hAmp = new Float64Array(n);
+    for (let k = 0; k < n; k++) { eAmp[k] = Math.hypot(ph.Er[2 * k], ph.Er[2 * k + 1], ph.Eth[2 * k], ph.Eth[2 * k + 1]); hAmp[k] = Math.hypot(ph.Hph[2 * k], ph.Hph[2 * k + 1]); }
+    this.eRange = pct(eAmp, 0.05, 0.97); this.sRange = pct(this.gridS.data, 0.05, 0.97);
+    const hm = Array.from(hAmp).sort((p, q) => p - q)[Math.floor(0.95 * n)] || 1; this.hRange = [-hm, hm];
     this.psiFar = (wavenumber(this.f()).k * this.p.I0 * this.dl()) / (4 * PI); // far-field amplitude of r sinθ H_φ: the outer loops live at fractions of it
+    return ph;
+  },
+
+  compute() {
+    const E = this.extent, key = `${E.join(',')}|${this.p.I0}|${this.p.dl}|${this.p.f}`;
+    if (!this.ph || this.ph.key !== key) this.ph = this.phasorGrid();
+    const ph = this.ph, n = N * N, c = Math.cos(2 * PI * this.f() * this.t), s = Math.sin(2 * PI * this.f() * this.t);
+    this.gridE = new Grid2D(N, N, E); this.gridH = new Grid2D(N, N, E); this.gridPsi = new Grid2D(N, N, E);
+    for (let k = 0; k < n; k++) {
+      // Re[P e^{jωt}] = Pr c − Pi s;  Im[P e^{jωt}] = Pr s + Pi c
+      const er = ph.Er[2 * k] * c - ph.Er[2 * k + 1] * s, eth = ph.Eth[2 * k] * c - ph.Eth[2 * k + 1] * s;
+      const hr = ph.Hph[2 * k] * c - ph.Hph[2 * k + 1] * s, hi = ph.Hph[2 * k] * s + ph.Hph[2 * k + 1] * c;
+      this.gridE.data[k] = Math.hypot(er, eth); this.gridH.data[k] = ph.sg[k] * hr; this.gridPsi.data[k] = ph.rs[k] * hi;
+    }
     this.finish();
   },
   finish() { const r = radiation(this.p.I0, this.dl(), this.f()); const far = farFields(this.p.I0, this.dl(), this.f(), this.p.dist, PI / 2); this.results = { ...r, k: wavenumber(this.f()).k, nf: nearFarBoundary(this.f()), Efar: Math.hypot(...far.Eth), Sfar: (Math.hypot(...far.Eth) ** 2) / (2 * ETA0) }; this.renderResults(); },

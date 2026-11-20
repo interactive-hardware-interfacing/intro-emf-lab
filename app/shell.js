@@ -132,7 +132,7 @@ export class Shell {
     if (tab.available === false) {
       const note = document.createElement('div');
       note.className = 'overlay-note';
-      note.textContent = `${tab.title}: coming in Phase ${tab.phase}. The equation panel on the right already shows what this tab will solve.`;
+      note.textContent = `${tab.title} is not finished yet. The equation panel on the right already shows what this tab will solve.`;
       this.stackEl.appendChild(note);
     }
 

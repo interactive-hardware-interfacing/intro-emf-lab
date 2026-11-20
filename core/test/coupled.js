@@ -33,6 +33,15 @@ export function coupledChecks(check) {
   check('coupled transformer loaded: v2 = R i2', Math.hypot(...ld.V2), 10 * Math.hypot(...ld.I2), 1e-12);
   check('coupled transformer loaded: secondary voltage is lower than open circuit', Math.hypot(...ld.V2) < Math.hypot(...open.V2) ? 1 : 0, 1, 0);
   // identical coincident single-layer coils would need the wire radius; with a tiny offset k should approach a high value
+  {
+    // identical coils (every turn pair coincident) must not blow up: the pairs take the ring self-term
+    const c = { N: 100, a: 0.015, l: 0.03 }, Mi = mutualInductance(c, { ...c }), ki = coupling(Mi, selfInductance(c), selfInductance(c));
+    check('coupled M: identical coils give a finite M', Number.isFinite(Mi) && Mi > 0 ? 1 : 0, 1, 0);
+    check('coupled k: identical coils couple with k ≈ 1 (within 15 %: filament sum vs Nagaoka)', ki, 1, 0.15);
+    check('coupled M: two turns a wire radius apart still use the filament formula (unchanged numbers)', mutualInductance({ N: 1, a: 0.01, l: 0 }, { N: 1, a: 0.01, l: 0, zc: 0.3e-3 }), filamentM(0.01, 0.01, 0.3e-3), 1e-15);
+    check('coupled L: a zero-length winding is clamped to one wire diameter, finite', Number.isFinite(selfInductance({ N: 10, a: 0.01, l: 0 })) ? 1 : 0, 1, 0);
+    check('coupled L: the clamp is inactive for a normal coil', selfInductance({ N: 10, a: 0.01, l: 0.02 }), selfInductance({ N: 10, a: 0.01, l: 0.02 }, 0.5e-3), 0);
+  }
   const same = { N: 60, a: 0.02, l: 0.06 }, kk = coupling(mutualInductance(same, { ...same, a: 0.0205 }), selfInductance(same), selfInductance({ ...same, a: 0.0205 }));
   check('coupled k: two coils wound on top of each other are tightly coupled (k > 0.9)', kk > 0.9 ? 1 : 0, 1, 0);
 }
