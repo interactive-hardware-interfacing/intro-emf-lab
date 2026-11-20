@@ -112,8 +112,8 @@ export default {
     const k = this.kind, q = this.phys(), n = 300, xs = [], ys = [];
     const isSphere = k === 'sphere', a0 = isSphere ? 0 : k === 'corner' ? 0 : this.extent[0], a1 = isSphere ? 180 : this.extent[1];
     for (let i = 0; i < n; i++) { const s = a0 + ((a1 - a0) * i) / (n - 1); xs.push(s); ys.push(inducedSigma(k, q, isSphere ? (s * PI) / 180 : s)); }
-    const m = Math.max(...ys.map(Math.abs));
-    const A = axesFrame(ctx, W, H, { lo: -1.05 * m, hi: 0.05 * m, a0, a1, xlabel: isSphere ? 'angle from the line to the charge (degrees)' : 'position along the plane y = 0 (m)', ylabel: k === 'linePlane' ? 'σ (C/m² per metre of line… C/m²)' : 'induced σ (C/m²)', top: 70, fmt: (v) => sci(v, 2) });
+    const m = Math.max(...ys.map(Math.abs)) || 1, neg = ys.every((v) => v <= 0); // σ has the sign opposite to q
+    const A = axesFrame(ctx, W, H, { lo: neg ? -1.05 * m : -0.05 * m, hi: neg ? 0.05 * m : 1.05 * m, a0, a1, xlabel: isSphere ? 'angle from the line to the charge (degrees)' : 'position along the plane y = 0 (m)', ylabel: 'induced σ (C/m²)', top: 70, fmt: (v) => sci(v, 2) });
     A.hline(0, '#bbb', ''); A.line(xs, ys, '#1f5fbf');
     const y = A.legend([['induced surface charge density', '#1f5fbf']]);
     const cf = this.results.cf;

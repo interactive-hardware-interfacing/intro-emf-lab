@@ -2,7 +2,7 @@
 // carrying I. Each leg is a reluctance ℛ = l/(μA); the gap dominates; fringing widens the gap's
 // effective area; a saturating core (the same μ(B) law as the Inductors tab) makes ℛ_core
 // depend on the flux, solved by bisection. Closed form.
-//   NI = Φ (ℛ_core + ℛ_gap),  B = Φ/A,  L = N²/ℛ_total = NΦ/I,  W = ½LI²,
+//   NI = Φ (ℛ_core + ℛ_gap),  B = Φ/A,  L = N²/ℛ_total = NΦ/I,  W = ½LI² (linear; saturating core: W_core = ∫H dB per volume),
 //   energy split: W_gap/W = ℛ_gap/ℛ_total,  gap force F = B_gap² A_gap/(2μ₀) (pull on the pole faces)
 //   fringing (simple rule): A_gap = (w + g)(d + g) for a rectangular section w × d
 //   saturation: B = μ₀ H + (2 B_sat/π) atan(π (μ_i − 1) μ₀ H /(2 B_sat))  (from axisym.js's model)
@@ -12,6 +12,13 @@ import { PI, MU0 } from './constants.js';
 export function coreB(H, { muR = 2000, Bsat = 0 }) {
   if (!Bsat) return MU0 * muR * H;
   return MU0 * H + ((2 * Bsat) / PI) * Math.atan((PI * (muR - 1) * MU0 * H) / (2 * Bsat));
+}
+
+/** Energy density ∫₀^B H dB′ (J/m³) of the core material at field H. */
+export function coreEnergyDensity(H, mat, n = 200) {
+  if (!mat.Bsat || H === 0) return 0.5 * H * coreB(H, mat);
+  let I = 0; for (let i = 0; i <= n; i++) { const h = (H * i) / n, w = i === 0 || i === n ? 1 : i % 2 ? 4 : 2; I += w * coreB(h, mat); } I *= H / n / 3;
+  return H * coreB(H, mat) - I;
 }
 
 /**
@@ -32,7 +39,9 @@ export function solve({ lc = 0.2, w = 0.02, d = 0.02, g = 1e-3, muR = 2000, Bsat
     Hc = 0.5 * (lo + hi); Bc = coreB(Hc, { muR, Bsat }); Phi = Bc * Ac; Rc = Phi > 0 ? (Hc * lc) / Phi : lc / (MU0 * muR * Ac);
   }
   const Bg = Phi / Ag, Hg = Bg / MU0, L = I ? (N * Phi) / I : N * N / (Rc + Rg);
-  const Wg = 0.5 * Hg * Bg * Ag * g, Wc = 0.5 * Hc * Bc * Ac * lc, F = (Bg * Bg * Ag) / (2 * MU0);
+  // stored energy: ½HB in the gap (linear); in the core ∫₀^B H dB′, which is ½HB only while the core is linear
+  // (by parts: H B − ∫₀^H B dH′, Simpson over H)
+  const Wg = 0.5 * Hg * Bg * Ag * g, Wc = coreEnergyDensity(Hc, { muR, Bsat }) * Ac * lc, F = (Bg * Bg * Ag) / (2 * MU0);
   return { Ac, Ag, Rc, Rg, Rtot: Rc + Rg, Phi, Bc, Bg, Hc, Hg, L, W: Wg + Wc, Wg, Wc, gapShare: (Rg * Phi) / NI, F, NI, muEff: Bc / (MU0 * Hc || 1), Lgapless: (N * N * MU0 * muR * Ac) / lc };
 }
 

@@ -66,4 +66,19 @@ export function lossyChecks(check) {
     check('guide TE10: power through the section E₀² a b β/(4ωμ)', te10Power(a, b, f, 1), (a * b * pr.beta) / (4 * w * MU0), 1e-12);
     void EPS0; void ETA0;
   }
+  // below cutoff the H field is reactive (in quadrature with E) and must still be divergence-free; an earlier version set H_x = 0, which broke ∇·H = 0 and Ampère
+  {
+    const f = 5e9, x = 0.3 * a, z = 0.004, t = 0.37e-10, h = 1e-7, ht = 1e-15;
+    const F = (xx, zz, tt) => te10Fields(a, f, xx, zz, tt);
+    check('guide below cutoff: evanescent flag', F(x, z, t).evanescent ? 1 : 0, 1, 0);
+    const dHxdx = (F(x + h, z, t).Hx - F(x - h, z, t).Hx) / (2 * h), dHzdz = (F(x, z + h, t).Hz - F(x, z - h, t).Hz) / (2 * h);
+    check('guide below cutoff: ∇·H = 0 (H_x is not zero)', dHxdx + dHzdz, 0, 1e-6 * Math.abs(dHzdz));
+    const dEdz = (F(x, z + h, t).Ey - F(x, z - h, t).Ey) / (2 * h), dHxdt = (F(x, z, t + ht).Hx - F(x, z, t - ht).Hx) / (2 * ht);
+    check('guide below cutoff: Faraday x-component', -dEdz, -MU0 * dHxdt, 1e-5);
+    const dHxdz = (F(x, z + h, t).Hx - F(x, z - h, t).Hx) / (2 * h), dHzdx = (F(x + h, z, t).Hz - F(x - h, z, t).Hz) / (2 * h), dEdt = (F(x, z, t + ht).Ey - F(x, z, t - ht).Ey) / (2 * ht);
+    check('guide below cutoff: Ampère y-component', dHxdz - dHzdx, EPS0 * dEdt, 1e-5);
+    // no real power: the period average of E_y H_x vanishes
+    let S = 0; const n = 64, T = 1 / f; for (let i = 0; i < n; i++) { const tt = (i * T) / n; S += -F(x, z, tt).Ey * F(x, z, tt).Hx; }
+    check('guide below cutoff: time-average Poynting along z is zero', S / n, 0, 1e-12);
+  }
 }

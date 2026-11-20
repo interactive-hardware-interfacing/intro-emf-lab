@@ -14,7 +14,7 @@ const PRESETS = {
   'RG-58 coax, ~100 MHz (R′ 0.7 Ω/m, G′ small)': { R: 0.7, L: 250, C: 100, G: 1e-4, f: 100, len: 20, RL: 50, XL: 0 },
   'Lossless 50 Ω': { R: 0, L: 250, C: 100, G: 0, f: 100, len: 5, RL: 100, XL: 0 },
   'Distortionless (R′/L′ = G′/C′)': { R: 1, L: 250, C: 100, G: 0.4e-3, f: 100, len: 20, RL: 50, XL: 0 },
-  'Telephone pair, audio (R′ heavy, low f)': { R: 0.1, L: 0.6, C: 50, G: 1e-7, f: 0.01, len: 2000, RL: 600, XL: 0 },
+  'Telephone pair, audio (R′ heavy, low f)': { R: 0.1, L: 600, C: 50, G: 1e-7, f: 0.01, len: 2000, RL: 600, XL: 0 },
 };
 
 export default {
@@ -62,7 +62,7 @@ export default {
     A.line(sw.f, sw.vp.map((v) => v / ap.vLossless), '#1f5fbf'); A.line(sw.f, sw.vg.map((v) => v / ap.vLossless), '#7b61ff', [5, 4]); A.line(sw.f, sw.alphaDb.map((v) => v / amax), '#e5484d', [2, 3]);
     A.hline(1, '#bbb', 'lossless 1/√(L′C′)'); A.vline(p.f * 1e6, '#5a5955', `f = ${p.f} MHz`);
     const y = A.legend([['phase velocity v_p / v_lossless', '#1f5fbf'], ['group velocity v_g / v_lossless', '#7b61ff', [5, 4]], [`attenuation α (dB/m) / ${sci(amax, 3)}`, '#e5484d', [2, 3]]]);
-    A.caption(ap.distortionless ? 'Distortionless: R′/L′ = G′/C′ makes v_p the same at every frequency and α constant, so a pulse keeps its shape and just shrinks. Heaviside’s loading coils raised L′ on telephone lines to get there.' : 'Where R′ matters (f below R′/L′) the velocity depends on frequency and the line is dispersive: the parts of a pulse travel at different speeds and it smears. At high frequency v_p → 1/√(L′C′) and α levels off at R′/2Z₀ + G′Z₀/2.', y);
+    A.caption(ap.distortionless ? 'Distortionless: R′/L′ = G′/C′ makes v_p the same at every frequency and α constant, so a pulse keeps its shape and just shrinks. Heaviside’s loading coils raised L′ on telephone lines to get there.' : 'Where R′ matters (ω below R′/L′) the velocity depends on frequency and the line is dispersive: the parts of a pulse travel at different speeds and it smears. At high frequency v_p → 1/√(L′C′) and α levels off at R′/2Z₀ + G′Z₀/2.', y);
   },
   statusText() { const r = this.results; if (!r) return ''; return `α = ${sci(r.c.alpha, 3)} Np/m = ${sci(r.c.alphaDb, 3)} dB/m · β = ${sci(r.c.beta, 4)} rad/m · Z₀ = ${sci(r.c.Z0[0], 4)} ${r.c.Z0[1] < 0 ? '−' : '+'} j${sci(Math.abs(r.c.Z0[1]), 3)} Ω · P_in ${sci(r.ss.Pin, 3)} W → P_L ${sci(r.ss.PL, 3)} W`; },
   probe() { return []; },

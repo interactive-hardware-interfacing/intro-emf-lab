@@ -2,7 +2,7 @@
 // sits in the gap, the force is B²A/2μ₀, fringing lowers ℛ_gap, saturation caps B and makes
 // L fall, and the gap linearises.
 import { PI, MU0 } from '../constants.js';
-import { coreB, solve, sweepNI, sweepGap } from '../magcircuit.js';
+import { coreB, coreEnergyDensity, solve, sweepNI, sweepGap } from '../magcircuit.js';
 
 export function magcircuitChecks(check) {
   const p = { lc: 0.2, w: 0.02, d: 0.02, g: 1e-3, muR: 2000, Bsat: 0, N: 200, I: 1, fringe: false };
@@ -45,5 +45,16 @@ export function magcircuitChecks(check) {
   const sg = sweepGap(p, 5e-3, 11);
   check('magcircuit sweep: L falls monotonically with gap', sg.L.every((v, i) => i === 0 || v < sg.L[i - 1]) ? 1 : 0, 1, 0);
   check('magcircuit sweep: gap share rises toward 1', sg.gapShare[10] > 0.95 ? 1 : 0, 1, 0);
+  // stored energy with a saturating core: ∫H dB, which is less than ½HB (the B–H curve bends over); equal while linear
+  {
+    const mat = { muR: 2000, Bsat: 1.2 }, H = 2000;
+    let I = 0; const n = 20000; for (let i = 0; i < n; i++) { const h = ((i + 0.5) * H) / n; I += coreB(h, mat) * (H / n); }
+    check('magcircuit energy density = HB − ∫B dH (saturating)', coreEnergyDensity(H, mat), H * coreB(H, mat) - I, 1e-6);
+    check('magcircuit energy density < ½HB once saturating', coreEnergyDensity(H, mat) < 0.5 * H * coreB(H, mat) ? 1 : 0, 1, 0);
+    check('magcircuit energy density = ½HB when linear', coreEnergyDensity(H, { muR: 2000, Bsat: 0 }), 0.5 * H * coreB(H, { muR: 2000, Bsat: 0 }), 1e-12);
+    const s = solve({ lc: 0.2, w: 0.02, d: 0.02, g: 1e-3, muR: 2000, Bsat: 1.2, N: 200, I: 5 });
+    check('magcircuit saturating solve: W = W_gap + ∫H dB · V_core', s.W, s.Wg + coreEnergyDensity(s.Hc, mat) * s.Ac * 0.2, 1e-9);
+    check('magcircuit saturating solve: W < ½ L I² (secant L overstates it)', s.W < 0.5 * s.L * 25 ? 1 : 0, 1, 0);
+  }
   void PI;
 }

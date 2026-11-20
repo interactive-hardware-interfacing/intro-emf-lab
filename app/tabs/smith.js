@@ -64,7 +64,7 @@ export default {
     for (const rr of [0.2, 0.5, 1, 2, 5]) { const g = gammaOf([rr, 0]); const [x, y] = P(g); ctx.fillText(`${rr}`, x, y - 3); }
     for (const xx of [0.5, 1, 2]) for (const sg of [1, -1]) { const g = gammaOf([0, sg * xx]); const [x, y] = P(g); ctx.fillText(`${sg > 0 ? '+' : '−'}j${xx}`, x + 14 * g[0], y - 14 * g[1] + 4); }
     ctx.fillText('0', cx - R - 8, cy + 4); ctx.fillText('∞', cx + R + 8, cy + 4);
-    ctx.font = '11px system-ui'; ctx.textAlign = 'right'; ctx.fillText('toward the generator: clockwise, λ/2 per turn ↻', cx + R, cy + R + 34);
+    ctx.font = '11px system-ui'; ctx.textAlign = 'right'; ctx.fillText('toward the generator: clockwise, λ/2 per turn ↻', cx + R, cy + R + 20);
     ctx.textAlign = 'left';
     // SWR circle
     const g = cabs(r.G); ctx.strokeStyle = '#1f5fbf'; ctx.lineWidth = 1.8; ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.arc(cx, cy, R * Math.min(g, 1), 0, 2 * PI); ctx.stroke(); ctx.setLineDash([]);
@@ -75,9 +75,11 @@ export default {
     dot(r.Gd, '#b8860b', `z_in at ${this.p.d.toFixed(3)} λ`, 14);
     dot([-r.G[0], -r.G[1]], '#2a9d4b', `y_L (= z_L turned over)`, 14);
     if (this.show === 'stub') {
-      // g = 1 circle on the admittance chart = the r = 1 circle turned over: centre (−0.5, 0), radius 0.5
-      ctx.strokeStyle = '#2a9d4b'; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(cx - 0.5 * R, cy, 0.5 * R, 0, 2 * PI); ctx.stroke(); ctx.setLineDash([]);
-      for (const [i, s] of r.stub.entries()) { const Gy = moveToward(gammaOf(r.y), s.d); dot([-Gy[0], -Gy[1]], '#2a9d4b', `y = 1 ${s.b < 0 ? '−' : '+'} j${sci(Math.abs(s.b), 3)} at d${i + 1} = ${s.d.toFixed(3)} λ`, i ? 16 : -8); }
+      // the textbook construction: flip the load to y_L, walk clockwise on the same |Γ| circle, and read the r = 1 circle as g = 1
+      ctx.strokeStyle = '#2a9d4b'; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(cx + 0.5 * R, cy, 0.5 * R, 0, 2 * PI); ctx.stroke(); ctx.setLineDash([]);
+      const Gy0 = gammaOf(r.y), dFar = Math.max(...r.stub.map((s) => s.d)), Gy1 = moveToward(Gy0, dFar);
+      ctx.strokeStyle = '#2a9d4b'; ctx.lineWidth = 3; ctx.setLineDash([2, 4]); ctx.beginPath(); ctx.arc(cx, cy, R * Math.min(g, 1), -carg(Gy0), -carg(Gy1), false); ctx.stroke(); ctx.setLineDash([]);
+      for (const [i, s] of r.stub.entries()) { const Gy = moveToward(Gy0, s.d); dot(Gy, '#2a9d4b', `y = 1 ${s.b < 0 ? '−' : '+'} j${sci(Math.abs(s.b), 3)} at d${i + 1} = ${s.d.toFixed(3)} λ`, i ? 16 : -8); }
     } else if (this.show === 'qw') {
       for (const s of r.qw) dot(moveToward(r.G, s.d), '#7b61ff', `real z = ${sci(s.r, 3)} at ${s.d.toFixed(3)} λ: Z_T = ${sci(s.zT * this.p.Z0, 4)} Ω`, s.r > 1 ? -8 : 16);
     }
@@ -85,8 +87,8 @@ export default {
     ctx.fillStyle = '#5a5955'; ctx.font = '12px system-ui';
     let yy = 20;
     yy = wrapText(ctx, `Z₀ = ${this.p.Z0} Ω · Γ = ${sci(cabs(r.G), 3)} ∠ ${((180 / PI) * carg(r.G)).toFixed(1)}° · SWR = ${r.swr === Infinity ? '∞' : sci(r.swr, 3)}`, 12, yy, capW);
-    yy = wrapText(ctx, 'Blue dashed: the constant-|Γ| (SWR) circle. Red arc: the walk from the load toward the generator. Green: the load admittance, which sits diametrically opposite, so the same chart serves for y; the dotted green circle is g = 1, where a shunt stub can cancel the rest.', 12, yy + 6, capW);
-    if (this.show === 'stub') wrapText(ctx, 'Single stub: walk to where the admittance circle meets g = 1 (two places per half wavelength), then hang a stub whose susceptance is −b. The numbers give both solutions with open- and short-circuit stub lengths.', 12, yy + 6, capW);
+    yy = wrapText(ctx, 'Blue dashed: the constant-|Γ| (SWR) circle. Red arc: the walk from the load toward the generator. Green: the load admittance, diametrically opposite, so the same chart serves for y once every r is read as g and every x as b; the dotted green arc is the walk from y_L, and the dotted circle (the r = 1 circle read as g = 1) is where a shunt stub can cancel the rest.', 12, yy + 6, capW);
+    if (this.show === 'stub') wrapText(ctx, 'Single stub: from y_L walk toward the generator to where the circle meets g = 1 (two places per half wavelength), then hang a stub whose susceptance is −b. The numbers give both solutions with open- and short-circuit stub lengths.', 12, yy + 6, capW);
     if (this.show === 'qw') wrapText(ctx, 'Quarter-wave transformer: at a voltage maximum or minimum the line is purely resistive, r; a λ/4 section of Z_T = Z₀√r makes it 1.', 12, yy + 6, capW);
   },
 

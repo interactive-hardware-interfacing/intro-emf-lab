@@ -74,7 +74,7 @@ export default {
       for (let k = 0; k < 12 && zx < W; k++) { const nz = zx + (H - 4) / Math.tan(th), nx = xx + dir * (H - 4); ctx.beginPath(); ctx.moveTo(zx, xx); ctx.lineTo(nz, nx); ctx.stroke(); zx = nz; xx = nx; dir = -dir; }
       ctx.fillStyle = '#ffd166'; ctx.fillText(`TE10 = two plane waves bouncing at θ = ${((180 / PI) * th).toFixed(1)}° to the axis (cos θ = β/k)`, 10, H - 28);
     }
-    if (!r.pr10.propagating) { ctx.fillStyle = '#ff5ad6'; ctx.fillText(`below cutoff (f < ${sci(r.pr10.fc, 4)} Hz): no wave, the field decays as e^{−αz}, α = ${sci(r.pr10.alpha, 3)} Np/m`, 10, H - 28); }
+    if (!r.pr10.propagating) { ctx.fillStyle = '#ff5ad6'; ctx.fillText(`below cutoff (f < ${sci(r.pr10.fc, 4)} Hz): no wave, the field decays as e^{−αz}, α = ${sci(r.pr10.alpha, 3)} Np/m; E and H are 90° out of step, so no power flows`, 10, H - 28); }
     ctx.fillStyle = '#fff'; ctx.fillText(`f = ${this.p.f} GHz · λ₀ = ${sci(C0 / this.f(), 3)} m · λ_g = ${r.pr10.propagating ? sci(r.pr10.lamG, 3) + ' m' : '—'} · t = ${(this.t * this.f()).toFixed(2)} T`, 10, H - 10);
     ctx.restore();
   },
@@ -93,7 +93,7 @@ export default {
     curves.forEach((c, i) => { A.line(c.f, c.beta, cols[i % cols.length], c.kind === 'TM' ? [5, 4] : []); A.vline(c.fc, cols[i % cols.length], `${c.kind}${c.m}${c.n}`, A.T + 12 + 13 * (i % 3)); });
     A.vline(this.f(), '#5a5955', `f = ${this.p.f} GHz`, A.T + 60);
     const y = A.legend([...curves.map((c, i) => [`${c.kind}${c.m}${c.n} (f_c ${sci(c.fc, 3)} Hz)`, cols[i % cols.length], c.kind === 'TM' ? [5, 4] : []]), ['free space β = ω/c', '#bbb', [2, 3]]]);
-    A.caption(`Every mode starts at its cutoff with β = 0 (v_p → ∞, v_g → 0) and bends toward the free-space line at high frequency. Below cutoff there is no curve: the mode is evanescent. Single-mode band ${sci(r.band.lo, 3)}–${sci(r.band.hi, 3)} Hz (ratio ${r.band.ratio.toFixed(2)}): run the guide there and only TE10 carries power. The slope of a curve is 1/v_g, the slope from the origin 1/v_p.`, y);
+    A.caption(`Every mode starts at its cutoff with β = 0 (v_p → ∞, v_g → 0) and bends toward the free-space line at high frequency. Below cutoff there is no curve: the mode is evanescent. Single-mode band ${sci(r.band.lo, 3)}–${sci(r.band.hi, 3)} Hz (ratio ${r.band.ratio.toFixed(2)}): run the guide there and only TE10 carries power. The slope of a curve is 2π/v_g, the slope of the line from the origin 2π/v_p.`, y);
   },
   statusText() { const r = this.results; if (!r) return ''; const p = r.pr10; return `TE10: f_c = ${sci(p.fc, 4)} Hz · ${p.propagating ? `β = ${sci(p.beta, 4)} rad/m, λ_g = ${sci(p.lamG, 4)} m, v_p = ${sci(p.vp, 4)}, v_g = ${sci(p.vg, 4)} m/s, Z_TE = ${sci(p.Z, 4)} Ω` : `below cutoff, α = ${sci(p.alpha, 4)} Np/m`} · t = ${(this.t * this.f()).toFixed(2)} T`; },
   probe(z, x) { const F = te10Fields(this.a(), this.f(), x, z, this.t); return [{ label: 'E_y / E₀', value: F.Ey, unit: '' }, { label: 'H_x', value: F.Hx, unit: 'A/m per V/m' }, { label: 'H_z', value: F.Hz, unit: 'A/m per V/m' }, { label: 'x/a', value: x / this.a(), unit: '', note: 'E_y ∝ sin(πx/a): max at the centre, zero on the walls' }]; },

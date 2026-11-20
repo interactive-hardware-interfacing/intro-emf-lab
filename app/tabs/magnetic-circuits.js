@@ -130,7 +130,7 @@ export default {
     row('ℛ_core = l_c/(μA_c)', `${sci(r.Rc, 4)} /H`); row('ℛ_gap = g/(μ₀A_g)', `${sci(r.Rg, 4)} /H (A_g = ${sci(r.Ag, 3)} m²)`);
     row('Φ = NI/ℛ_total', `${sci(r.Phi, 4)} Wb`); row('B_core, B_gap', `${sci(r.Bc, 4)} T, ${sci(r.Bg, 4)} T`); row('H_core, H_gap', `${sci(r.Hc, 4)} A/m, ${sci(r.Hg, 4)} A/m`);
     row('MMF drops H_c l_c + H_g g', `${sci(r.Hc * this.phys().lc, 3)} + ${sci(r.Hg * this.phys().g, 3)} = ${sci(r.NI, 3)} A·t`);
-    row('L = N²/ℛ_total = NΦ/I', `${sci(r.L, 4)} H (gapless ${sci(r.Lgapless, 4)} H)`); row('energy ½LI², share in the gap', `${sci(r.W, 4)} J, ${(100 * r.Wg / (r.W || 1)).toFixed(1)} %`);
+    row('L = N²/ℛ_total = NΦ/I', `${sci(r.L, 4)} H (gapless ${sci(r.Lgapless, 4)} H)`); row(this.p.Bsat ? 'stored energy ∫H dB (not ½LI² once the iron saturates), share in the gap' : 'energy ½LI², share in the gap', `${sci(r.W, 4)} J, ${(100 * r.Wg / (r.W || 1)).toFixed(1)} %`);
     row('pull on the pole faces B²A/2μ₀', `${sci(r.F, 4)} N`); if (this.p.Bsat) row('effective μ_r of the core now', sci(r.muEff, 4));
   },
 };

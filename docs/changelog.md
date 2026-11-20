@@ -503,6 +503,25 @@ tightened 10⁴×). Fixes:
 - New Tools tab before Div and curl: six scalar fields with their gradients and three non-conservative fields (swirl, shear, the wire's B); click to draw a path, the running ∫F·dl is labelled at each vertex and compared with V(a) − V(b); a view of F·t̂, the running integral and V(a) − V(s) along the path; r̂ and φ̂ at the probe with F in that basis; the circulation around the unit circle and around a circle away from the origin in the numbers. `core/vectorcalc.js`.
 - Tests: `core/test/vectorcalc.js` (18 checks: analytic vs numeric gradients, path independence on two paths for every gradient field, closed-loop zero, Stokes for the swirl and shear, 2π around the wire and 0 away from it, the unit vectors), bench app checks, smoke entry.
 
+## Audit of the ten new tabs (patch 8k)
+
+Independent cross-checks (brute-force integrals and Maxwell/boundary identities against every closed form in the ten new cores: Fresnel energy and tangential continuity with μ ≠ 1 and past critical, Smith stub and λ/4 solutions, Gauss by E·A = Q/ε₀ and V = −∫E dr, images at V = 0 with σ = ε₀Eₙ and F = −dW/dD, telegrapher power bookkeeping, TE10 Faraday/Ampère/∇·H, magnetic-circuit Ampère loop, line integrals of gradients) plus a read of every tab. Findings, all fixed:
+
+- **Waveguides (core):** below cutoff `te10Fields` returned H_x = 0. The evanescent mode has H_x = −(α/ωμ) sin(πx/a) e^{−αz} sin ωt, in quadrature with E; without it ∇·H ≠ 0 and Ampère fails on the picture. Tests now check both Maxwell curl equations, ∇·H = 0 and zero time-average power below cutoff.
+- **Magnetic circuits (core):** the core's stored energy was ½HB, which overstates it by ~20 % once the iron saturates (the B–H curve bends over). Now ∫H dB per volume (`coreEnergyDensity`, by parts with Simpson); ½HB when linear. The energy row says so; tests pin W < ½LI² for the saturating case.
+- **Antennas:** the H-plane polar cut was drawn with φ = 0 at the top while its axis labels put x to the right, so the end-fire beam pointed the wrong way on the picture. The H-plane is now drawn counter-clockwise from the right.
+- **Smith chart:** the single-stub construction mixed representations: the load admittance was shown turned over, but the g = 1 points were impedance points on a flipped circle. Now the textbook recipe: walk from y_L on the same |Γ| circle (dotted green arc) and read the r = 1 circle as g = 1; the solutions land where every student expects them (Pozar's 60 − j80 Ω example: 1 ± j1.47 at 0.110 and 0.259 λ).
+- **Oblique incidence:** the Γ-against-angle caption said both coefficients reach −1 at grazing; with this (Sadiku) sign convention Γ∥ → +1. Reworded to |Γ| → 1 and the sign explained.
+- **Charged bodies:** the E/V/Q_enc plot normalised by the signed maximum, so a negative charge blew the curves up; now by |maximum|. The flux readout's unit was wrong for the cylinder and slab (V per metre, V/m per m² of face).
+- **Images:** the σ plot assumed σ < 0 and clipped it for a negative charge; the line-charge axis label was garbled.
+- **Lossy lines:** the telephone-pair preset had L′ = 0.6 nH/m, a thousand times too small (Z₀ of 3 Ω); 600 nH/m. "f below R′/L′" → ω.
+- **Dipole:** switching to "in a uniform field" with E₀ = 0 showed no torque; it now starts at 10 kV/m.
+- **Energy flow:** the H_φ layer label claimed "out of the page", which is only true for the resistor's orientation; the radial plot normalised by the signed maximum (discharging capacitor).
+- **Waveguides (tab):** the dispersion caption's slopes are 2π/v_g and 2π/v_p, not 1/v.
+- `bench/_x.mjs`, a screenshot helper, had been committed with the Oblique tab; it is gone from the series.
+
+Not changed, noted: the Γ-against-angle plot shows Re Γ (so labelled) past the critical angle, where Γ is complex; R = |Γ|² is the dashed curve. In the RC regime of a lossy line v_g > v_p (β ∝ √ω), which is correct and not an error of the plot.
+
 ## Antennas tab (patch 8j)
 
 - New Waves tab **Antennas**: a centre-fed dipole of any length (0.02–2 λ) with the sinusoidal-current pattern, directivity, R_rad referred to I_max, R_in referred to the feed current, half-power beamwidth and main-lobe direction, all by Simpson quadrature; two dipoles on the x axis as an array with the array factor, pattern multiplication, array directivity (and the same array of isotropic sources for comparison) and presets for broadside, end-fire both ways, grating lobes and a single element.

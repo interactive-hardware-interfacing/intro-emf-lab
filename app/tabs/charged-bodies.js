@@ -73,7 +73,7 @@ export default {
       else { ctx.beginPath(); ctx.arc(cx, cy, sx - cx, 0, 2 * PI); ctx.stroke(); }
       ctx.setLineDash([]); ctx.fillStyle = '#ff5ad6';
       const what = k === 'slab' ? 'pillbox |x| ≤ s' : BODIES[k].dim === 3 ? 'Gaussian sphere' : 'Gaussian cylinder (per metre)';
-      ctx.fillText(`${what}, s = ${sci(s, 3)} m: Φ = E·A = ${sci(r.flux, 4)} = Q_enc/ε₀ = ${sci(r.fluxGauss, 4)} V·m${BODIES[k].dim === 3 ? '' : '/m'}`, 10, view.height - 10);
+      ctx.fillText(`${what}, s = ${sci(s, 3)} m: Φ = E·A = ${sci(r.flux, 4)} = Q_enc/ε₀ = ${sci(r.fluxGauss, 4)} ${BODIES[k].dim === 3 ? 'V·m' : BODIES[k].dim === 2 ? 'V (per metre of length)' : 'V/m (per m² of face)'}`, 10, view.height - 10);
     }
     ctx.restore();
   },
@@ -90,8 +90,8 @@ export default {
     if (!this.results) this.compute();
     const k = this.kind, q = this.phys(), a = this.p.a, n = 300, ss = [], Es = [], Vs = [], Qs = [];
     for (let i = 0; i < n; i++) { const s = (3 * a * i) / (n - 1) + 1e-9; ss.push(s); Es.push(fieldMag(k, q, s)); Vs.push(potential(k, q, s)); Qs.push(enclosed(k, q, s)); }
-    const Emax = Math.max(...Es.filter(Number.isFinite)), Vmax = Math.max(...Vs.map(Math.abs)), Qmax = Math.max(...Qs);
-    const A = axesFrame(ctx, W, H, { lo: -1.05, hi: 1.05, a0: 0, a1: 3 * a, xlabel: k === 'slab' ? 'distance from the mid-plane s (m)' : 'distance from the centre / axis s (m)', ylabel: 'normalised to each curve’s maximum', top: 76, fmt: (v) => sci(v, 2) });
+    const Emax = Math.max(...Es.filter(Number.isFinite).map(Math.abs)) || 1, Vmax = Math.max(...Vs.map(Math.abs)) || 1, Qmax = Math.max(...Qs.map(Math.abs)) || 1; // signed curves, normalised by magnitude (negative charges flip them)
+    const A = axesFrame(ctx, W, H, { lo: -1.05, hi: 1.05, a0: 0, a1: 3 * a, xlabel: k === 'slab' ? 'distance from the mid-plane s (m)' : 'distance from the centre / axis s (m)', ylabel: 'normalised to each curve’s |maximum|', top: 76, fmt: (v) => sci(v, 2) });
     A.hline(0, '#bbb', '');
     A.line(ss, Es.map((v) => v / Emax), '#e5484d'); A.line(ss, Vs.map((v) => v / Vmax), '#1f5fbf', [5, 4]); A.line(ss, Qs.map((v) => v / Qmax), '#2a9d4b', [2, 3]);
     A.vline(a, '#b8860b', `a = ${sci(a, 3)} m`); A.vline(this.p.s, '#ff5ad6', `Gaussian s`, A.T + 28);

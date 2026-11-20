@@ -42,7 +42,11 @@ export function singleModeBand(a, b) {
 /** TE10 instantaneous fields at (x, z), time t; E₀ = 1 V/m. Below cutoff the z dependence is e^{−αz} with no phase advance. */
 export function te10Fields(a, f, x, z, t) {
   const pr = propagation(a, 1, 1, 0, f), w = 2 * PI * f, ph = w * t;
-  if (!pr.propagating) { const env = Math.exp(-pr.alpha * z); const Ey = Math.sin((PI * x) / a) * env * Math.cos(ph); return { Ey, Hx: 0, Hz: -((PI / a) / (w * MU0)) * Math.cos((PI * x) / a) * env * Math.sin(ph), evanescent: true }; }
+  if (!pr.propagating) {
+    // β → −jα: E_y = sin(πx/a) e^{−αz} e^{jωt}; H_x = −(β/ωμ) E_y = (jα/ωμ) E_y → Re gives −(α/ωμ) sin(πx/a) e^{−αz} sin(ωt): in quadrature with E (reactive, no real power flow), and needed for ∇·H = 0
+    const env = Math.exp(-pr.alpha * z), sx = Math.sin((PI * x) / a);
+    return { Ey: sx * env * Math.cos(ph), Hx: -((pr.alpha / (w * MU0)) * sx * env * Math.sin(ph)), Hz: -((PI / a) / (w * MU0)) * Math.cos((PI * x) / a) * env * Math.sin(ph), evanescent: true };
+  }
   const arg = ph - pr.beta * z;
   const Ey = Math.sin((PI * x) / a) * Math.cos(arg);
   const Hx = -(pr.beta / (w * MU0)) * Ey;

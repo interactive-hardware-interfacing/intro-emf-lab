@@ -38,12 +38,12 @@ export default {
   },
   render() { return null; },
 
-  polar(ctx, cx, cy, R, samples, color, label, axisLabels) {
+  polar(ctx, cx, cy, R, samples, color, label, axisLabels, fromRight = false) { // angle from the top clockwise (θ from z), or from the right counter-clockwise (φ from x)
     for (const g of [0.25, 0.5, 0.75, 1]) { ctx.strokeStyle = '#e5e5e5'; ctx.beginPath(); ctx.arc(cx, cy, R * g, 0, 2 * PI); ctx.stroke(); }
     ctx.strokeStyle = '#ddd'; ctx.beginPath(); ctx.moveTo(cx, cy - R * 1.08); ctx.lineTo(cx, cy + R * 1.08); ctx.moveTo(cx - R * 1.08, cy); ctx.lineTo(cx + R * 1.08, cy); ctx.stroke();
     ctx.fillStyle = '#5a5955'; ctx.font = '11px system-ui'; ctx.textAlign = 'center'; ctx.fillText(axisLabels[0], cx, cy - R * 1.08 - 4); ctx.fillText(axisLabels[1], cx + R * 1.02, cy - 8); ctx.textAlign = 'left';
     ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
-    samples.forEach((v, i) => { const a = (2 * PI * i) / (samples.length - 1), x = cx + R * v * Math.sin(a), y = cy - R * v * Math.cos(a); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke();
+    samples.forEach((v, i) => { const a = (2 * PI * i) / (samples.length - 1), x = cx + R * v * (fromRight ? Math.cos(a) : Math.sin(a)), y = cy - R * v * (fromRight ? Math.sin(a) : Math.cos(a)); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }); ctx.stroke();
     ctx.fillStyle = color; ctx.font = 'bold 12px system-ui'; ctx.textAlign = 'center'; ctx.fillText(label, cx, cy + R * 1.08 + 18); ctx.textAlign = 'left';
   },
   drawPolar(ctx, W, H) {
@@ -52,7 +52,7 @@ export default {
     ctx.font = '12px system-ui'; ctx.fillStyle = '#5a5955';
     let y = wrapText(ctx, this.mode === 'array' ? `Two dipoles of ${this.p.L} λ along z, on the x axis ${this.p.d} λ apart, fed ${this.p.delta}° apart. Left: the E-plane cut (φ = 0, the x–z plane, angle θ from the dipole axis). Right: the H-plane cut (θ = 90°, the x–y plane, angle φ from the array axis). Normalised field patterns.` : `A dipole of ${this.p.L} λ along z. Left: the E-plane (θ from the axis). Right: the H-plane (θ = 90°), a circle: the dipole is omnidirectional around its axis. Normalised field pattern |F|/F_max.`, 12, 18, W - 24);
     this.polar(ctx, W * 0.27, cy, R, r.cuts.E, '#e5484d', 'E-plane: θ from the dipole axis (up = z)', ['z (dipole axis)', 'x']);
-    this.polar(ctx, W * 0.73, cy, R, r.cuts.H, '#1f5fbf', 'H-plane: φ in the x–y plane (right = x, the array axis)', ['y', 'x']);
+    this.polar(ctx, W * 0.73, cy, R, r.cuts.H, '#1f5fbf', 'H-plane: φ in the x–y plane (right = x, the array axis)', ['y', 'x'], true);
     const f = r.fig;
     wrapText(ctx, this.mode === 'array' ? `Array directivity D = ${f && r.arr ? r.arr.D.toFixed(2) : ''} (${(10 * Math.log10(r.arr.D)).toFixed(2)} dBi); the same array of isotropic sources would give ${r.arr.Diso.toFixed(2)}; one dipole alone ${f.D.toFixed(2)}.` : `D = ${f.D.toFixed(3)} (${f.DdBi.toFixed(2)} dBi), R_in = ${sci(f.Rin, 4)} Ω, half-power beamwidth ${f.hpbw.toFixed(1)}°.`, 12, H - 24, W - 24);
   },

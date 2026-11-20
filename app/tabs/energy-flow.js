@@ -23,7 +23,7 @@ export default {
   layers: [
     { id: 'S', label: '|S| = |E × H| (power density)', kind: 'scalar', unit: 'W/m²', default: true, eq: 'S' },
     { id: 'Ez', label: 'E_z', kind: 'scalar', unit: 'V/m', eq: 'E' },
-    { id: 'H', label: 'H_φ (out of the page on this side)', kind: 'scalar', unit: 'A/m', eq: 'H' },
+    { id: 'H', label: 'H_φ (azimuthal, around the axis)', kind: 'scalar', unit: 'A/m', eq: 'H' },
     { id: 'Svec', label: 'S arrows', kind: 'vector', styles: ['arrows'], default: true, eq: 'S' },
     { id: 'Evec', label: 'E arrows', kind: 'vector', styles: ['arrows'], eq: 'E' },
     { id: 'body', label: 'the body and a coaxial Poynting surface', kind: 'info', default: true, eq: 'surface' },
@@ -89,7 +89,7 @@ export default {
     if (!this.results) this.compute();
     const q = this.phys(), kind = this.kind, n = 200, rs = [], Ps = [], Hs = [], Es = [], rmax = this.extent[1];
     for (let i = 0; i < n; i++) { const r = (rmax * i) / (n - 1); rs.push(r / q.a); Ps.push(powerWithin(kind, q, r)); const f = this.f(r, 0); Hs.push(f.Hphi); Es.push(f.Ez); }
-    const Pmax = this.kind === 'resistor' ? this.results.PJoule : this.results.dWdt, Hmax = Math.max(...Hs) || 1, Emax = Math.max(...Es) || 1;
+    const Pmax = this.kind === 'resistor' ? this.results.PJoule : this.results.dWdt, Hmax = Math.max(...Hs.map(Math.abs)) || 1, Emax = Math.max(...Es.map(Math.abs)) || 1;
     const A = axesFrame(ctx, W, H, { lo: 0, hi: 1.1, a0: 0, a1: rmax / q.a, xlabel: 'radius r / a', ylabel: 'normalised', top: 76, fmt: (v) => v.toFixed(2) });
     A.line(rs, Ps.map((v) => v / Pmax), '#2a9d4b'); A.line(rs, Hs.map((v) => v / Hmax), '#1f5fbf', [5, 4]); A.line(rs, Es.map((v) => v / Emax), '#e5484d', [2, 3]);
     A.vline(1, '#ffd166', 'surface r = a'); A.vline(this.p.rs, '#ff5ad6', 'chosen surface', A.T + 28);

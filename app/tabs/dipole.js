@@ -104,7 +104,7 @@ export default {
     const pf = (key, label, min, max, after = re) => ui.field(label, ui.number(p[key], { min, max, onChange: (v) => { p[key] = v; after(); } }));
     const row = (...els) => { const r = ui.el('div', 'row'); r.append(...els); box.appendChild(r); };
     box.appendChild(ui.el('h2', '', 'Dipole'));
-    box.appendChild(ui.field('Situation', ui.select([['free', 'the pair alone (axis along y)'], ['field', 'the pair in a uniform field E₀ (x̂)']], this.mode, (v) => { this.mode = v; re(); })));
+    box.appendChild(ui.field('Situation', ui.select([['free', 'the pair alone (axis along y)'], ['field', 'the pair in a uniform field E₀ (x̂)']], this.mode, (v) => { this.mode = v; if (v === 'field' && !p.E0) p.E0 = 1e4; re(); })));
     row(pf('q', 'q (nC)', -100, 100), pf('s', 'separation s (mm)', 0.1, 200), pf('span', 'Picture half-height (m)', 0.01, 2));
     if (this.mode === 'field') row(pf('theta', 'Angle of p from E₀ (degrees)', -180, 180, () => { shell.recompute(); shell.updateStageView(); shell.syncUrl(); }), pf('E0', 'E₀ (V/m)', 0, 1e7));
     box.appendChild(ui.el('p', 'hint', this.mode === 'free' ? 'Turn on the dashed ideal-dipole equipotentials: they match the pair’s beyond a few s and part company inside, where the pair is really two charges. Shrink s and the match extends inward; p = qs is all that survives.' : 'The torque p × E tries to line p up with E₀; the field picture shows the two charges pulled opposite ways. In a uniform field the pulls cancel: a dipole feels a torque, not a force.'));
