@@ -20,6 +20,7 @@ import { chargedBodiesChecks } from './charged-bodies.js';
 import { imagesChecks } from './images.js';
 import { dipoleChecks } from './dipole.js';
 import { lossyChecks } from './lossy-waveguide.js';
+import { poyntingChecks } from './poynting.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -42,4 +43,5 @@ mark('charged-bodies'); chargedBodiesChecks(check);
 mark('images'); imagesChecks(check);
 mark('dipole'); dipoleChecks(check);
 mark('lossy-waveguide'); lossyChecks(check);
+mark('poynting'); poyntingChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }

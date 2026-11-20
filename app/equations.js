@@ -279,6 +279,23 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid}`, note: 'Air-filled, perfectly conducting walls.' },
   },
 
+  'energy-flow': {
+    governing: [
+      { title: 'Poynting’s theorem', tex: String.raw`-\oint \mathbf{S}\cdot d\mathbf{A} = \frac{d}{dt}\int\left(\tfrac{1}{2}\varepsilon E^2 + \tfrac{1}{2}\mu H^2\right)dv + \int \mathbf{E}\cdot\mathbf{J}\,dv, \qquad \mathbf{S} = \mathbf{E}\times\mathbf{H}` },
+      { title: 'Resistor (DC)', tex: String.raw`\mathbf{E} = \frac{I}{\pi a^2\sigma}\hat{\mathbf{z}}, \quad \mathbf{H} = \frac{I r}{2\pi a^2}\hat{\boldsymbol\phi}\ (r<a), \quad \mathbf{S} = -EH\,\hat{\mathbf{r}}, \quad \oint_{\text{side}}\mathbf{S}\cdot d\mathbf{A} = -I^2 R` },
+      { title: 'Charging capacitor', tex: String.raw`\mathbf{E} = \frac{V}{g}\hat{\mathbf{z}}, \quad \nabla\times\mathbf{H} = \varepsilon_0\frac{\partial\mathbf{E}}{\partial t} \Rightarrow H_\phi = \frac{\varepsilon_0 r}{2}\frac{dE}{dt}, \quad \oint_{\text{rim}}\mathbf{S}\cdot d\mathbf{A} = -\frac{d}{dt}\left(\tfrac{1}{2}CV^2\right)` },
+      { title: 'Displacement current', tex: String.raw`I_d = \varepsilon_0\frac{dE}{dt}\pi a^2 = C\frac{dV}{dt} = I_{\text{leads}}` },
+      { title: 'Ampère–Maxwell', tex: MAXWELL.ampere },
+    ],
+    layers: {
+      S: { tex: String.raw`|\mathbf{S}| = E_z H_\phi`, note: 'Radial and inward wherever E and H are both nonzero: inside the resistor, inside the gap.' },
+      E: { tex: String.raw`E_z`, note: 'Uniform inside the body (J = σE) or the gap (V/g); idealised as zero outside.' },
+      H: { tex: String.raw`H_\phi = \frac{I_{\text{enc}}(r)}{2\pi r}`, note: 'Grows linearly inside (conduction current or displacement current ∝ r²), falls as 1/r outside the resistor.' },
+      surface: { tex: String.raw`P(r) = -\oint_{r} \mathbf{S}\cdot d\mathbf{A} = P_{\text{total}}\,(r/a)^2`, note: 'The pink coaxial cylinder; slide it in the controls.' },
+    },
+    solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid}`, note: 'Uniform-field models (no fringing, ideal leads).' },
+  },
+
   smith: {
     governing: [
       { title: 'The chart is the Γ plane', tex: String.raw`\Gamma = \frac{z - 1}{z + 1}, \qquad z = \frac{Z}{Z_0} = \frac{1 + \Gamma}{1 - \Gamma}, \qquad |\Gamma| \le 1` },

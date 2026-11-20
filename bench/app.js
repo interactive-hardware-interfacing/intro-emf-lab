@@ -560,6 +560,21 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5x. Energy flow tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'energy-flow'), st = Object.create(tab);
+    st.p = { ...tab.pDefaults }; st.kind = 'resistor'; st.resultsEl = null; st.shell = { setExtent() {}, layerOn: new Map() };
+    tab.build.call(st); tab.compute.call(st);
+    check('energy-flow state: parameters + kind', Object.keys(tab.getState.call(st)).length, Object.keys(tab.pDefaults).length + 1, 0);
+    check('energy-flow resistor: side flux = I²R', st.results.Pside, st.results.PJoule, 1e-12);
+    check('energy-flow resistor: power within 0.7a = 0.49 I²R', st.results.Pwithin, 0.49 * st.results.PJoule, 1e-12);
+    check('energy-flow resistor: |S| grid zero outside the body (top row)', st.gridS.get(80, 160), 0, 0);
+    st.kind = 'capacitor'; tab.build.call(st); tab.compute.call(st);
+    check('energy-flow capacitor: rim flux = C V dV/dt', st.results.Prim, st.results.dWdt, 1e-12);
+    check('energy-flow capacitor: E grid = V/g in the gap', st.gridE.get(40, 80), 1e4, 1e-12);
+  }
+
   // ------------------------------------------------------------ 5w. Lossy lines and Waveguides tabs (app layer, no DOM)
   {
     const { TABS } = await import('../app/tabs/index.js');
