@@ -53,7 +53,7 @@ input[type=range] { width: 100%; }
 .brand-title { font-weight: 700; font-size: 15px; }
 .brand-sub { font-size: 11px; color: var(--ink-2); }
 .tabs { display: flex; flex-wrap: wrap; gap: 2px 10px; flex: 1; align-items: flex-end; }
-.tab-group { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 2px; padding: 2px 6px 0 6px; border-radius: 7px 7px 0 0; max-width: 100%; min-width: 0; --tint: transparent; --tint-ink: var(--ink-2); background: var(--tint); }
+.tab-group { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1px; padding: 2px 5px 0 5px; border-radius: 7px 7px 0 0; max-width: 100%; min-width: 0; --tint: transparent; --tint-ink: var(--ink-2); background: var(--tint); }
 /* one faint tint per topic so the groups read at a glance; the label takes a darker shade of the same hue */
 .tab-group[data-group="Electrostatics"] { --tint: #eaf1fb; --tint-ink: #2f5fa8; }
 .tab-group[data-group="Currents & circuits"] { --tint: #fdf3e2; --tint-ink: #9a6410; }
@@ -63,7 +63,7 @@ input[type=range] { width: 100%; }
 .tab-group[data-group="Tools"] { --tint: #f0efec; --tint-ink: #5a5955; }
 .tab-group-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tint-ink); padding: 0 4px 8px 0; white-space: nowrap; }
 .tab {
-  font: inherit; font-size: 12.5px; padding: 5px 7px; border: 0; border-bottom: 2px solid transparent;
+  font: inherit; font-size: 12px; padding: 4px 5px; border: 0; border-bottom: 2px solid transparent;
   background: transparent; color: var(--ink-2); cursor: pointer; white-space: nowrap;
 }
 .tab:hover { color: var(--ink); }

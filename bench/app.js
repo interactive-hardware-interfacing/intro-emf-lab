@@ -560,6 +560,23 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5u. Images tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'images');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults }; stub.kind = 'plane'; stub.resultsEl = null; stub.shell = { setExtent() {}, layerOn: new Map() };
+    check('images state: parameters + kind', Object.keys(tab.getState.call(stub)).length, Object.keys(tab.pDefaults).length + 1, 0);
+    tab.build.call(stub); tab.compute.call(stub);
+    check('images compute: force on 1 nC at 0.1 m above a plane = 2.25e-7 N', stub.results.Fmag, 8.98755e9 * 1e-18 / 0.04, 1e-4);
+    check('images compute: V grid is zero in the conductor half', stub.gridV.get(80, 20), 0, 0);
+    check('images compute: induced total −q', stub.results.Qind, -1e-9, 1e-15);
+    stub.shell.layerOn.set('img', true); tab.compute.call(stub);
+    check('images compute: with the images layer the V grid continues below the plane (nonzero)', stub.gridV.get(80, 20) !== 0 ? 1 : 0, 1, 0);
+    stub.kind = 'sphere'; stub.shell.layerOn.set('img', false); tab.build.call(stub); tab.compute.call(stub);
+    check('images compute: sphere image −q a/D', stub.results.set[1].q, -0.4e-9, 1e-12);
+  }
+
   // ------------------------------------------------------------ 5t. Charged bodies tab (app layer, no DOM)
   {
     const { TABS } = await import('../app/tabs/index.js');

@@ -475,3 +475,8 @@ tightened 10⁴×). Fixes:
 ## Charged bodies tab (patch 8c)
 - New Electrostatics tab after Gauss's law: the five textbook distributions with a draggable Gaussian surface (sphere, cylinder per metre, pillbox), the flux E·A against Q_enc/ε₀, |E| and V maps with equipotentials, and E, V, Q_enc against distance. `core/charged-bodies.js`.
 - Tests: `core/test/charged-bodies.js` (26 checks: every closed form, continuity of E and V at the surface, the σ/ε₀ jump at shells, E = −dV/ds for every body, E·A·ε₀ = Q_enc for every body at three sizes, in-plane divergence ρ/ε₀ for the cylinder and ⅔ρ/ε₀ for the sphere cut), bench app checks, smoke entry.
+
+## Images tab (patch 8d)
+- New Electrostatics tab after Charged bodies: the method of images for a point charge above a grounded plane, a line charge above a plane, a point charge near a grounded sphere and a charge in a 90° corner. V and |E| in the physical region with the conductor grey, an optional layer that shows the images and their (fictitious) field inside, induced σ as bars and as a plot, the total induced charge and the force. `core/images.js`.
+- Tests: `core/test/images.js` (23 checks: V = 0 on every conductor, E normal to it, σ = ε₀E_n, ∫σ = −q / −λ / −q a/D by quadrature, forces against the closed forms), bench app checks, smoke entry.
+- Tab bar: slightly smaller tabs (12 px, 4 × 5 px padding) so the growing bar stays at four rows at 1500 px.

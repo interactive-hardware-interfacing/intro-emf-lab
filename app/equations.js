@@ -200,6 +200,23 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed forms for } \mathbf{F}, \nabla\cdot\mathbf{F}, \nabla\times\mathbf{F}`, note: 'Nothing is solved; the point is the definitions.' },
   },
 
+  images: {
+    governing: [
+      { title: 'Uniqueness', tex: String.raw`\nabla^2 V = -\rho/\varepsilon_0 \text{ in the region},\ V = 0 \text{ on the conductor} \ \Rightarrow\ V \text{ is unique there}` },
+      { title: 'Plane', tex: String.raw`q \text{ at } (0, d) + (-q) \text{ at } (0, -d): \quad \sigma(x) = \frac{-q\,d}{2\pi (x^2 + d^2)^{3/2}}, \quad \int\sigma\, dA = -q, \quad F = \frac{q^2}{4\pi\varepsilon_0 (2d)^2}` },
+      { title: 'Line charge and plane', tex: String.raw`\sigma(x) = \frac{-\lambda d}{\pi (x^2 + d^2)}, \qquad \frac{F}{l} = \frac{\lambda^2}{4\pi\varepsilon_0 d}` },
+      { title: 'Grounded sphere', tex: String.raw`q' = -\frac{a}{D}q \text{ at } \frac{a^2}{D}, \qquad \sigma(\theta) = \frac{-q(D^2 - a^2)}{4\pi a (a^2 + D^2 - 2aD\cos\theta)^{3/2}}, \qquad F = \frac{q^2 a D}{4\pi\varepsilon_0 (D^2 - a^2)^2}` },
+      { title: 'Corner (90°)', tex: String.raw`\text{images } -q \text{ at } (-x_0, y_0),\ -q \text{ at } (x_0, -y_0),\ +q \text{ at } (-x_0, -y_0)` },
+    ],
+    layers: {
+      V: { tex: String.raw`V = \sum_i \frac{q_i}{4\pi\varepsilon_0 r_i} \ (\text{outside}), \quad 0 \ (\text{inside})`, note: 'For the line charge, −(λ/2πε₀) Σ ± ln r.' },
+      E: { tex: String.raw`\mathbf{E} = -\nabla V`, note: 'Normal to the conductor at its surface: that is what V = const means.' },
+      images: { tex: String.raw`\text{the images\' field continued into the conductor}`, note: 'Not the real field there (the real field inside a conductor is zero); shown so you can see what produces the outside field.' },
+      sigma: { tex: String.raw`\sigma = \varepsilon_0 E_n`, note: 'Bars drawn along the conductor, scaled to the largest value.' },
+    },
+    solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid}`, note: '' },
+  },
+
   'charged-bodies': {
     governing: [
       { title: 'Gauss', tex: MAXWELL.gaussE },

@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, twenty-eight tabs grouped by topic, plus an About page that explains each tab
+page, twenty-nine tabs grouped by topic, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -17,6 +17,7 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Line charge | Two charged rods in cross-section, exact image solution, C′ | Closed form |
 | Gauss's law | A movable sphere or cube tiled into patches; E·n painted and summed against Q_enc/ε₀ | Coulomb + midpoint sum |
 | Charged bodies | Gauss's law for the textbook distributions (uniform sphere, spherical shell, infinite cylinder, cylindrical shell, slab): drag the Gaussian surface, flux vs Q_enc/ε₀, E, V and Q_enc against radius | Closed form |
+| Images | Method of images: a charge above a grounded plane, a line charge above a plane, a charge near a grounded sphere, a charge in a 90° corner; the images, the induced surface charge and the force | Closed form |
 | Interface | Plane boundary: dielectric–dielectric, dielectric–conductor, magnetic–magnetic; refraction, bound charge | Boundary conditions, closed form |
 | Capacitors | Disk capacitor, three-layer dielectric, C from Gauss and from energy, sweeps, axis plots | Gauss–Seidel in (r, z) |
 | Dielectrics | Parallel plates with up to four dielectrics, layered (same D, series) or side by side (same E, parallel) or tilted; free and bound charge face by face; hold V or hold Q; slab force from dC/dx | Gauss–Seidel in (x, y) |
@@ -77,6 +78,7 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   planewave.js          medium parameters (γ, η, δ, loss tangent), normal-incidence Fresnel, E and H along z, Poynting flux, polarization
   operators.js          2-D field library with closed-form div and curl; box flux and loop circulation; central differences
   coupled.js            coil turns, mutual inductance by the filament sum, Nagaoka/ring self-inductance, coupling, the transformer in phasors
+  images.js             method of images: image sets, field and V outside the conductor, induced σ, totals, force
   charged-bodies.js     Gauss's law for sphere, shell, cylinder, cylindrical shell, slab: Q_enc, E, V, flux
   smith.js              Smith chart: Γ ↔ z, rotation, extrema, quarter-wave transformer, single shunt stub
   oblique.js            oblique incidence: Snell, Fresnel ⊥ and ∥, Brewster, critical, evanescent field, the pictured field
@@ -84,7 +86,7 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith, charged-bodies) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith, charged-bodies, images) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files
