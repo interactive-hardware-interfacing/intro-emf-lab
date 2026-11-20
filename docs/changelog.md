@@ -463,3 +463,11 @@ tightened 10⁴×). Fixes:
 - Tests: `core/test/oblique.js` (28 checks: Snell, Fresnel at normal incidence and Brewster,
   power conservation at six angles both polarisations, TIR |Γ| = 1 and decay, continuity of
   the pictured field across the interface at 36 samples), bench app checks, smoke entry.
+
+## Smith chart tab (patch 8b)
+- New Waves tab after Line waves: the chart drawn live with the load, SWR circle, the walk
+  toward the generator (slider), the admittance point and the g = 1 circle; single-stub and
+  quarter-wave matching marked and worked out; z_in along half a wavelength. `core/smith.js`.
+- `ui.range` takes an `onChange` (URL sync on release). Tests: `core/test/smith.js` (26
+  checks, including both stub solutions substituted back for five loads), bench app checks,
+  smoke entry.

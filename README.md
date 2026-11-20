@@ -1,7 +1,7 @@
 # intro-EMF-lab
 
 Browser-based field simulators for EGRE 309 (Intro to Electromagnetism) at VCU. One static
-page, twenty-six tabs grouped by topic, plus an About page that explains each tab
+page, twenty-seven tabs grouped by topic, plus an About page that explains each tab
 and lists every equation. Served from GitHub Pages; plain ES modules, no build step, no
 dependency beyond a vendored KaTeX.
 
@@ -22,6 +22,7 @@ Live site: https://interactive-hardware-interfacing.github.io/intro-emf-lab/
 | Conduction (J) | Steady current between electrodes, J = σE, current through a cut, R | Gauss–Seidel in (r, z) |
 | Transmission lines | C′, L′, Z₀, v of coax, twin-lead, parallel plates, with a numeric check | Closed form + Gauss–Seidel |
 | Line waves | A terminated line: Γ, VSWR, standing-wave envelopes with the forward and reflected waves animated, Z_in along the line, the step bounce diagram and V(z, t); Z₀ and v from the Transmission lines tab | Closed form (lossless line) |
+| Smith chart | The chart drawn live: Γ ↔ z, the SWR circle, moving toward the generator, admittance, quarter-wave and single-stub matching worked on the chart | Closed form |
 | Plane waves | The uniform plane wave in closed form: E and H along z animated, lossy media and skin depth, normal incidence on a second medium (Γ, τ, standing wave, decay), polarization | Closed form |
 | Oblique incidence | A plane wave on a boundary at an angle: Snell, Fresnel for both polarisations against angle, Brewster, critical angle, total internal reflection with the evanescent tail; the field animated | Closed form |
 | Radiation | The Hertzian dipole in closed form: the exact fields animated with the E lines pinching off into closed loops, near vs far field along a radius (1/r³, 1/r², 1/r), the sin²θ pattern, R_rad and P_rad | Closed form |
@@ -75,12 +76,13 @@ core/                   em-core: the numerics, no DOM; a git subtree of github.c
   planewave.js          medium parameters (γ, η, δ, loss tangent), normal-incidence Fresnel, E and H along z, Poynting flux, polarization
   operators.js          2-D field library with closed-form div and curl; box flux and loop circulation; central differences
   coupled.js            coil turns, mutual inductance by the filament sum, Nagaoka/ring self-inductance, coupling, the transformer in phasors
+  smith.js              Smith chart: Γ ↔ z, rotation, extrema, quarter-wave transformer, single shunt stub
   oblique.js            oblique incidence: Snell, Fresnel ⊥ and ∥, Brewster, critical, evanescent field, the pictured field
   radiation.js          Hertzian dipole: exact and far-field phasors, instantaneous fields, the stream function for E lines, Poynting, R_rad, P_rad
   axisym.js             (r, z) solvers: Axisym (eps or sigma, explicit faces) and AxisymMag (psi = r A_phi, mu(B))
   eddy.js               AxisymEddy: complex psi for AC coils and conductors (quasi-static eddy currents)
   fdtd2d.js             2-D TMz Yee FDTD with CPML / Mur walls
-  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique) and runner; bench/run.js imports them
+  test/                 em-core's own checks (core, fdtd, eddy, dielectrics, ampere, solenoid, filters, faraday, lorentz, tline, planewave, operators, coupled, radiation, oblique, smith) and runner; bench/run.js imports them
 bench/
   run.js                the test runner (`npm test`): core/test checks + the app layer + parse of every module
   app.js                app-layer tests: worker protocol, URL state, contracts, KaTeX, golden files

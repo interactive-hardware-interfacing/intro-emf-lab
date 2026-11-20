@@ -200,6 +200,19 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed forms for } \mathbf{F}, \nabla\cdot\mathbf{F}, \nabla\times\mathbf{F}`, note: 'Nothing is solved; the point is the definitions.' },
   },
 
+  smith: {
+    governing: [
+      { title: 'The chart is the Γ plane', tex: String.raw`\Gamma = \frac{z - 1}{z + 1}, \qquad z = \frac{Z}{Z_0} = \frac{1 + \Gamma}{1 - \Gamma}, \qquad |\Gamma| \le 1` },
+      { title: 'Circles of constant r and x', tex: String.raw`\text{centre}\left(\tfrac{r}{1+r}, 0\right),\ \text{radius}\ \tfrac{1}{1+r}; \qquad \text{centre}\left(1, \tfrac{1}{x}\right),\ \text{radius}\ \tfrac{1}{|x|}` },
+      { title: 'Along a lossless line', tex: String.raw`\Gamma(d) = \Gamma_L e^{-j2\beta d} = \Gamma_L e^{-j4\pi d/\lambda}, \qquad \text{SWR} = \frac{1 + |\Gamma|}{1 - |\Gamma|}` },
+      { title: 'Admittance', tex: String.raw`y = 1/z \iff \Gamma_y = -\Gamma_z \quad (\text{the point diametrically opposite})` },
+      { title: 'Quarter-wave transformer', tex: String.raw`\text{at a V max or min } z = r \text{ (real)}, \qquad Z_T = Z_0\sqrt{r}` },
+      { title: 'Single shunt stub', tex: String.raw`y(d) = 1 + jb \text{ where the SWR circle meets } g = 1; \quad y_{\text{stub}} = -jb: \ \ \text{short } -j\cot\beta l, \ \text{open } j\tan\beta l` },
+    ],
+    layers: {},
+    solver: { tex: String.raw`\text{closed form}`, note: 'Lossless line; lengths in wavelengths.' },
+  },
+
   oblique: {
     governing: [
       { title: 'Snell', tex: String.raw`n_1\sin\theta_i = n_2\sin\theta_t, \qquad n = \sqrt{\varepsilon_r\mu_r}, \qquad \theta_r = \theta_i` },

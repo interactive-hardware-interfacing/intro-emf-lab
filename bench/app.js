@@ -560,6 +560,20 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5s. Smith chart tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'smith');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults }; stub.show = 'stub'; stub.resultsEl = null; stub.shell = {};
+    check('smith state: parameters + show', Object.keys(tab.getState.call(stub)).length, Object.keys(tab.pDefaults).length + 1, 0);
+    tab.compute.call(stub);
+    check('smith compute: SWR 3.91 for 60 − j80 on 50', stub.results.swr, 3.911, 1e-3);
+    check('smith compute: two stub solutions', stub.results.stub.length, 2, 0);
+    check('smith compute: z_in at the first stub position has y = 1 + jb (Re y = 1)', stub.results.yin[0], 1, 2e-2);
+    check('smith csv: 201 rows + header', tab.csv.call(stub).split('\n').length, 202, 0);
+  }
+
   // ------------------------------------------------------------ 5r. Oblique incidence tab (app layer, no DOM)
   {
     const { TABS } = await import('../app/tabs/index.js');

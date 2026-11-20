@@ -716,12 +716,13 @@ export const ui = {
     i.addEventListener('keydown', (e) => { if (e.key === 'Enter') commit(); });
     return i;
   },
-  range(value, { min, max, step, onInput, ariaLabel } = {}) {
+  range(value, { min, max, step, onInput, onChange, ariaLabel } = {}) {
     const i = document.createElement('input');
     i.type = 'range';
     if (ariaLabel) i.setAttribute('aria-label', ariaLabel);
     i.min = min; i.max = max; i.step = step; i.value = value;
     i.addEventListener('input', () => onInput?.(parseFloat(i.value)));
+    if (onChange) i.addEventListener('change', () => onChange(parseFloat(i.value)));
     return i;
   },
   select(options, value, onChange) {

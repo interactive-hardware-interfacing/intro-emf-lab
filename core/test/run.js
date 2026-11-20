@@ -15,6 +15,7 @@ import { operatorChecks } from './operators.js';
 import { coupledChecks } from './coupled.js';
 import { radiationChecks } from './radiation.js';
 import { obliqueChecks } from './oblique.js';
+import { smithChecks } from './smith.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -32,4 +33,5 @@ mark('operators'); operatorChecks(check);
 mark('coupled'); coupledChecks(check);
 mark('radiation'); radiationChecks(check);
 mark('oblique'); obliqueChecks(check);
+mark('smith'); smithChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }
