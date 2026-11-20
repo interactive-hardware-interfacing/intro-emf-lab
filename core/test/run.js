@@ -14,6 +14,7 @@ import { planeWaveChecks } from './planewave.js';
 import { operatorChecks } from './operators.js';
 import { coupledChecks } from './coupled.js';
 import { radiationChecks } from './radiation.js';
+import { obliqueChecks } from './oblique.js';
 
 const { check, mark, report } = makeRunner();
 await coreChecks(check, mark);
@@ -30,4 +31,5 @@ mark('planewave'); planeWaveChecks(check);
 mark('operators'); operatorChecks(check);
 mark('coupled'); coupledChecks(check);
 mark('radiation'); radiationChecks(check);
+mark('oblique'); obliqueChecks(check);
 if (report()) { console.error('\nem-core: checks failed'); process.exit(1); }

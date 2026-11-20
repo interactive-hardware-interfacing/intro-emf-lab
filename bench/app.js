@@ -560,6 +560,23 @@ export async function run(check) {
     check('coupled-coils csv: k decreases from the first row to the last', parseFloat(rows[1].split(',')[2]) > parseFloat(rows[101].split(',')[2]) ? 1 : 0, 1, 0);
   }
 
+  // ------------------------------------------------------------ 5r. Oblique incidence tab (app layer, no DOM)
+  {
+    const { TABS } = await import('../app/tabs/index.js');
+    const tab = TABS.find((t) => t.id === 'oblique');
+    const stub = Object.create(tab);
+    stub.p = { ...tab.pDefaults }; stub.pol = 'perp'; stub.t = 0; stub.speed = 0.1; stub.resultsEl = null; stub.shell = { setExtent() {}, layerOn: new Map() };
+    check('oblique state: parameters + polarisation + t + speed', Object.keys(tab.getState.call(stub)).length, Object.keys(tab.pDefaults).length + 3, 0);
+    tab.build.call(stub); tab.compute.call(stub);
+    check('oblique compute: Γ⊥ at 40° air→glass = −0.278', stub.results.G[0], -0.2779, 1e-3);
+    check('oblique compute: R + T = 1', stub.results.R + stub.results.Tp, 1, 1e-12);
+    check('oblique compute: field just below the interface equals just above (continuity on the grid row pair)', Math.abs(stub.grid.get(60, 80) - stub.grid.get(60, 81)) < 0.15 ? 1 : 0, 1, 0);
+    check('oblique compute: extent 4:3', stub.extent[1] / stub.extent[3], 4 / 3, 1e-12);
+    stub.pol = 'par'; stub.p.e1 = 2.25; stub.p.e2 = 1; stub.p.th = 60; tab.build.call(stub); tab.compute.call(stub);
+    check('oblique compute: TIR → R = 100 %', stub.results.R, 1, 1e-12);
+    check('oblique csv: 161² rows + header', tab.csv.call(stub).split('\n').length, 161 * 161 + 1, 0);
+  }
+
   // ------------------------------------------------------------ 5q. SolverClient message routing
   {
     const r = (st, m) => routeMessage(st, m).action;

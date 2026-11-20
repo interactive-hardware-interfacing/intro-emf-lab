@@ -451,3 +451,15 @@ tightened 10⁴×). Fixes:
 - Audited and left alone: every About/equation sentence that states a number or a direction
   (recomputed by hand), the Randomize puzzle's URL (hidden values are kept out until Reveal),
   animations stopped on leaving a tab (0 frame requests after switching), rapid tab switching.
+
+## Oblique incidence tab (patch 8a)
+- New Waves tab between Plane waves and Radiation: a plane wave on a plane boundary at an
+  angle. Field view (E_y for ⊥, H_y for ∥, animated) with the three rays; a plot of Γ and R
+  against angle for both polarisations with Brewster and critical angles; numbers including
+  complex Γ past critical, the power split, wavelengths and the evanescent depth. Presets
+  for air→glass, glass→air below and above critical, water, Brewster. `core/oblique.js`.
+- `app/views.js` gains `axesFrame` (the plot frame the newer tabs had each been carrying)
+  and `wrapText`; `app/state.js` gains `getStr`.
+- Tests: `core/test/oblique.js` (28 checks: Snell, Fresnel at normal incidence and Brewster,
+  power conservation at six angles both polarisations, TIR |Γ| = 1 and decay, continuity of
+  the pictured field across the interface at 36 samples), bench app checks, smoke entry.

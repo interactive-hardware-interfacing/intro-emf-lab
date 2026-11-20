@@ -200,6 +200,22 @@ export const EQUATIONS = {
     solver: { tex: String.raw`\text{closed forms for } \mathbf{F}, \nabla\cdot\mathbf{F}, \nabla\times\mathbf{F}`, note: 'Nothing is solved; the point is the definitions.' },
   },
 
+  oblique: {
+    governing: [
+      { title: 'Snell', tex: String.raw`n_1\sin\theta_i = n_2\sin\theta_t, \qquad n = \sqrt{\varepsilon_r\mu_r}, \qquad \theta_r = \theta_i` },
+      { title: 'Perpendicular (E out of the plane of incidence)', tex: String.raw`\Gamma_\perp = \frac{\eta_2\cos\theta_i - \eta_1\cos\theta_t}{\eta_2\cos\theta_i + \eta_1\cos\theta_t}, \qquad \tau_\perp = 1 + \Gamma_\perp` },
+      { title: 'Parallel (E in the plane of incidence)', tex: String.raw`\Gamma_\parallel = \frac{\eta_2\cos\theta_t - \eta_1\cos\theta_i}{\eta_2\cos\theta_t + \eta_1\cos\theta_i}, \qquad \tau_\parallel = (1 + \Gamma_\parallel)\frac{\cos\theta_i}{\cos\theta_t}` },
+      { title: 'Brewster and critical angles', tex: String.raw`\tan\theta_B = \sqrt{\varepsilon_2/\varepsilon_1}\ (\Gamma_\parallel = 0), \qquad \sin\theta_c = \sqrt{\varepsilon_2/\varepsilon_1}\ (\varepsilon_1 > \varepsilon_2)` },
+      { title: 'Past the critical angle', tex: String.raw`\cos\theta_t = -j\sqrt{\tfrac{\varepsilon_1}{\varepsilon_2}\sin^2\theta_i - 1}, \qquad |\Gamma| = 1, \qquad E_t \propto e^{-\alpha z}e^{-jk_1 x\sin\theta_i},\ \alpha = k_2\sqrt{\tfrac{\varepsilon_1}{\varepsilon_2}\sin^2\theta_i - 1}` },
+      { title: 'Power', tex: String.raw`R = |\Gamma|^2, \qquad T = |\tau|^2\frac{\eta_1\cos\theta_t}{\eta_2\cos\theta_i} = 1 - R` },
+    ],
+    layers: {
+      field: { tex: String.raw`E_y(x,z,t) = \mathrm{Re}\left[\left(e^{-jk_1(x\sin\theta_i + z\cos\theta_i)} + \Gamma e^{-jk_1(x\sin\theta_i - z\cos\theta_i)}\right)e^{j\omega t}\right] \ (z<0)`, note: 'In medium 2 the transmitted wave τ e^{−j(k₁ sinθi x + k₂ cosθt z)}. For ∥ the pictured component is H_y, with H_r = −Γ∥ H_i.' },
+      snell: { tex: String.raw`\lambda_x = \frac{\lambda_1}{\sin\theta_i} = \frac{\lambda_2}{\sin\theta_t}`, note: 'Both sides share the wavelength along the interface; that is where Snell comes from.' },
+    },
+    solver: { tex: String.raw`\text{closed form on a } 161^2 \text{ grid}`, note: 'Lossless media, μr = 1.' },
+  },
+
   radiation: {
     governing: [
       { title: 'The Hertzian dipole (exact)', tex: String.raw`H_\phi = \frac{j k I_0\,dl\,\sin\theta}{4\pi r}\left(1 + \frac{1}{jkr}\right)e^{-jkr}` },

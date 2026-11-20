@@ -38,6 +38,10 @@ export function getNum(state, key, fallback) {
   return Number.isFinite(v) ? v : fallback;
 }
 
+export function getStr(state, key, fallback) {
+  return state[key] === undefined || state[key] === '' ? fallback : String(state[key]);
+}
+
 export function getList(state, key, fallback) {
   if (state[key] === undefined || state[key] === '') return fallback;
   return state[key].split(',').filter(Boolean);
